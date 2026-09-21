@@ -1,0 +1,190 @@
+import MetalKit
+
+enum RenderError: LocalizedError {
+    case unavailable(String)
+    var errorDescription: String? {
+        switch self { case .unavailable(let message): message }
+    }
+}
+
+@MainActor
+final class MetalRenderer: NSObject, MTKViewDelegate {
+    private let queue: any MTLCommandQueue
+    private let pipeline: any MTLRenderPipelineState
+    private let texture: any MTLTexture
+    private let videoPipeline: any MTLRenderPipelineState
+    private let cache: CVMetalTextureCache
+    private var currentVideo: VideoTextures?
+    private var source: LocalVideo?
+    private let inFlight = DispatchSemaphore(value: 3)
+    private var lastDrawableSize = CGSize.zero
+    private var lastReport = 0.0
+    var report: ((PlaybackStats) -> Void)?
+
+    init(view: MTKView) throws {
+        guard let device = view.device, let queue = device.makeCommandQueue() else {
+            throw RenderError.unavailable("Unable to create the Metal command queue.")
+        }
+        let resourceBundle: Bundle
+        if Bundle.main.bundleURL.pathExtension == "app" {
+            guard let resources = Bundle.main.resourceURL,
+                  let bundled = Bundle(url: resources.appendingPathComponent("XFrame_XFrame.bundle")) else {
+                throw RenderError.unavailable("The app's rendering resource bundle is missing.")
+            }
+            resourceBundle = bundled
+        } else {
+            resourceBundle = Bundle.module
+        }
+        guard let url = resourceBundle.url(forResource: "Shaders", withExtension: "metal") else {
+            throw RenderError.unavailable("The rendering shaders are missing.")
+        }
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let library = try device.makeLibrary(source: source, options: nil)
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.vertexFunction = library.makeFunction(name: "patternVertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "patternFragment")
+        descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+        pipeline = try device.makeRenderPipelineState(descriptor: descriptor)
+        descriptor.fragmentFunction = library.makeFunction(name: "videoFragment")
+        videoPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
+        var cache: CVMetalTextureCache?
+        guard CVMetalTextureCacheCreate(nil, nil, device, nil, &cache) == kCVReturnSuccess, let cache else {
+            throw RenderError.unavailable("Unable to create the video texture cache.")
+        }
+        self.cache = cache
+        texture = try TestPattern.makeTexture(device: device)
+        self.queue = queue
+        super.init()
+    }
+
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+
+    func play(_ source: LocalVideo?, in view: MTKView) {
+        self.source?.stop()
+        self.source = source
+        currentVideo = nil
+        lastDrawableSize = .zero
+        view.enableSetNeedsDisplay = source == nil
+        view.isPaused = source == nil
+        view.preferredFramesPerSecond = 120
+        view.needsDisplay = true
+    }
+
+    func draw(in view: MTKView) {
+        let now = CACurrentMediaTime()
+        if let source, now - lastReport >= 0.5 {
+            lastReport = now
+            let stats = source.snapshot()
+            report?(stats)
+            if stats.state == "Ended" || stats.state.hasPrefix("Failed:") {
+                view.isPaused = true
+                view.enableSetNeedsDisplay = true
+            }
+        }
+        guard inFlight.wait(timeout: .now()) == .success else { return }
+        var committed = false
+        defer { if !committed { inFlight.signal() } }
+        guard view.drawableSize.width > 0, view.drawableSize.height > 0,
+              let pass = view.currentRenderPassDescriptor,
+              let drawable = view.currentDrawable,
+              let command = queue.makeCommandBuffer() else { return }
+
+        let next = source?.nextFrame(at: now)
+        if let next {
+            do { currentVideo = try VideoTextures(frame: next, cache: cache) }
+            catch {
+                source?.fail(error.localizedDescription)
+                if let source { report?(source.snapshot()) }
+                view.isPaused = true
+                return
+            }
+        }
+        if source != nil && next == nil && lastDrawableSize == view.drawableSize { return }
+        guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { return }
+        lastDrawableSize = view.drawableSize
+
+        // Use the actual drawable's pixels, never the window's logical points.
+        let width = Double(drawable.texture.width)
+        let height = Double(drawable.texture.height)
+        let imageWidth = currentVideo?.luma.width ?? texture.width
+        let imageHeight = currentVideo?.luma.height ?? texture.height
+        let scale = min(width / Double(imageWidth), height / Double(imageHeight))
+        let fittedWidth = Double(imageWidth) * scale
+        let fittedHeight = Double(imageHeight) * scale
+        encoder.setViewport(MTLViewport(
+            originX: (width - fittedWidth) / 2, originY: (height - fittedHeight) / 2,
+            width: fittedWidth, height: fittedHeight, znear: 0, zfar: 1
+        ))
+        if let video = currentVideo {
+            encoder.setRenderPipelineState(videoPipeline)
+            encoder.setFragmentTexture(video.luma, index: 0)
+            encoder.setFragmentTexture(video.chroma, index: 1)
+            var conversion = video.conversion
+            encoder.setFragmentBytes(&conversion, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+        } else {
+            encoder.setRenderPipelineState(pipeline)
+            encoder.setFragmentTexture(texture, index: 0)
+        }
+        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+        encoder.endEncoding()
+        let retainedVideo = currentVideo
+        let permit = inFlight
+        let activeSource = source
+        command.addCompletedHandler { command in
+            withExtendedLifetime(retainedVideo) {}
+            if command.status == .error {
+                activeSource?.fail("Metal rendering failed: \(command.error?.localizedDescription ?? "Unknown GPU error")")
+            }
+            permit.signal()
+        }
+        if next != nil, let source {
+            drawable.addPresentedHandler { _ in source.didPresent() }
+        }
+        command.present(drawable)
+        committed = true
+        command.commit()
+    }
+}
+
+// Retain both CoreVideo texture wrappers and the decode surface until GPU completion.
+private final class VideoTextures: @unchecked Sendable {
+    let frame: VideoFrame
+    let planes: [CVMetalTexture]
+    let luma: any MTLTexture
+    let chroma: any MTLTexture
+    let conversion: SIMD4<Float>
+
+    init(frame: VideoFrame, cache: CVMetalTextureCache) throws {
+        self.frame = frame
+        let buffer = frame.buffer
+        guard CVPixelBufferGetPlaneCount(buffer) == 2,
+              CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange else {
+            throw RenderError.unavailable("The decoder did not return video-range NV12.")
+        }
+        let matrix = CVBufferCopyAttachment(buffer, kCVImageBufferYCbCrMatrixKey, nil) as? String
+        if matrix == kCVImageBufferYCbCrMatrix_ITU_R_601_4 as String {
+            conversion = SIMD4(0.299, 0.114, 0, 0)
+        } else if matrix == nil || matrix == kCVImageBufferYCbCrMatrix_ITU_R_709_2 as String {
+            conversion = SIMD4(0.2126, 0.0722, 0, 0)
+        } else {
+            throw RenderError.unavailable("Only SDR BT.601 and BT.709 color matrices are supported.")
+        }
+        var wrapped: [CVMetalTexture] = []
+        for index in 0..<2 {
+            var result: CVMetalTexture?
+            let status = CVMetalTextureCacheCreateTextureFromImage(nil, cache, buffer, nil,
+                index == 0 ? .r8Unorm : .rg8Unorm,
+                CVPixelBufferGetWidthOfPlane(buffer, index), CVPixelBufferGetHeightOfPlane(buffer, index), index, &result)
+            guard status == kCVReturnSuccess, let result else {
+                throw RenderError.unavailable("Cannot import the decoded video surface into Metal (\(status)).")
+            }
+            wrapped.append(result)
+        }
+        guard let luma = CVMetalTextureGetTexture(wrapped[0]), let chroma = CVMetalTextureGetTexture(wrapped[1]) else {
+            throw RenderError.unavailable("The decoded surface has no Metal texture.")
+        }
+        planes = wrapped
+        self.luma = luma
+        self.chroma = chroma
+    }
+}
