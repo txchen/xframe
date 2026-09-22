@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Single-controller input and an opt-in keyboard gamepad fallback are implemented. Console remote play and MetalFX remain pending.
+The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Single-controller input and an opt-in keyboard gamepad fallback are implemented. Optional MetalFX Spatial and integer scaling are implemented; console remote play remains pending.
 
 ## Requirements
 
@@ -33,6 +33,8 @@ Known limitation: the self-signed certificate stabilizes the designated requirem
 The script explicitly selects SwiftPM's native build engine because the default `swiftbuild` engine fails to initialize with the standalone Command Line Tools on the development machine. That engine is deprecated; revisit this workaround with future toolchain updates.
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
+
+Controller input enablement is remembered across app restarts (first launch defaults to off); focus loss still releases game input. The controller toggle stays in the View menu so a controller user cannot disable their own navigation from the playback panel.
 
 For game input, choose **View → Enable Controller Input** or **View → Enable Keyboard Input** (both can be enabled; the last device with a fresh button press or deliberate stick/trigger motion takes control). Keyboard mode maps physical key positions to the Xbox controller: WASD moves, arrows look, J/Space=A, K=B, U=X, I=Y, Q/E=LB/RB, Z/C=LT/RT, F/T/H/G=D-pad, L/O=stick clicks, Return=Menu and Tab=View. **View → Keyboard Controls…** shows the mapping. Only the focused cloud playback window captures game keys; Command/Control/Option shortcuts remain available. Keyboard sticks/triggers are digital, and custom bindings/mouse look are not implemented. See [keyboard validation](.scratch/keyboard-input/validation.md) for the current live acceptance limits.
 
@@ -84,7 +86,7 @@ Playback diagnostics now include bounded recent p95 timings for decode submissio
 
 Open **Streaming Settings** in the cloud library sidebar to select **Standard** or **HQ (experimental)** and a **Game language** (including 简体中文 and 繁體中文). Settings save automatically and apply to newly started sessions. For an active game, use **End Session**, then start it again; changing settings does not alter the current session. Standard preserves the existing client profile. HQ requests the XStreaming-style higher-quality profile, with automatic bitrate negotiation; actual resolution/bitrate depend on the service, subscription and title. Check the Detailed HUD for received resolution and Mbps. Game-language support depends on the title; app and catalog language remain English. A numerical custom bitrate override is not implemented.
 
-The performance overlay defaults to **Compact**. **Command-Shift-D** cycles Compact → Detailed → Hidden; **View → Performance Overlay** selects a preset directly. The choice persists across app launches. The panel uses a 28% black background and lets mouse clicks pass through. In cloud playback, press **View + Menu together** on the controller for the same cycle; both buttons must start within 300 ms, and both must be released before another cycle. Standalone View/Menu still reach the game after the short recognition window; quick taps retain their press/release. Chords are local and work only while playback owns input. While focused controller input is enabled, XFrame requests direct View/Menu input without macOS capture gestures; the previous per-button preferences are restored on focus loss, disable, controller replacement and shutdown.
+The performance overlay defaults to **Compact**. **Command-Shift-D** cycles Compact → Detailed → Hidden; **View → Performance Overlay** selects a preset directly. The choice persists across app launches. The panel uses a 28% black background and lets mouse clicks pass through. In cloud playback, press **View + Menu together** on an enabled controller to open **Playback Settings**, which includes HUD choices and all three scaling modes; both buttons must start within 300 ms. Release the chord before navigating. Standalone View/Menu still reach the game after the short recognition window; quick taps retain their press/release. Chords are local and work only while playback owns input. While focused controller input is enabled, XFrame requests direct View/Menu input without macOS capture gestures; the previous per-button preferences are restored on focus loss, disable, controller replacement and shutdown.
 
 **VIDEO Mbps** is measured incoming video RTP payload throughput over the latest statistics interval (about one second), not a requested limit or total audio/network bandwidth. Initial/missing/reset/stale samples display `n/a`. STREAM/OUT FPS are stream decode/presentation averages, not independently measured game FPS; 60 video frames can contain repeated game images. Detailed mode explicitly marks game FPS as unmeasured. Game startup language and HQ preferences are available in Streaming Settings; see the [profile research](.scratch/stream-settings/xstream-research.md).
 
@@ -125,14 +127,23 @@ Open `.build/fixtures/h264-1080p60.mp4` in XFrame to exercise a 12-second, 720-f
 4. Enter and exit full-screen mode. Confirm that the complete image and its proportions are preserved.
 5. If another display is available, move the window between displays with different scale factors. Confirm that the drawable updates and that the image remains correctly fitted.
 
-The fixed source image is scaled using bilinear filtering. Enlarging it does not add image detail. This increment verifies geometry and drawable sizing, not enhanced upscaling quality.
+**Right-click the playback picture** to open **Playback Settings** without leaving fullscreen. Choose a scaling mode or HUD preset with the mouse. With controller input enabled during cloud playback, **View + Menu** opens the same panel; use **D-pad ↑/↓**, **A** to apply and **B** to close. Keyboard **↑/↓**, **Return** and **Esc** also work. Right-click again, click the surrounding picture, or choose Close to dismiss. Video/audio continue, but game input is released and locally intercepted while the panel is open; the remote game is not paused. Release held controls before resuming gameplay. The panel closes on focus loss or session teardown.
+
+**View → Video Scaling** switches immediately between **Original**, **Integer Scaling**, and **MetalFX Spatial**, including during an active stream. The selection persists across launches and applies to cloud video, local video, and the test pattern. Original (bilinear Aspect Fit) is the first-launch default.
+
+Integer Scaling uses nearest-neighbor pixel replication only in fullscreen when the fitted picture is an exact integer enlargement (1080p → 3840×2160 is 2×). Windowed/noninteger output temporarily uses Original; returning to eligible fullscreen automatically restores Integer Scaling. It does not force extra borders to fit a smaller integer image.
+
+MetalFX Spatial follows the actual Aspect Fit picture area in backing pixels, preserving black bars. It bypasses when no enlargement is needed, the GPU is unsupported, or scaler initialization fails. The HUD reports the effective mode, source/output dimensions and any bypass reason. It does not change the received stream resolution. Spatial processing uses the current frame only; additional sharpening, frame interpolation and neural enhancement are deferred.
+
+The Detailed HUD reports **MetalFX GPU span** mean/p95 separately from whole-frame GPU and actual presentation timings. This timestamp interval runs from source-color conversion completion to final composition's fragment start, including MetalFX and inter-pass scheduling; it is not pure kernel time or added input latency. Missing counters remain `n/a`. Scaler samples reset on mode/extent changes; other timings retain their recent 256-sample windows, so allow a warm-up interval before comparison. Static patterns have no video timing stream. Schema-8 diagnostic reports include the selected/effective mode, extents, bypass reason and scaler timing. See [implementation validation](.scratch/4k-post-processing/spatial-validation.md) for measured results and remaining acceptance.
 
 ## Implementation
 
 - `XFrameApp.swift`: native AppKit lifecycle, menus, window, and Metal view backing-size updates.
 - `MetalRenderer.swift`: Metal pipeline and centered Aspect Fit viewport in actual drawable pixels.
 - `TestPattern.swift`: one-time test image generation and texture upload.
-- `Shaders.metal`: textured quad with bilinear sampling.
+- `Shaders.metal`: bilinear and nearest-neighbor sampling with SDR NV12 conversion.
+- `VideoScaling.swift` / `SpatialUpscaler.swift`: scaling policy, native MetalFX resources and GPU timestamp sampling.
 - `LocalVideo.swift`: compressed file reading, hardware decoding, bounded frame queue, playback clock, and counters.
 - `Auth/`: device-code authentication, Xbox/xCloud exchanges, temporary private-file storage, retained legacy Keychain implementation, and account UI.
 - `Cloud/`: authenticated title discovery, public title metadata, session ownership/cleanup, and searchable game UI.

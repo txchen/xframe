@@ -46,14 +46,19 @@ final class CloudVideoConnection {
     private var inputEnabled: Bool { keyboardEnabled || controllerEnabled }
     private var inputConnected: Bool { keyboardEnabled || (controllerEnabled && gamepad.connected) }
     private func releaseInput() {
-        keyboard.release(); input.release(); hudShortcut.reset()
+        keyboard.release(); input.release(); settingsShortcut.reset()
         ownership.reset(controller: gamepad.sample())
     }
     private func handoffInput() {
-        keyboard.release(); input.release(); hudShortcut.reset()
+        keyboard.release(); input.release(); settingsShortcut.reset()
         input.update(GamepadSnapshot(), ownsInput: ownsController)
     }
     private func controllerEvent(_ state: GamepadSnapshot) {
+        if playbackSettingsVisible {
+            input.update(GamepadSnapshot(), ownsInput: false)
+            if controllerEnabled && playbackFocused && !closed { settingsGamepad?(state) }
+            return
+        }
         if ownership.observeController(state, enabled: controllerEnabled && ownsController) { handoffInput() }
         if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) { processGamepad(state) }
     }
@@ -78,8 +83,10 @@ final class CloudVideoConnection {
     }
     private let gamepad = NativeGamepad()
     private var input = GamepadInput()
-    private var hudShortcut = GamepadHUDShortcut()
-    var cyclePerformanceOverlay: (() -> Void)?
+    private var settingsShortcut = GamepadSettingsShortcut()
+    var showPlaybackSettings: (() -> Void)?
+    var settingsGamepad: ((GamepadSnapshot) -> Void)?
+    var playbackSettingsVisible = false { didSet { releaseInput() } }
     private var inputTask: Task<Void, Never>?
     private var gamepadReset = false
     private var advertised = false
@@ -466,19 +473,24 @@ final class CloudVideoConnection {
         else if !playbackFocused { controllerStatus = "\(name) · paused (focus playback)" }
         else if !advertised { controllerStatus = "\(name) · connecting" }
         else if blockedSince != nil { controllerStatus = "\(name) · input transport blocked" }
+        else if playbackSettingsVisible { controllerStatus = "Playback settings · game input paused" }
         else if !input.armed { controllerStatus = "\(name) · release all controls" }
         else { controllerStatus = "\(name) · input active · sent \(input.encoder.sequence)" }
     }
 
     private func processGamepad(_ state: GamepadSnapshot) {
+        if playbackSettingsVisible {
+            input.update(GamepadSnapshot(), ownsInput: false)
+            return
+        }
         guard ownsController, input.armed else {
-            hudShortcut.reset()
+            settingsShortcut.reset()
             input.update(state, ownsInput: ownsController)
             return
         }
-        let result = hudShortcut.process(state, now: CACurrentMediaTime())
+        let result = settingsShortcut.process(state, now: CACurrentMediaTime())
         for state in result.states { input.update(state, ownsInput: true) }
-        if result.cycle { cyclePerformanceOverlay?() }
+        if result.openSettings { showPlaybackSettings?() }
     }
 
     private func sendInput(on channel: RTCDataChannel, now: Double) -> Bool {

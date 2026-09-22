@@ -6,8 +6,8 @@ import Testing
 
 // Offscreen GPU execution only: no NSWindow, drawable, display or UI automation.
 // CPU plane writes/readback exist only in this synthetic verification fixture.
-@Test(arguments: [false, true])
-func metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601: Bool) throws {
+@Test(arguments: [false, true], [false, true])
+func metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601: Bool, integer: Bool) throws {
     let device = try #require(MTLCreateSystemDefaultDevice())
     let queue = try #require(device.makeCommandQueue())
     var buffer: CVPixelBuffer?
@@ -41,10 +41,11 @@ func metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601: Bool) throws {
     let library = try device.makeLibrary(source: shader, options: nil)
     let pipeline = MTLRenderPipelineDescriptor()
     pipeline.vertexFunction = library.makeFunction(name: "patternVertex")
-    pipeline.fragmentFunction = library.makeFunction(name: "videoFragment")
+    pipeline.fragmentFunction = library.makeFunction(name: integer ? "integerVideoFragment" : "videoFragment")
     pipeline.colorAttachments[0].pixelFormat = .bgra8Unorm
     let state = try device.makeRenderPipelineState(descriptor: pipeline)
-    let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: 24, height: 8, mipmapped: false)
+    let width = integer ? 48 : 24, height = integer ? 16 : 8
+    let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
     descriptor.storageMode = .shared; descriptor.usage = [.renderTarget]
     let target = try #require(device.makeTexture(descriptor: descriptor))
     let pass = MTLRenderPassDescriptor()
@@ -63,11 +64,21 @@ func metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601: Bool) throws {
     command.commit(); command.waitUntilCompleted() // Test only; production never waits synchronously.
     #expect(command.status == .completed)
     withExtendedLifetime(imported) {}
-    var output = [UInt8](repeating: 0, count: 24 * 8 * 4)
+    var output = [UInt8](repeating: 0, count: width * height * 4)
     output.withUnsafeMutableBytes {
-        target.getBytes($0.baseAddress!, bytesPerRow: 24 * 4, from: MTLRegionMake2D(0, 0, 24, 8), mipmapLevel: 0)
+        target.getBytes($0.baseAddress!, bytesPerRow: width * 4, from: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0)
     }
-    func sample(_ x: Int) -> [Int] { output[((4 * 24 + x) * 4)..<((4 * 24 + x) * 4 + 4)].map(Int.init) }
+    func pixel(_ x: Int, _ y: Int) -> [Int] { Array(output[((y * width + x) * 4)..<((y * width + x) * 4 + 4)]).map(Int.init) }
+    func sample(_ x: Int) -> [Int] { pixel(x * (integer ? 2 : 1), 4 * (integer ? 2 : 1)) }
+    if integer {
+        for y in stride(from: 0, to: height, by: 2) {
+            for x in stride(from: 0, to: width, by: 2) {
+                #expect(pixel(x, y) == pixel(x + 1, y))
+                #expect(pixel(x, y) == pixel(x, y + 1))
+                #expect(pixel(x, y) == pixel(x + 1, y + 1))
+            }
+        }
+    }
     #expect(sample(4) == [0, 0, 0, 255])
     #expect(sample(12) == [255, 255, 255, 255])
     let expected = use601 ? [21, 54, 213, 255] : [18, 68, 227, 255]

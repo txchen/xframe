@@ -56,8 +56,11 @@ import Testing
     #expect(!unknown && keyboard.snapshot == GamepadSnapshot())
 }
 
-@Test @MainActor func keyboardAndControllerCanBothBeEnabled() {
-    let library = CloudLibrary()
+@Test @MainActor func keyboardAndControllerCanBothBeEnabled() throws {
+    let suite = "XFrameTests.Input.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let library = CloudLibrary(inputDefaults: defaults)
     #expect(!library.keyboardEnabled && !library.controllerEnabled)
     library.controllerEnabled = true
     library.keyboardEnabled = true

@@ -8,6 +8,8 @@ struct TimingSummary: Codable, Equatable, Sendable {
 }
 
 struct PlaybackTimingSnapshot: Codable, Equatable, Sendable {
+    var scaling: ScalingStatus?
+    var scaler: TimingSummary?
     var decode: TimingSummary?
     var frameWait: TimingSummary?
     var gpu: TimingSummary?
@@ -20,7 +22,7 @@ struct PlaybackTimingSnapshot: Codable, Equatable, Sendable {
 // All distributions describe the latest 256 valid samples, not a lifetime p95.
 // Empty stages stay nil; unavailable GPU/presentation timestamps are not zero.
 final class PlaybackPerformance: @unchecked Sendable {
-    enum Stage { case decode, frameWait, gpu, presentation, gpuQueue, displayWait, arrivalInterval, drawInterval, drawableWait }
+    enum Stage { case scaler, decode, frameWait, gpu, presentation, gpuQueue, displayWait, arrivalInterval, drawInterval, drawableWait }
     enum Event { case arrival, draw, inboxReplaced, rendererReplaced, busy, drawableMiss, notPresented }
     private struct Window {
         var samples: [Double] = []
@@ -41,6 +43,8 @@ final class PlaybackPerformance: @unchecked Sendable {
     }
     private let lock = NSLock()
     private var windows: [Stage: Window] = [:]
+    private var scaling: ScalingStatus?
+    private var scalingRevision = 0
     private var stopped = false
     private var pacing = PlaybackPacingSnapshot()
     private var lastArrival: Double?
@@ -71,6 +75,23 @@ final class PlaybackPerformance: @unchecked Sendable {
             windows[stage, default: Window()].append(seconds * 1000)
         }
     }
+    @discardableResult func setScaling(_ status: ScalingStatus) -> Int {
+        lock.withLock {
+            if !stopped, scaling != status {
+                scaling = status
+                scalingRevision += 1
+                windows[.scaler] = nil
+            }
+            return scalingRevision
+        }
+    }
+    func recordScaler(seconds: Double, revision: Int) {
+        guard seconds.isFinite, seconds >= 0, (seconds * 1000).isFinite else { return }
+        lock.withLock {
+            guard !stopped, revision == scalingRevision, scaling?.effective == .metalFX else { return }
+            windows[.scaler, default: Window()].append(seconds * 1000)
+        }
+    }
     func stop() { lock.withLock { stopped = true } }
     func snapshot() -> PlaybackTimingSnapshot {
         lock.withLock {
@@ -78,7 +99,7 @@ final class PlaybackPerformance: @unchecked Sendable {
             details.arrivalInterval = windows[.arrivalInterval]?.summary
             details.drawInterval = windows[.drawInterval]?.summary
             details.drawableWait = windows[.drawableWait]?.summary
-            return PlaybackTimingSnapshot(decode: windows[.decode]?.summary,
+            return PlaybackTimingSnapshot(scaling: scaling, scaler: windows[.scaler]?.summary, decode: windows[.decode]?.summary,
             frameWait: windows[.frameWait]?.summary, gpu: windows[.gpu]?.summary,
             presentation: windows[.presentation]?.summary,
             gpuQueue: windows[.gpuQueue]?.summary, displayWait: windows[.displayWait]?.summary, pacing: details) }

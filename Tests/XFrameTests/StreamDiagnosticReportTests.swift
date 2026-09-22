@@ -12,7 +12,7 @@ import Testing
     let data = try report.encoded()
     let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     #expect(Set(json.keys) == ["schemaVersion", "outcome", "durationSeconds", "video", "audio", "events", "timings", "framePacing"])
-    #expect(json["schemaVersion"] as? Int == 7)
+    #expect(json["schemaVersion"] as? Int == 8)
     let video = try #require(json["video"] as? [String: Any])
     #expect(video["decoded"] as? Int == 123)
     #expect(video["packetsLost"] == nil)

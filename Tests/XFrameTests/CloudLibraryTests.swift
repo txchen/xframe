@@ -5,6 +5,24 @@ import Testing
 private let cloudGame = CloudGame(id: "TEST", name: "Test Game", productID: "PRODUCT", access: .init(entitled: true))
 private let sessionURL = URL(string: "https://test.gssv-play-prod.xboxlive.com/v5/sessions/cloud/test-session")!
 
+@Test @MainActor func controllerPreferenceSurvivesLibraryRecreationWithoutRestoringFocus() throws {
+    let suite = "XFrameTests.Controller.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let first = CloudLibrary(inputDefaults: defaults)
+    #expect(!first.controllerEnabled)
+    first.controllerEnabled = true
+    first.playbackFocused = true
+    let restored = CloudLibrary(inputDefaults: defaults)
+    #expect(restored.controllerEnabled)
+    #expect(!restored.playbackFocused)
+    restored.playbackFocused = true
+    restored.playbackFocused = false
+    #expect(CloudLibrary(inputDefaults: defaults).controllerEnabled)
+    restored.controllerEnabled = false
+    #expect(!CloudLibrary(inputDefaults: defaults).controllerEnabled)
+}
+
 private actor FakeCloud: CloudServing {
     var creates = 0
     var launches: [CloudStreamPreferences] = []

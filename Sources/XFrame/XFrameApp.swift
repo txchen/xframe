@@ -25,8 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var lastURL: URL?
     private lazy var account = XboxAccount()
     private var libraryWindow: NSWindow?
+    private let playbackSettings = PlaybackSettingsView()
     private let diagnostics = PerformanceHUDView()
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
+    private var scalingMode = VideoScalingMode(rawValue: UserDefaults.standard.string(forKey: VideoScalingMode.preferenceKey) ?? "") ?? .original
+    private var scalingMenuItems: [NSMenuItem] = []
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
     private var keyboardMenuItem: NSMenuItem?
@@ -48,6 +51,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
             let view = MetalView(frame: NSRect(x: 0, y: 0, width: 960, height: 540), device: device)
             let renderer = try MetalRenderer(view: view)
+            renderer.scalingMode = scalingMode
+            renderer.scalingReport = { [weak self] status in
+                self?.diagnostics.scaling = status
+                self?.playbackSettings.setEffective(status)
+            }
+            view.showPlaybackSettings = { [weak self] in self?.togglePlaybackSettings() }
+            view.dismissPlaybackSettings = { [weak self] in self?.hidePlaybackSettings() }
+            playbackSettings.selectScaling = { [weak self] mode in self?.setScaling(mode) }
+            playbackSettings.selectHUD = { [weak self] preset in self?.setPerformanceHUD(preset) }
+            playbackSettings.dismiss = { [weak self] in self?.hidePlaybackSettings() }
             self.renderer = renderer
             self.videoView = view
             view.delegate = renderer
@@ -68,6 +81,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             content.addSubview(view)
             diagnostics.preset = hudPreset
             content.addSubview(diagnostics)
+            content.addSubview(playbackSettings)
+            NSLayoutConstraint.activate([
+                playbackSettings.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+                playbackSettings.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                playbackSettings.widthAnchor.constraint(lessThanOrEqualTo: content.widthAnchor, constant: -24),
+                playbackSettings.heightAnchor.constraint(lessThanOrEqualTo: content.heightAnchor, constant: -24)
+            ])
             NSLayoutConstraint.activate([
                 diagnostics.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
                 diagnostics.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),
@@ -88,6 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             NSApp.activate(ignoringOtherApps: true)
             account.library.displayVideo = { [weak self] source in
                 guard let self, let view = self.videoView, let renderer = self.renderer else { return }
+                self.hidePlaybackSettings()
                 self.playback?.stop()
                 self.playback = nil
                 renderer.play(source, in: view)
@@ -100,7 +121,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self.hidePlaybackWindow()
                 }
             }
-            account.library.cyclePerformanceOverlay = { [weak self] in self?.cyclePerformanceHUD() }
+            account.library.showPlaybackSettings = { [weak self] in self?.showPlaybackSettings() }
+            account.library.settingsGamepad = { [weak self] state in self?.playbackSettings.gamepad(state) }
             account.restore()
             showCloudLibrary()
         } catch {
@@ -175,6 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func play(_ url: URL) {
         guard !account.library.ownsSession else { return }
         guard let renderer, let videoView else { return }
+        hidePlaybackSettings()
         playback?.stop()
         let source = LocalVideo(url: url)
         playback = source
@@ -201,14 +224,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func hidePlaybackWindow() {
+        hidePlaybackSettings()
         playbackPresentation?.hide()
         showCloudLibrary()
     }
 
     func windowDidBecomeKey(_ notification: Notification) { updateControllerFocus() }
-    func windowDidResignKey(_ notification: Notification) { account.library.playbackFocused = false }
+    func windowDidResignKey(_ notification: Notification) { account.library.playbackFocused = false; hidePlaybackSettings() }
     func applicationDidBecomeActive(_ notification: Notification) { updateControllerFocus() }
-    func applicationDidResignActive(_ notification: Notification) { account.library.playbackFocused = false }
+    func applicationDidResignActive(_ notification: Notification) { account.library.playbackFocused = false; hidePlaybackSettings() }
     private func updateControllerFocus() {
         account.library.playbackFocused = NSApp.isActive && window?.isKeyWindow == true
     }
@@ -231,6 +255,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         alert.runModal()
     }
     private func handleKeyboard(_ event: NSEvent) -> NSEvent? {
+        if !playbackSettings.isHidden, event.window === window, window?.isKeyWindow == true {
+            // Keep app/system shortcuts available. Consume all ordinary game keys,
+            // including key-up, while settings owns local input.
+            if !event.modifierFlags.intersection([.command, .control, .option]).isEmpty { return event }
+            if event.type == .keyDown && (!event.isARepeat || [125, 126].contains(event.keyCode)) {
+                _ = playbackSettings.key(event.keyCode)
+            }
+            return nil
+        }
         guard account.library.keyboardEnabled, account.library.ready,
               NSApp.isActive, let window, event.window === window, window.isKeyWindow,
               window.attachedSheet == nil else { return event }
@@ -283,6 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func refreshVideoView() {
         guard let view = videoView else { return }
+        renderer?.invalidate()
         view.updateBackingSize()
         view.draw()
     }
@@ -295,11 +329,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     private func setPerformanceHUD(_ preset: PerformanceHUDPreset) {
         hudPreset = preset
+        playbackSettings.update(scaling: scalingMode, hud: preset)
         diagnostics.preset = preset
         UserDefaults.standard.set(preset.rawValue, forKey: "XFrame.PerformanceHUD")
         for item in hudMenuItems {
             item.state = item.representedObject as? String == preset.rawValue ? .on : .off
         }
+    }
+
+    @objc private func selectScaling(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String, let mode = VideoScalingMode(rawValue: value) else { return }
+        setScaling(mode)
+    }
+    private func setScaling(_ mode: VideoScalingMode) {
+        scalingMode = mode
+        playbackSettings.update(scaling: mode, hud: hudPreset)
+        UserDefaults.standard.set(mode.rawValue, forKey: VideoScalingMode.preferenceKey)
+        renderer?.scalingMode = mode
+        for item in scalingMenuItems { item.state = item.representedObject as? String == mode.rawValue ? .on : .off }
+        videoView?.needsDisplay = true
+        videoView?.draw()
+    }
+
+    private func togglePlaybackSettings() {
+        if playbackSettings.isHidden { showPlaybackSettings() } else { hidePlaybackSettings() }
+    }
+    private func showPlaybackSettings() {
+        guard window?.isVisible == true, window?.isKeyWindow == true else { return }
+        account.library.playbackSettingsVisible = true
+        playbackSettings.show(scaling: scalingMode, hud: hudPreset)
+    }
+    private func hidePlaybackSettings() {
+        guard !playbackSettings.isHidden else { return }
+        playbackSettings.isHidden = true
+        account.library.playbackSettingsVisible = false
     }
 
     private func installMenu() {
@@ -325,12 +388,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         games.target = self
         let viewItem = menu.addItem(withTitle: "View", action: nil, keyEquivalent: "")
         let viewMenu = NSMenu(title: "View")
+        let scalingItem = viewMenu.addItem(withTitle: "Video Scaling", action: nil, keyEquivalent: "")
+        let scalingMenu = NSMenu(title: "Video Scaling")
+        scalingItem.submenu = scalingMenu
+        for mode in VideoScalingMode.allCases {
+            let item = scalingMenu.addItem(withTitle: mode.title, action: #selector(selectScaling(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode.rawValue
+            item.state = mode == scalingMode ? .on : .off
+            scalingMenuItems.append(item)
+        }
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.control, .command]
         controllerMenuItem = viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "")
         controllerMenuItem?.target = self
         keyboardMenuItem = viewMenu.addItem(withTitle: "Enable Keyboard Input", action: #selector(toggleKeyboardInput(_:)), keyEquivalent: "")
         keyboardMenuItem?.target = self
+        refreshInputMenu()
         viewMenu.addItem(withTitle: "Keyboard Controls…", action: #selector(showKeyboardControls), keyEquivalent: "").target = self
         let cycle = viewMenu.addItem(withTitle: "Cycle Performance Overlay", action: #selector(cyclePerformanceHUD), keyEquivalent: "d")
         cycle.keyEquivalentModifierMask = [.command, .shift]
@@ -353,6 +427,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 @MainActor
 final class MetalView: MTKView {
     var sourceName = "1920×1080"
+    var showPlaybackSettings: (() -> Void)?
+    var dismissPlaybackSettings: (() -> Void)?
+    override func mouseDown(with event: NSEvent) { dismissPlaybackSettings?() }
+    override func rightMouseDown(with event: NSEvent) { showPlaybackSettings?() }
     override init(frame: NSRect, device: (any MTLDevice)?) {
         super.init(frame: frame, device: device)
         autoresizingMask = [.width, .height]

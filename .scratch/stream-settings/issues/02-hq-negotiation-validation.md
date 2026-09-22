@@ -17,4 +17,6 @@ Use controlled comparable scenes and record received dimensions/bitrate for Stan
 
 ## Comments
 
+- 2026-09-22: Black Flag failed to deliver a decoded first frame in two HQ starts, while a subsequent Standard start produced 1080p60 stream output. See [compatibility evidence](03-black-flag-hq-no-video.md). HQ remains experimental; no universal quality or compatibility claim is supported.
+
 - 2026-09-22: Recorded after feature implementation. No higher-quality result is claimed for Palworld. Simplified Chinese language switching passed independently.

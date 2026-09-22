@@ -74,43 +74,43 @@ import Testing
     #expect(PerformanceHUDText.render(stats, preset: .compact, controller: "Gamepad").contains("n/a Mbps"))
 }
 
-@Test func gamepadHUDChordIsLocalAndCyclesOnceUntilBothButtonsRelease() {
-    var shortcut = GamepadHUDShortcut()
+@Test func gamepadSettingsChordIsLocalAndOpensOnceUntilBothButtonsRelease() {
+    var shortcut = GamepadSettingsShortcut()
     let first = shortcut.process(GamepadSnapshot(buttons: [.view], leftX: 0.5), now: 0)
     let chord = shortcut.process(GamepadSnapshot(buttons: [.view, .menu, .a], leftX: 0.5), now: 0.05)
     let held = shortcut.process(GamepadSnapshot(buttons: [.view, .menu]), now: 1)
     let partlyReleased = shortcut.process(GamepadSnapshot(buttons: [.menu]), now: 1.1)
     #expect(first.states.first?.buttons == [] && first.states.first?.leftX == 0.5)
-    #expect(chord.cycle && chord.states.first?.buttons == [.a] && chord.states.first?.leftX == 0.5)
-    #expect(!held.cycle && held.states.first?.buttons == [])
-    #expect(!partlyReleased.cycle && partlyReleased.states.first?.buttons == [])
+    #expect(chord.openSettings && chord.states.first?.buttons == [.a] && chord.states.first?.leftX == 0.5)
+    #expect(!held.openSettings && held.states.first?.buttons == [])
+    #expect(!partlyReleased.openSettings && partlyReleased.states.first?.buttons == [])
     _ = shortcut.process(GamepadSnapshot(), now: 2)
-    #expect(shortcut.process(GamepadSnapshot(buttons: [.view, .menu]), now: 3).cycle)
+    #expect(shortcut.process(GamepadSnapshot(buttons: [.view, .menu]), now: 3).openSettings)
 }
 
-@Test func gamepadHUDShortcutPreservesStandaloneTapHoldAndLateSecondButton() {
-    var shortcut = GamepadHUDShortcut()
+@Test func gamepadSettingsShortcutPreservesStandaloneTapHoldAndLateSecondButton() {
+    var shortcut = GamepadSettingsShortcut()
     _ = shortcut.process(GamepadSnapshot(buttons: [.menu]), now: 0)
     let tap = shortcut.process(GamepadSnapshot(), now: 0.05)
-    #expect(tap.states.map(\.buttons) == [[.menu], []] && !tap.cycle)
+    #expect(tap.states.map(\.buttons) == [[.menu], []] && !tap.openSettings)
     _ = shortcut.process(GamepadSnapshot(buttons: [.view]), now: 1)
     let hold = shortcut.process(GamepadSnapshot(buttons: [.view]), now: 1.4)
-    #expect(hold.states.first?.buttons == [.view] && !hold.cycle)
+    #expect(hold.states.first?.buttons == [.view] && !hold.openSettings)
     let late = shortcut.process(GamepadSnapshot(buttons: [.view, .menu]), now: 2)
-    #expect(!late.cycle && late.states.first?.buttons == [.view, .menu])
+    #expect(!late.openSettings && late.states.first?.buttons == [.view, .menu])
     shortcut.reset()
     let released = shortcut.process(GamepadSnapshot(), now: 3)
     #expect(released.states.map(\.buttons) == [[]]) // No delayed press survives focus loss.
 }
 
-@Test func gamepadHUDChordAcceptsCapturedXboxButtonStagger() {
+@Test func gamepadSettingsChordAcceptsCapturedXboxButtonStagger() {
     // Physical Xbox trace: first press at 24.957 s, second at 25.085 s.
     // The connection also polls between the two button callbacks.
-    var shortcut = GamepadHUDShortcut()
+    var shortcut = GamepadSettingsShortcut()
     _ = shortcut.process(GamepadSnapshot(buttons: [.menu]), now: 24.957)
     _ = shortcut.process(GamepadSnapshot(buttons: [.menu]), now: 25.080)
     let chord = shortcut.process(GamepadSnapshot(buttons: [.menu, .view]), now: 25.085)
-    #expect(chord.cycle)
+    #expect(chord.openSettings)
     #expect(chord.states.allSatisfy { $0.buttons.isDisjoint(with: [.menu, .view]) })
 }
 

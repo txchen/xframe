@@ -34,11 +34,12 @@ enum PerformanceHUDText {
         var lines = [stats.state, rate + " · Game FPS not measured", video,
             "FRAMES skipped total \(stats.dropped) · queue \(stats.queued)/\(stats.capacity) · errors \(stats.decodeErrors)",
             "P95 ms decode / wait / GPU / present  \(stages)"]
+        lines += ["MEAN ms queue / GPU queue / GPU / display  " + [timing.frameWait, timing.gpuQueue, timing.gpu, timing.displayWait].map { decimal($0?.meanMS) }.joined(separator: " / "),
+            "LOCAL present mean \(decimal(timing.presentation?.meanMS)) ms · p95 \(decimal(timing.presentation?.p95MS)) ms"]
+        if !stats.isLive { lines += ["TOTAL in \(stats.decoded) · out \(stats.presented)"] }
         if stats.isLive {
             lines += ["PACING \(stats.framePacing.title)", "Latency est. \(decimal(stats.pipelineLatencyEstimateMS)) ms · network + client only",
                 "RTT \(decimal(stats.networkRoundTripMS)) ms · buffer \(decimal(stats.jitterBufferMS)) ms · host delay not measured"]
-            lines += ["MEAN ms queue / GPU queue / GPU / display  " + [timing.frameWait, timing.gpuQueue, timing.gpu, timing.displayWait].map { decimal($0?.meanMS) }.joined(separator: " / "),
-                "LOCAL present mean \(decimal(timing.presentation?.meanMS)) ms · p95 \(decimal(timing.presentation?.p95MS)) ms"]
             let pacing = timing.pacing
             lines += [average, "TOTAL in \(stats.decoded) · out \(stats.presented) · ticks \(pacing.drawTicks)",
                 "SKIP inbox \(pacing.inboxReplaced) · renderer \(pacing.rendererReplaced) · busy \(pacing.busyTicks) · drawable \(pacing.drawableMisses) · not shown \(pacing.notPresented)",
@@ -58,6 +59,7 @@ final class PerformanceHUDView: NSView {
     private var stats: PlaybackStats?
     private var controller = ""
     private var quality: CloudStreamQuality?
+    var scaling: ScalingStatus? { didSet { refresh() } }
     private var message = "Test pattern · Command-O to open an H.264 video"
     var preset: PerformanceHUDPreset = .compact { didSet { refresh() } }
 
@@ -104,7 +106,13 @@ final class PerformanceHUDView: NSView {
     private func refresh() {
         isHidden = preset == .hidden
         guard !isHidden else { return }
-        let text = stats.map { PerformanceHUDText.render($0, preset: preset, controller: controller, quality: quality) } ?? message
+        var text = stats.map { PerformanceHUDText.render($0, preset: preset, controller: controller, quality: quality) } ?? message
+        if let scaling { text += "\n" + scaling.title }
+        if preset == .detailed, scaling?.effective == .metalFX {
+            if stats?.timings.scaling == scaling, let timing = stats?.timings.scaler {
+                text += String(format: "\nMetalFX GPU span mean %.2f · p95 %.2f ms", timing.meanMS, timing.p95MS)
+            } else { text += "\nMetalFX GPU span n/a" }
+        }
         if label.stringValue != text { label.stringValue = text }
     }
 }

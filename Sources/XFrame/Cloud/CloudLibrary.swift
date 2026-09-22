@@ -100,6 +100,7 @@ final class CloudLibrary {
     }
     var controllerEnabled = false {
         didSet {
+            inputDefaults.set(controllerEnabled, forKey: "XFrame.ControllerEnabled")
             connection?.controllerEnabled = controllerEnabled
         }
     }
@@ -120,14 +121,20 @@ final class CloudLibrary {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var cancelRequested = false
     @ObservationIgnored private var connection: CloudVideoConnection?
-    @ObservationIgnored var cyclePerformanceOverlay: (() -> Void)?
+    @ObservationIgnored var showPlaybackSettings: (() -> Void)?
+    @ObservationIgnored var settingsGamepad: ((GamepadSnapshot) -> Void)?
+    var playbackSettingsVisible = false { didSet { connection?.playbackSettingsVisible = playbackSettingsVisible } }
     @ObservationIgnored var displayVideo: ((LiveVideo?) -> Void)?
     @ObservationIgnored private let sleep: @Sendable () async throws -> Void
+    @ObservationIgnored private let inputDefaults: UserDefaults
 
     init(favoritesStore: GameFavoritesStore = GameFavoritesStore(defaults: .standard),
          preferencesStore: CloudStreamPreferencesStore = .init(defaults: .standard),
+         inputDefaults: UserDefaults = .standard,
          sleep: @escaping @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(2)) }) {
         self.preferencesStore = preferencesStore
+        self.inputDefaults = inputDefaults
+        controllerEnabled = inputDefaults.bool(forKey: "XFrame.ControllerEnabled")
         streamPreferences = preferencesStore.load()
         self.favoritesStore = favoritesStore
         favorites = favoritesStore.load()
@@ -226,7 +233,9 @@ final class CloudLibrary {
                         if let signaling = service as? any CloudSignaling {
                             let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing)
                             self.connection = connection
-                            connection.cyclePerformanceOverlay = { [weak library = self] in library?.cyclePerformanceOverlay?() }
+                            connection.showPlaybackSettings = { [weak library = self] in library?.showPlaybackSettings?() }
+                            connection.settingsGamepad = { [weak library = self] state in library?.settingsGamepad?(state) }
+                            connection.playbackSettingsVisible = playbackSettingsVisible
                             connection.controllerEnabled = controllerEnabled
                             connection.keyboardEnabled = keyboardEnabled
                             connection.playbackFocused = playbackFocused

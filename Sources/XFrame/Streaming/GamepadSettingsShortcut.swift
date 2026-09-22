@@ -2,10 +2,10 @@ import Foundation
 
 // Recognize View+Menu within 300 ms, before either button reaches the game.
 // Longer individual holds remain ordinary game controls and cannot become a chord.
-struct GamepadHUDShortcut {
+struct GamepadSettingsShortcut {
     struct Result {
         let states: [GamepadSnapshot]
-        let cycle: Bool
+        let openSettings: Bool
     }
     private enum Phase {
         case idle, waiting(GamepadButton, Double), forwarding, chord
@@ -22,31 +22,31 @@ struct GamepadHUDShortcut {
         case .idle:
             if held == reserved {
                 phase = .chord
-                return Result(states: [stripped], cycle: true)
+                return Result(states: [stripped], openSettings: true)
             }
             if let button = held.first {
                 phase = .waiting(button, now)
-                return Result(states: [stripped], cycle: false)
+                return Result(states: [stripped], openSettings: false)
             }
         case .waiting(let button, let started):
             if held == reserved && now - started <= recognitionWindow {
                 phase = .chord
-                return Result(states: [stripped], cycle: true)
+                return Result(states: [stripped], openSettings: true)
             }
             if held == [button] && now - started < recognitionWindow {
-                return Result(states: [stripped], cycle: false)
+                return Result(states: [stripped], openSettings: false)
             }
             phase = held.isEmpty ? .idle : .forwarding
             if !held.contains(button) {
                 // Preserve a quick standalone tap's press before its release.
-                return Result(states: [stripped.replacingButtons(stripped.buttons.union([button])), state], cycle: false)
+                return Result(states: [stripped.replacingButtons(stripped.buttons.union([button])), state], openSettings: false)
             }
         case .forwarding:
             if held.isEmpty { phase = .idle }
         case .chord:
             if held.isEmpty { phase = .idle }
-            return Result(states: [stripped], cycle: false)
+            return Result(states: [stripped], openSettings: false)
         }
-        return Result(states: [state], cycle: false)
+        return Result(states: [state], openSettings: false)
     }
 }

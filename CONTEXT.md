@@ -15,3 +15,11 @@ _Avoid_: Test video
 **Backing Pixels**:
 The pixels of the rendering surface, distinct from the logical points used to lay out the application window.
 _Avoid_: Logical window size
+
+**Picture Area**:
+The region occupied by the source image under Aspect Fit, measured in Backing Pixels and excluding black bars.
+_Avoid_: Window size, canvas size
+
+**Integer Scaling**:
+An enlargement in which each source-image pixel becomes an equally sized square block of output pixels, with an integer multiplier and no blending between adjacent source-image pixels during enlargement.
+_Avoid_: Super resolution, arbitrary nearest-neighbor scaling
