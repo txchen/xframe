@@ -25,6 +25,14 @@ Improve decoded 1080p cloud video on a 4K monitor/TV. Provide optional upscaling
 
 ## Primary-source feasibility notes
 
+Research reference index (2026-09-22):
+
+- [Frame interpolation research](frame-interpolation-research.md): candidate algorithms, input contracts, dynamic cadence, latency and prototype gates.
+- [OpenDLSS-NR on Metal](opendlss-nr-metal-research.md): network portability, numerical parity, existing native implementations and M1/M5 hardware differences.
+- [Veyra macOS portability](veyra-macos-portability.md): native ports versus Wine/GPTK paths.
+
+The user also has an M5 MacBook Air for evaluation. Its GPU configuration, memory, OS and sustained performance have not been measured; keep M1 Mac mini as the initial acceptance device and add the M5 Air to prototype comparisons.
+
 - [Apple MetalFX](https://developer.apple.com/documentation/MetalFX): spatial scaling is the initial native backend. [Metal capability tables](https://developer.apple.com/metal/capabilities/) and [Metal 4 interpolation overview](https://developer.apple.com/videos/play/wwdc2025/211/) are inputs to per-device/API checks; no interpolation integration has been validated here.
 - [AMD FSR 1](https://gpuopen.com/fidelityfx-superresolution/) is spatial upscaling; evaluate a Metal shader port, not a direct plug-in of a Windows SDK. [FSR 2](https://gpuopen.com/fidelityfx-superresolution-2/) requires color, depth and velocity buffers. Decoded xCloud video does not expose engine depth/velocity; codec motion information is not an equivalent integration contract.
 - [NVIDIA DLSS 5 description](https://www.nvidia.com/en-eu/geforce/news/dlss-5-3d-guided-neural-rendering/) describes neural lighting/material enhancement using color and motion vectors; it is distinct from super resolution and frame generation.
