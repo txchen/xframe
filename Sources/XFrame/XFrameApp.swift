@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let panelInput = PlaybackPanelInput()
     private let diagnostics = PerformanceHUDView()
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
+    private var sharpening = SharpeningPreset.load()
     private var scalingMode = VideoScalingMode(rawValue: UserDefaults.standard.string(forKey: VideoScalingMode.preferenceKey) ?? "") ?? .original
     private var scalingMenuItems: [NSMenuItem] = []
     private var hudMenuItems: [NSMenuItem] = []
@@ -53,6 +54,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let view = MetalView(frame: NSRect(x: 0, y: 0, width: 960, height: 540), device: device)
             let renderer = try MetalRenderer(view: view)
             renderer.scalingMode = scalingMode
+            renderer.sharpening = sharpening
+            playbackSettings.updateSharpening(sharpening)
             renderer.scalingReport = { [weak self] status in
                 self?.diagnostics.scaling = status
                 self?.playbackSettings.setEffective(status)
@@ -60,6 +63,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             view.showPlaybackSettings = { [weak self] in self?.togglePlaybackSettings() }
             view.dismissPlaybackSettings = { [weak self] in self?.hidePlaybackSettings() }
             playbackSettings.selectScaling = { [weak self] mode in self?.setScaling(mode) }
+            playbackSettings.selectSharpening = { [weak self] preset in
+                guard let self else { return }
+                self.sharpening = preset
+                preset.save()
+                self.renderer?.sharpening = preset
+                self.playbackSettings.updateSharpening(preset)
+                self.videoView?.needsDisplay = true
+                self.videoView?.draw()
+            }
             playbackSettings.selectHUD = { [weak self] preset in self?.setPerformanceHUD(preset) }
             playbackSettings.dismiss = { [weak self] in self?.hidePlaybackSettings() }
             playbackSettings.selectAudio = { [weak self] muted, volume in

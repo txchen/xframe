@@ -44,3 +44,16 @@ This update records scope and strategy only; no processing shaders, model integr
 - **Controls:** evaluate queue depth, display synchronization and output cap as separate mechanisms; avoid adding empirically identical presets. Keep current XFrame queue options until its own evidence supports a change.
 
 Capture-card/PS5 specifics inform common input and timing contracts; this research does not add PS5 or capture support to XFrame’s product scope. No upstream implementation is copied.
+
+
+## Variable input cadence — user observation, 2026-09-22
+
+During Palworld gameplay, the user observed that the incoming xCloud frame rate is dynamic: complex scenes fall to approximately 40 fps, while simpler scenes return to approximately 60 fps. Treat variable input cadence as a required interpolation scenario, not a constant 30/60 fps assumption. This is a user-reported incoming-rate observation; no synchronized source-timestamp/receive/decoder trace was captured with it, so the exact cause and the distinction from unique game-image cadence remain to be measured.
+
+Implications for interpolation design and acceptance:
+
+- Fixed 30 → 60 is one test case, not the scheduling model. Include sustained ~40 → 60 and continuous 60 → 40 → 60 transitions, irregular source intervals, and 30/60 cases.
+- Schedule against target display timestamps and actual source-frame timestamps. Choose interpolation phase within each valid bracketing pair; do not blindly insert one generated frame after every real frame or switch only between fixed integer multipliers.
+- Adapt cadence estimates smoothly while keeping look-ahead, queued-frame age and compute bounded. When a valid next frame cannot arrive before the deadline, use the defined safe fallback rather than wait indefinitely or extrapolate without validation.
+- Keep unique image cadence, received/decoded frames, generated frames and presented output separately observable. Distinguish changing source cadence from network jitter/loss, decoder drops and presentation skips.
+- Preserve A/V synchronization across cadence changes and reduce/bypass unnecessary generation when fresh real frames already cover the target cadence. Measure artifacts and added delay during transitions, not only at steady 30 fps.

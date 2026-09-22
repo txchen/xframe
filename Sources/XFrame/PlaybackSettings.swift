@@ -39,9 +39,10 @@ struct PlaybackSettingsNavigation {
 final class PlaybackSettingsView: NSVisualEffectView {
     enum Mode: Equatable { case settings, confirmation, ending, failed(String) }
     private enum Row: Equatable {
-        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), volume, mute, fullscreen, end, close, cancel, confirm, retry
+        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), sharpening(SharpeningPreset), volume, mute, fullscreen, end, close, cancel, confirm, retry
     }
     var selectScaling: ((VideoScalingMode) -> Void)?
+    var selectSharpening: ((SharpeningPreset) -> Void)?
     var selectHUD: ((PerformanceHUDPreset) -> Void)?
     var selectAudio: ((Bool, Double) -> Void)?
     var toggleFullscreen: (() -> Void)?
@@ -60,6 +61,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private let scroll = NSScrollView()
     private let stack = NSStackView()
     private var navigation = PlaybackSettingsNavigation()
+    private var sharpening: SharpeningPreset = .off
     private var scaling: VideoScalingMode = .original
     private var hud: PerformanceHUDPreset = .compact
     private var cloud = false
@@ -138,6 +140,11 @@ final class PlaybackSettingsView: NSVisualEffectView {
             effectiveLabel.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
             label("Performance Overlay")
             for preset in PerformanceHUDPreset.allCases { addRow(.hud(preset)) }
+            if scaling == .metalFX {
+                label("MetalFX Sharpening")
+                for preset in SharpeningPreset.allCases { addRow(.sharpening(preset)) }
+                label("Extra sharpening after MetalFX. Off keeps the original MetalFX result. Applies only while MetalFX is active.", size: 11)
+            }
             if cloud {
                 label("Game Audio")
                 addRow(.volume)
@@ -196,7 +203,17 @@ final class PlaybackSettingsView: NSVisualEffectView {
     }
     func resetNavigation() { navigation.reset() }
     func update(scaling: VideoScalingMode, hud: PerformanceHUDPreset) {
+        let changed = self.scaling != scaling
+        let selected = actions.indices.contains(selectedRow) ? actions[selectedRow] : nil
         self.scaling = scaling; self.hud = hud
+        if changed && mode == .settings {
+            rebuild()
+            selectedRow = selected.flatMap { actions.firstIndex(of: $0) } ?? 0
+        }
+        refreshSelection()
+    }
+    func updateSharpening(_ preset: SharpeningPreset) {
+        sharpening = preset
         refreshSelection()
     }
     func setEffective(_ status: ScalingStatus) { effectiveLabel.stringValue = status.title }
@@ -239,6 +256,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         switch row {
         case .scaling(let value): return (value == scaling ? "✓ " : "") + value.title
         case .hud(let value): return (value == hud ? "✓ " : "") + value.title
+        case .sharpening(let preset): return (preset == sharpening ? "✓ " : "") + preset.title
         case .volume: return "Volume: \(Int((volume * 100).rounded()))%  ← →"
         case .mute: return muted ? "✓ Mute" : "Mute"
         case .fullscreen: return fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"
@@ -267,6 +285,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         switch actions[selectedRow] {
         case .scaling(let mode): selectScaling?(mode)
         case .hud(let preset): selectHUD?(preset)
+        case .sharpening(let preset): selectSharpening?(preset)
         case .volume: break
         case .mute: muted.toggle(); refreshSelection(); selectAudio?(muted, volume)
         case .fullscreen: toggleFullscreen?()

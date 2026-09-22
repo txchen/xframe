@@ -50,3 +50,21 @@ fragment float4 integerVideoFragment(VertexOutput in [[stage_in]],
     float2 center = (floor(in.uv * extent) + 0.5) / extent;
     return videoColor(center, luma, chroma, conversion);
 }
+
+// Restrained luminance unsharp mask on the upscaled image. The symmetric kernel
+// preserves flat fields; the bounded correction limits ringing/compression noise.
+// Fused into final composition so sharpening adds no frame queue or intermediate.
+fragment float4 sharpenFragment(VertexOutput in [[stage_in]],
+                                texture2d<float> image [[texture(0)]],
+                                constant float &amount [[buffer(0)]]) {
+    constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
+    float4 center = image.sample(s, in.uv);
+    float2 pixel = 1.0 / float2(image.get_width(), image.get_height());
+    float3 neighbors = (image.sample(s, in.uv + float2(pixel.x, 0)).rgb
+                      + image.sample(s, in.uv - float2(pixel.x, 0)).rgb
+                      + image.sample(s, in.uv + float2(0, pixel.y)).rgb
+                      + image.sample(s, in.uv - float2(0, pixel.y)).rgb) * 0.25;
+    const float3 luma = float3(0.2126, 0.7152, 0.0722);
+    float detail = clamp(dot(center.rgb - neighbors, luma), -0.08, 0.08);
+    return float4(saturate(center.rgb + detail * amount), center.a);
+}

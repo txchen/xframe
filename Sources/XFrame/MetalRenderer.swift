@@ -13,6 +13,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let queue: any MTLCommandQueue
     private let pipeline: any MTLRenderPipelineState
     private let texture: any MTLTexture
+    private let sharpenPipeline: any MTLRenderPipelineState
     private let videoPipeline: any MTLRenderPipelineState
     private let nearestPipeline: any MTLRenderPipelineState
     private let integerVideoPipeline: any MTLRenderPipelineState
@@ -21,6 +22,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var failedSpatialStatus: ScalingStatus?
     private var invalidated = true
     var scalingMode: VideoScalingMode = .original { didSet { invalidated = true; failedSpatialStatus = nil } }
+    var sharpening: SharpeningPreset = .off { didSet { invalidated = true } }
     var scalingReport: ((ScalingStatus) -> Void)?
     private var lastScalingStatus: ScalingStatus?
     private let cache: CVMetalTextureCache
@@ -62,6 +64,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         nearestPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
         descriptor.fragmentFunction = library.makeFunction(name: "integerVideoFragment")
         integerVideoPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
+        descriptor.fragmentFunction = library.makeFunction(name: "sharpenFragment")
+        sharpenPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
         supportsSpatial = MTLFXSpatialScalerDescriptor.supportsDevice(device)
         var cache: CVMetalTextureCache?
         guard CVMetalTextureCacheCreate(nil, nil, device, nil, &cache) == kCVReturnSuccess, let cache else {
@@ -189,7 +193,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         encoder.setViewport(MTLViewport(originX: plan.x, originY: plan.y,
             width: plan.width, height: plan.height, znear: 0, zfar: 1))
         if let activeSpatial {
-            encoder.setRenderPipelineState(pipeline)
+            encoder.setRenderPipelineState(sharpening == .off ? pipeline : sharpenPipeline)
+            var amount = sharpening.amount
+            encoder.setFragmentBytes(&amount, length: MemoryLayout<Float>.size, index: 0)
             encoder.setFragmentTexture(activeSpatial.output, index: 0)
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         } else { encodeSource(encoder, integer: plan.status.effective == .integer) }
