@@ -18,6 +18,8 @@ final class CloudLibrary {
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var cancelRequested = false
+    @ObservationIgnored private var connection: CloudVideoConnection?
+    @ObservationIgnored var displayVideo: ((LiveVideo?) -> Void)?
     @ObservationIgnored private let sleep: @Sendable () async throws -> Void
 
     init(sleep: @escaping @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(2)) }) {
@@ -85,6 +87,16 @@ final class CloudLibrary {
                         try await service.configuration(at: handle!)
                         if cancelRequested { await cleanup(); return }
                         ready = true
+                        if let signaling = service as? any CloudSignaling {
+                            let connection = CloudVideoConnection()
+                            self.connection = connection
+                            displayVideo?(connection.video)
+                            try await connection.run(service: signaling, session: handle!) { [weak self] message in
+                                self?.status = message
+                            }
+                            await cleanup()
+                            return
+                        }
                         status = "Session ready — video connection is not implemented yet."
                         // A session-only test must not hold a cloud console indefinitely.
                         try await Task.sleep(for: .seconds(60))
@@ -123,6 +135,9 @@ final class CloudLibrary {
         guard let service, let handle else { return }
         ending = true
         ready = false
+        connection?.close()
+        connection = nil
+        displayVideo?(nil)
         // Independent task: cleanup must not inherit the canceled idle timer.
         let result = await Task { () -> Bool in
             do { try await service.end(at: handle); return true }
@@ -139,7 +154,7 @@ final class CloudLibrary {
     }
 
     private func fail(_ error: Error) {
-        errorMessage = (error as? CloudError)?.localizedDescription ?? (error as? AuthError)?.localizedDescription ?? "The cloud operation failed. Please try again."
+        errorMessage = (error as? CloudError)?.localizedDescription ?? (error as? AuthError)?.localizedDescription ?? (error as? StreamError)?.localizedDescription ?? "The cloud operation failed. Please try again."
         status = "Cloud operation failed"
     }
 }

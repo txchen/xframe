@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment adds Microsoft device-code sign-in and an xCloud credential check. Local H.264 playback uses verified VideoToolbox hardware decoding and Metal rendering, alongside a fixed 1920 × 1080 test pattern. Both rendering paths use Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Actual cloud streaming, console connections, audio, and MetalFX are not implemented yet.
+The current increment connects xCloud sessions to a native H.264 video preview through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Console remote play, audio playback, controller input, and MetalFX are not implemented yet.
 
 ## Requirements
 
@@ -16,7 +16,15 @@ bash scripts/build-app.sh
 open .build/XFrame.app
 ```
 
-The script builds a release executable, bundles its shader resource, and applies a local ad-hoc signature. This is a development app, not a notarized distribution build. No external dependencies are required.
+The script builds a release executable, bundles its shader resource and the pinned WebRTC 153.0.0 framework, and signs both framework and app. The first build requires network access to fetch the checksummed SwiftPM binary dependency. This is a development app, not a notarized distribution build.
+
+For stable local signing, run the following **only if you want to create/import a local signing certificate into your login Keychain** (requires OpenSSL 3):
+
+```sh
+bash scripts/setup-development-signing.sh
+```
+
+This creates `XFrame Local Development`, does not change system trust, and does not store private key material in the repo. Builds automatically use it when present. Set `XFRAME_SIGNING_IDENTITY` to select another certificate-backed identity. Otherwise the build warns and falls back to ad-hoc signing, which changes the application's Keychain identity after code changes. Moving from an ad-hoc build to the certificate may require a new Always Allow approval. Do not allow all applications to read your stored login just to suppress prompts.
 
 The script explicitly selects SwiftPM's native build engine because the default `swiftbuild` engine fails to initialize with the standalone Command Line Tools on the development machine. That engine is deprecated; revisit this workaround with future toolchain updates.
 
@@ -40,9 +48,9 @@ Real account login and Keychain restoration across a confirmed full process rest
 
 Open **Account → Cloud Games…** (**Shift-Command-G**), choose **Load Games**, search, select a game, and choose **Start Session**. The account's title list is hydrated with English names from Microsoft's public catalog; it may not be exhaustive, and launch eligibility is ultimately checked by the service.
 
-The window distinguishes waiting for resources, provisioning, and a provisioned session with configuration available. It does not connect WebRTC or display game audio/video. Choose **End Session** to cancel startup or release the session. Ready test sessions automatically end after 60 seconds. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing a window is not the same as ending a session.
+The window distinguishes waiting for resources, provisioning, video negotiation, and streaming. Once provisioned, the native rendering window displays received H.264 video. This is a video-only preview: no audio playback, microphone/camera capture, or controller input. Choose **End Session**, press **Command-0**, or close the rendering window to stop the stream and release the session. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing the library window alone does not end a stream.
 
-This is a supervised session-lifecycle increment, not a playable client. Crash/force-quit recovery and renewal of credentials during a session are deferred. A failed creation request without a returned session address can have an uncertain server outcome, which is reported explicitly. See [the session specification](.scratch/cloud-sessions/spec.md).
+This is a supervised video-preview increment, not a playable client. The stream keeps one latest decoded frame and uses the existing zero-pixel-copy Metal surface import. Startup without video and prolonged frame stalls trigger cleanup. Crash/force-quit recovery, reconnect, TURN fallback, and renewal of credentials during long sessions are deferred. A failed creation request without a returned session address can have an uncertain server outcome, which is reported explicitly. See [the session specification](.scratch/cloud-sessions/spec.md) and [video specification](.scratch/cloud-video/spec.md).
 
 ## Local Video
 
@@ -67,7 +75,7 @@ bash scripts/make-test-video.sh
 bash scripts/test.sh
 ```
 
-Open `.build/fixtures/h264-1080p60.mp4` in XFrame to exercise a 12-second, 720-frame 1080p60 fixture with B frames. The hardware integration checks require Apple Silicon and verify frame coverage and order, IOSurface/NV12 output, bounded buffering, cancellation, and visible failure state.
+Open `.build/fixtures/h264-1080p60.mp4` in XFrame to exercise a 12-second, 720-frame 1080p60 fixture with B frames. The fixture script also produces an Annex B `.h264` file for the WebRTC decoder adapter. Hardware integration checks require Apple Silicon and verify frame coverage and order, IOSurface/NV12 output, bounded buffering, cancellation, and visible failure state.
 
 ## Visual Acceptance Check
 
@@ -88,6 +96,7 @@ The fixed source image is scaled using bilinear filtering. Enlarging it does not
 - `LocalVideo.swift`: compressed file reading, hardware decoding, bounded frame queue, playback clock, and counters.
 - `Auth/`: device-code authentication, Xbox/xCloud exchanges, Keychain storage, and account UI.
 - `Cloud/`: authenticated title discovery, public title metadata, session ownership/cleanup, and searchable game UI.
+- `Streaming/`: SDP/ICE exchange, WebRTC control handshake, hardware H.264 decoder, and the single-frame live display source.
 
 The static view redraws on invalidation. Video playback uses MTKView display callbacks and pauses its drawing loop after EOF or failure. CPU drawing is used only to create the static fixture once. Adaptive streaming frame pacing belongs to a later increment.
 

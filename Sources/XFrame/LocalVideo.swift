@@ -10,6 +10,8 @@ struct VideoFrame: @unchecked Sendable {
 }
 
 struct PlaybackStats: Sendable {
+    var capacity = 16
+    var decodeErrors = 0
     var state = "Loading"
     var hardware = false
     var decoded = 0
@@ -23,7 +25,7 @@ struct PlaybackStats: Sendable {
 
 // All mutable fields are protected by condition. The reader and VT session are
 // confined to the worker. Cancellation wakes a producer blocked by backpressure.
-final class LocalVideo: @unchecked Sendable {
+final class LocalVideo: VideoSource, @unchecked Sendable {
     static let capacity = 16
     private let condition = NSCondition()
     private var frames: [VideoFrame] = []

@@ -9,7 +9,7 @@ struct CloudLibraryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Cloud Games").font(.title.bold())
-            Text("Session test only. No video, audio, or controller input. Ready sessions end automatically after 60 seconds.")
+            Text("H.264 video preview. Audio and controller input are disabled. End the session when finished.")
                 .foregroundStyle(.secondary)
             HStack {
                 TextField("Search games", text: Binding(get: { library.search }, set: { library.search = $0 }))

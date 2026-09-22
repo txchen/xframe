@@ -12,9 +12,23 @@ swift build --build-system native -c release --arch arm64
 binary_dir="$(swift build --build-system native -c release --arch arm64 --show-bin-path)"
 app_dir="$PWD/.build/XFrame.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
+mkdir -p "$app_dir/Contents/Frameworks"
 cp "$binary_dir/XFrame" "$app_dir/Contents/MacOS/XFrame"
 cp Resources/Info.plist "$app_dir/Contents/Info.plist"
 cp THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
 cp -R "$binary_dir/XFrame_XFrame.bundle" "$app_dir/Contents/Resources/"
-codesign --force --sign - "$app_dir"
+cp -R "$binary_dir/WebRTC.framework" "$app_dir/Contents/Frameworks/"
+cp .build/artifacts/webrtc/WebRTC/WebRTC.xcframework/LICENSE "$app_dir/Contents/Resources/WebRTC-LICENSE.txt"
+signing_identity="${XFRAME_SIGNING_IDENTITY:-}"
+if [[ -z "$signing_identity" ]]; then
+    if security find-certificate -c "XFrame Local Development" >/dev/null 2>&1; then
+        signing_identity="XFrame Local Development"
+    else
+        signing_identity="-"
+        echo "Warning: ad-hoc signing changes Keychain identity after rebuilds." >&2
+    fi
+fi
+codesign --force --sign "$signing_identity" "$app_dir/Contents/Frameworks/WebRTC.framework"
+codesign --force --sign "$signing_identity" "$app_dir"
+codesign --verify --deep --strict "$app_dir"
 echo "Built $app_dir"

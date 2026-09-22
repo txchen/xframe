@@ -160,6 +160,22 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
     #expect(harness.script.requests == ["https://login.live.com/oauth20_token.srf"])
 }
 
+@Test func streamingSignalingExchangesEnvelopesAndKeepalive() async throws {
+    let sdpEnvelope = #"{"exchangeResponse":"{\"sdp\":\"v=0\\r\\n\"}"}"#
+    let iceEnvelope = #"{"exchangeResponse":"[{\"candidate\":\"candidate:test\",\"sdpMid\":\"0\",\"sdpMLineIndex\":\"0\"}]"}"#
+    let harness = AuthHarness([Reply(202, ""), Reply(sdpEnvelope), Reply(202, ""), Reply(iceEnvelope),
+                               Reply(#"{"keepAlivePulseInSeconds":20}"#), Reply(204, "")])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let url = URL(string: "https://test.gssv-play-prod.xboxlive.com/v5/sessions/cloud/test-session")!
+    #expect(try await service.exchangeSDP(at: url, offer: "v=0\r\n") == "v=0\r\n")
+    let candidates = try await service.exchangeICE(at: url, candidates: [.init(candidate: "candidate:local", sdpMid: "0", sdpMLineIndex: 0)])
+    #expect(candidates.count == 1)
+    #expect(candidates.first?.sdpMLineIndex == 0)
+    #expect(try await service.keepAliveInterval(at: url) == 20)
+    try await service.keepAlive(at: url)
+}
+
 @Test(arguments: [204, 404, 410]) func cleanupStillAttemptsDeletionAfterCredentialExpiry(status: Int) async throws {
     let harness = AuthHarness([Reply(status, "")])
     let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))

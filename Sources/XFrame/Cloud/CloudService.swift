@@ -167,7 +167,7 @@ struct CloudService: CloudServing {
         catch { throw CloudError.response }
     }
 
-    private func request(_ url: URL, method: String = "GET", body: Data? = nil,
+    func request(_ url: URL, method: String = "GET", body: Data? = nil,
                          authenticated: Bool = true, headers: [String: String] = [:]) async throws -> Data {
         if authenticated {
             guard Self.trusted(url) else { throw CloudError.response }

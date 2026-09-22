@@ -69,10 +69,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 let decodeRate = stats.elapsed > 0 ? Double(stats.decoded) / stats.elapsed : 0
                 let presentRate = stats.elapsed > 0 ? Double(stats.presented) / stats.elapsed : 0
                 self?.diagnostics.stringValue = String(format:
-                    "%@ · Hardware: %@\nDecode avg %.1f fps · Present avg %.1f fps · Skipped %d · Queue %d/%d",
+                    "%@ · Hardware: %@\nDecode avg %.1f fps · Present avg %.1f fps · Skipped %d · Queue %d/%d · Decode errors %d",
                     stats.state, stats.hardware ? "Yes" : "Pending",
                     decodeRate, presentRate,
-                    stats.dropped, stats.queued, LocalVideo.capacity)
+                    stats.dropped, stats.queued, stats.capacity, stats.decodeErrors)
             }
             window.contentView = content
             window.isReleasedWhenClosed = false
@@ -81,6 +81,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self.window = window
             view.updateBackingSize()
             NSApp.activate(ignoringOtherApps: true)
+            account.library.displayVideo = { [weak self] source in
+                guard let self, let view = self.videoView, let renderer = self.renderer else { return }
+                self.playback?.stop()
+                self.playback = nil
+                renderer.play(source, in: view)
+                view.sourceName = source == nil ? "1920×1080" : "xCloud H.264"
+                view.updateBackingSize()
+                self.diagnostics.stringValue = source == nil ? "Cloud session ended" : "Connecting cloud video…"
+                if source != nil { self.window?.makeKeyAndOrderFront(nil) }
+            }
             account.restore()
             showXboxAccount()
         } catch {
@@ -136,6 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func openVideo() {
+        guard !account.library.ownsSession else { showCloudLibrary(); return }
         guard let window else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.mpeg4Movie, .quickTimeMovie]
@@ -148,6 +159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func play(_ url: URL) {
+        guard !account.library.ownsSession else { return }
         guard let renderer, let videoView else { return }
         playback?.stop()
         let source = LocalVideo(url: url)
@@ -162,6 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func replayVideo() { if let lastURL { play(lastURL) } }
 
     @objc private func showTestPattern() {
+        guard !account.library.ownsSession else { account.library.end(); return }
         guard let renderer, let videoView else { return }
         playback?.stop()
         playback = nil
@@ -172,6 +185,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func windowDidResize(_ notification: Notification) { refreshVideoView() }
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if account.library.ownsSession { account.library.end(); showCloudLibrary(); return false }
+        return true
+    }
     func windowDidEnterFullScreen(_ notification: Notification) { refreshVideoView() }
     func windowDidExitFullScreen(_ notification: Notification) { refreshVideoView() }
     func windowDidChangeScreen(_ notification: Notification) { refreshVideoView() }

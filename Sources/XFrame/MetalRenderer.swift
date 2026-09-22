@@ -15,7 +15,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let videoPipeline: any MTLRenderPipelineState
     private let cache: CVMetalTextureCache
     private var currentVideo: VideoTextures?
-    private var source: LocalVideo?
+    private var source: (any VideoSource)?
     private let inFlight = DispatchSemaphore(value: 3)
     private var lastDrawableSize = CGSize.zero
     private var lastReport = 0.0
@@ -59,7 +59,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
-    func play(_ source: LocalVideo?, in view: MTKView) {
+    func play(_ source: (any VideoSource)?, in view: MTKView) {
         self.source?.stop()
         self.source = source
         currentVideo = nil
