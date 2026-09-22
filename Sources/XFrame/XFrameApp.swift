@@ -57,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             diagnostics.textColor = .white
             diagnostics.backgroundColor = NSColor.black.withAlphaComponent(0.8)
             diagnostics.drawsBackground = true
-            diagnostics.maximumNumberOfLines = 5
+            diagnostics.maximumNumberOfLines = 6
             diagnostics.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(diagnostics)
             NSLayoutConstraint.activate([
@@ -77,6 +77,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     self?.diagnostics.stringValue += "\nErrors before first frame \(stats.errorsBeforeFirstFrame) · IDR submissions \(stats.keyframeSubmissions) · Missing-frame signals \(stats.missingFrameSignals)"
                     self?.diagnostics.stringValue += "\nVT configurations \(stats.decoderConfigurations) · Errors sync/async \(stats.synchronousDecodeErrors)/\(stats.asynchronousDecodeErrors) · IDR errors \(stats.keyframeDecodeErrors) · Recovery skips \(stats.recoverySkippedFrames)"
                     self?.diagnostics.stringValue += "\nVideo RTP received/lost \(stats.videoPacketsReceived.map(String.init) ?? "n/a")/\(stats.videoPacketsLost.map(String.init) ?? "n/a") · NACKs \(stats.videoNacks.map(String.init) ?? "n/a")"
+                    let audioState = !stats.audioAttached ? "Waiting" : (stats.audioMuted || stats.audioVolume == 0 ? "Muted" : "Enabled")
+                    self?.diagnostics.stringValue += "\nAudio \(audioState) · Volume \(Int(stats.audioVolume * 100))% · Packets \(stats.audioPacketsReceived.map(String.init) ?? "n/a") · Energy \(stats.audioEnergy.map { String(format: "%.3f", $0) } ?? "n/a")"
                 }
             }
             window.contentView = content

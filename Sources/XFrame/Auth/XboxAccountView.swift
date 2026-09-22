@@ -6,7 +6,7 @@ struct XboxAccountView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Xbox Cloud Gaming").font(.title.bold())
-            Text("Sign in to check your xCloud access, then open Account → Cloud Games for a video preview.")
+            Text("Sign in to check your xCloud access, then open Account → Cloud Games for a game audio/video preview.")
                 .foregroundStyle(.secondary)
             if let gamertag = account.gamertag { Text(gamertag).font(.title2) }
             HStack {

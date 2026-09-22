@@ -23,6 +23,11 @@ struct PlaybackStats: Sendable {
     var videoPacketsReceived: Int?
     var videoPacketsLost: Int?
     var videoNacks: Int?
+    var audioAttached = false
+    var audioMuted = false
+    var audioVolume = 1.0
+    var audioPacketsReceived: Int?
+    var audioEnergy: Double?
     var state = "Loading"
     var hardware = false
     var decoded = 0

@@ -9,8 +9,17 @@ struct CloudLibraryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Cloud Games").font(.title.bold())
-            Text("H.264 video preview. Audio and controller input are disabled. End the session when finished.")
+            Text("H.264 video and game audio preview. Microphone and controller input are disabled.")
                 .foregroundStyle(.secondary)
+            HStack {
+                Toggle("Mute game audio", isOn: Binding(get: { library.audioMuted }, set: {
+                    library.setAudio(muted: $0, volume: library.audioVolume)
+                }))
+                Slider(value: Binding(get: { library.audioVolume }, set: {
+                    library.setAudio(muted: library.audioMuted, volume: $0)
+                }), in: 0...1) { Text("Game volume") }.frame(maxWidth: 160)
+                Text("\(Int(library.audioVolume * 100))%")
+            }
             Picker("Region", selection: Binding(get: { account.selectedRegion }, set: { account.selectRegion($0) })) {
                 Text("Automatic (service default)").tag("")
                 ForEach(account.regionNames, id: \.self) { Text($0).tag($0) }

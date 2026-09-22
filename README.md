@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment connects xCloud sessions to a native H.264 video preview through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Console remote play, audio playback, controller input, and MetalFX are not implemented yet.
+The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Console remote play, controller input, and MetalFX are not implemented yet.
 
 ## Requirements
 
@@ -54,7 +54,7 @@ Open **Account → Cloud Games…** (**Shift-Command-G**), choose **Load Games**
 
 The **Region** picker defaults to the service-selected region and offers only regions returned for the signed-in account. Choosing a region clears the old catalog; load games again before starting. Selection is locked while loading or owning a session. **Requested region** identifies the chosen service endpoint, not a guaranteed physical streaming location: the service may redirect the session. The selection is kept for the current app run, not saved across restarts. No region spoofing or latency-based automatic selection is performed.
 
-The window distinguishes waiting for resources, provisioning, video negotiation, and streaming. Once provisioned, the native rendering window displays received H.264 video. This is a video-only preview: no audio playback, microphone/camera capture, or controller input. Choose **End Session**, press **Command-0**, or close the rendering window to stop the stream and release the session. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing the library window alone does not end a stream.
+The window distinguishes waiting for resources, provisioning, video negotiation, and streaming. Once provisioned, the native rendering window displays received H.264 video and WebRTC plays received game audio through the default output. Cloud Games provides mute and 0–100% volume controls; preferences are retained in memory across sessions, independently of mute. Microphone/camera capture and controller input remain disabled. Audio packet and energy diagnostics show incoming media, not proof of audible output or A/V synchronization. Choose **End Session**, press **Command-0**, or close the rendering window to stop audio/video and release the session. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing the library window alone does not end a stream.
 
 After stopping, expand **Last stream diagnostics** to inspect the latest 128 numeric/typed events, retained only in memory until the next session, catalog reset or app exit. The overlay distinguishes actual decode errors from frames skipped while waiting for a recovery keyframe, and shows sampled video RTP loss and NACK counts. Unavailable network counters display `n/a`; a zero decoder missing-frame hint does not prove zero network loss.
 

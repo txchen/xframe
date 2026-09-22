@@ -18,6 +18,12 @@ enum StreamError: Error, LocalizedError {
 @MainActor
 final class CloudVideoConnection {
     let video = LiveVideo()
+    private let audio = CloudAudioPlayback()
+
+    func configureAudio(muted: Bool, volume: Double) {
+        audio.configure(muted: muted, volume: volume)
+        video.audioPlayback(attached: audio.hasTrack, muted: audio.muted, volume: audio.volume)
+    }
     private var factory: RTCPeerConnectionFactory?
     private var peer: RTCPeerConnection?
     private var events: PeerEvents?
@@ -60,9 +66,9 @@ final class CloudVideoConnection {
         let receive = RTCRtpTransceiverInit()
         receive.direction = .recvOnly
         guard peer.addTransceiver(of: .video, init: receive) != nil else { throw StreamError.signaling }
-        // xCloud expects an audio media section, but no local microphone track is
-        // created. Disable the receiver track before applying the remote SDP.
-        if let audio = peer.addTransceiver(of: .audio, init: receive) { audio.receiver.track?.isEnabled = false }
+        // Receive game audio without a microphone/capture track or send direction.
+        guard let audioReceiver = peer.addTransceiver(of: .audio, init: receive) else { throw StreamError.signaling }
+        received(audioReceiver.receiver.track)
         report("Negotiating H.264 video…")
         let offer = try await makeOffer(peer)
         try await setDescription(peer, sdp: offer, local: true)
@@ -101,7 +107,7 @@ final class CloudVideoConnection {
                 nextStatsSample = ContinuousClock.now.advanced(by: .seconds(2))
             }
             if stats.state.hasPrefix("Failed:") { throw StreamError.decoder(stats.state) }
-            if stats.decoded > 0 { report("Streaming H.264 video — audio and input disabled") }
+            if stats.decoded > 0 { report("Streaming H.264 video and game audio — controller input disabled") }
             else if ContinuousClock.now > deadline { throw StreamError.firstFrame }
             if let age = video.secondsSinceFrame, age > 15 { throw StreamError.stalled }
             if ContinuousClock.now >= nextKeyframeRequest, channels["control"]?.readyState == .open,
@@ -131,6 +137,12 @@ final class CloudVideoConnection {
                     lost: (inbound.values["packetsLost"] as? NSNumber)?.intValue,
                     nacks: (inbound.values["nackCount"] as? NSNumber)?.intValue)
             }
+            if let inbound = report.statistics.values.first(where: {
+                $0.type == "inbound-rtp" && ($0.values["kind"] as? String) == "audio"
+            }) {
+                video.audioNetworkSample(received: (inbound.values["packetsReceived"] as? NSNumber)?.intValue,
+                    energy: (inbound.values["totalAudioEnergy"] as? NSNumber)?.doubleValue)
+            }
             Task { @MainActor [weak self] in self?.samplingStats = false }
         }
     }
@@ -138,6 +150,7 @@ final class CloudVideoConnection {
     func close() {
         guard !closed else { return }
         closed = true
+        audio.stop()
         if let videoTrack { videoTrack.remove(video) }
         videoTrack = nil
         for channel in channels.values { channel.delegate = nil; channel.close() }
@@ -176,6 +189,9 @@ final class CloudVideoConnection {
             videoTrack?.remove(video)
             videoTrack = track
             track.add(video)
+        } else if let track = track as? RTCAudioTrack {
+            audio.attach(WebRTCAudioOutput(track: track))
+            video.audioPlayback(attached: audio.hasTrack, muted: audio.muted, volume: audio.volume)
         } else { track?.isEnabled = false }
     }
     fileprivate func channelOpened(_ name: String) {

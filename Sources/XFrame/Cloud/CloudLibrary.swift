@@ -15,6 +15,13 @@ final class CloudLibrary {
     private(set) var ready = false
     private(set) var activeGame: String?
     private(set) var lastVideoDiagnostics: String?
+    private(set) var audioMuted = false
+    private(set) var audioVolume = 1.0
+    func setAudio(muted: Bool, volume: Double) {
+        audioMuted = muted
+        audioVolume = volume.isFinite ? min(1, max(0, volume)) : 0
+        connection?.configureAudio(muted: audioMuted, volume: audioVolume)
+    }
     @ObservationIgnored private var service: (any CloudServing)?
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
@@ -93,6 +100,7 @@ final class CloudLibrary {
                         if let signaling = service as? any CloudSignaling {
                             let connection = CloudVideoConnection()
                             self.connection = connection
+                            connection.configureAudio(muted: audioMuted, volume: audioVolume)
                             displayVideo?(connection.video)
                             try await connection.run(service: signaling, session: handle!) { [weak self] message in
                                 self?.status = message

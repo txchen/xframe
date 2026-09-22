@@ -61,6 +61,19 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func hardwareVerified() { lock.withLock { stats.hardware = true } }
+    func audioPlayback(attached: Bool, muted: Bool, volume: Double) {
+        lock.withLock {
+            guard !stopped else { return }
+            stats.audioAttached = attached; stats.audioMuted = muted; stats.audioVolume = volume
+        }
+    }
+    func audioNetworkSample(received: Int?, energy: Double?) {
+        lock.withLock {
+            guard !stopped else { return }
+            stats.audioPacketsReceived = received
+            stats.audioEnergy = energy.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        }
+    }
     func skippedForRecovery() { lock.withLock { if !stopped { stats.recoverySkippedFrames += 1 } } }
     func decoderConfigured() {
         lock.withLock { guard !stopped else { return }; stats.decoderConfigurations += 1; record(.configured) }
