@@ -14,6 +14,7 @@ final class CloudLibrary {
     private(set) var ending = false
     private(set) var ready = false
     private(set) var activeGame: String?
+    private(set) var lastVideoDiagnostics: String?
     @ObservationIgnored private var service: (any CloudServing)?
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
@@ -33,6 +34,7 @@ final class CloudLibrary {
         service = nil
         errorMessage = nil
         viewError = nil
+        lastVideoDiagnostics = nil
         status = "Load games after signing in."
     }
 
@@ -57,6 +59,7 @@ final class CloudLibrary {
         ready = false
         errorMessage = nil
         activeGame = game.name
+        lastVideoDiagnostics = nil
         status = "Starting \(game.name)…"
         task = Task {
             do {
@@ -136,6 +139,7 @@ final class CloudLibrary {
         ending = true
         ready = false
         connection?.close()
+        if let connection { lastVideoDiagnostics = connection.video.diagnosticsText() }
         connection = nil
         displayVideo?(nil)
         // Independent task: cleanup must not inherit the canceled idle timer.

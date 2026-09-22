@@ -5,6 +5,82 @@ import Testing
 @preconcurrency import WebRTC
 @testable import XFrame
 
+@Test func lateErrorsDoNotInvalidateANewerRecoveryKeyframe() {
+    var recovery = H264RecoveryState()
+    recovery.submittedIDR(unit: 1)
+    recovery.failed(unit: 2)
+    #expect(recovery.needsIDR)
+    recovery.submittedIDR(unit: 10)
+    recovery.failed(unit: 3)
+    #expect(!recovery.needsIDR)
+    recovery.failed(unit: 10)
+    #expect(recovery.needsIDR)
+}
+
+@Test func streamEventTimelineIsBoundedOrderedAndCorrelatesFailures() {
+    let source = LiveVideo()
+    source.decoderConfigured()
+    let unit = source.submittedAccessUnit(keyframe: true, missingFrames: false)
+    source.recoverableDecodeError(synchronous: true, keyframe: true, unit: unit)
+    source.recoverableDecodeError(synchronous: false, keyframe: true, unit: unit)
+    let initial = source.diagnosticEvents()
+    #expect(initial.map(\.kind) == [.configured, .idrSubmitted, .badData, .badData])
+    #expect(initial.suffix(2).allSatisfy { $0.accessUnit == unit })
+    #expect(source.takeKeyframeRequest())
+    #expect(source.diagnosticEvents().last?.kind == .keyframeRequestDequeued)
+    for index in 0..<300 { source.networkSample(received: index, lost: index, nacks: index) }
+    let bounded = source.diagnosticEvents()
+    #expect(bounded.count == LiveVideo.eventLimit)
+    #expect(zip(bounded, bounded.dropFirst()).allSatisfy { $0.milliseconds <= $1.milliseconds })
+    source.stop()
+    let stopped = source.diagnosticsText()
+    source.decoderConfigured()
+    source.recoverableDecodeError()
+    #expect(!source.takeKeyframeRequest())
+    #expect(source.diagnosticsText() == stopped)
+}
+
+@Test func hardwareDecoderRecoversAfterDamagedAndMissingAccessUnits() throws {
+    let bytes = try Data(contentsOf: URL(fileURLWithPath: ".build/fixtures/h264-1080p60.h264"))
+    var accessUnits: [Data] = []
+    var current = Data()
+    for nal in H264AccessUnit.nalUnits(bytes) {
+        if nal.first! & 31 == 9, !current.isEmpty { accessUnits.append(current); current = Data() }
+        current.append(contentsOf: [0, 0, 0, 1]); current.append(nal)
+    }
+    if !current.isEmpty { accessUnits.append(current) }
+    let laterIDR = try #require(accessUnits.indices.dropFirst().first { index in
+        H264AccessUnit.nalUnits(accessUnits[index]).contains { $0.first! & 31 == 5 }
+    })
+    let source = LiveVideo()
+    let decoder = HardwareH264Decoder(output: source)
+    decoder.setCallback { source.renderFrame($0) }
+    _ = decoder.startDecode(withNumberOfCores: 1)
+    for (index, data) in accessUnits.enumerated() {
+        if (1..<20).contains(index) { continue }
+        let image = RTCEncodedImage()
+        // Keep the first format/IDR intact, then inject a truncated delta slice.
+        image.buffer = index == 20 ? Data([0, 0, 0, 1, 0x41, 0]) : data
+        image.timeStamp = UInt32(index * 1500)
+        image.rotation = ._0
+        _ = decoder.decode(image, missingFrames: index == 20, codecSpecificInfo: nil,
+                           renderTimeMs: Int64(index * 1000 / 60))
+        decoder.waitForPendingFrames()
+    }
+    _ = decoder.release()
+    let stats = source.snapshot()
+    #expect(!stats.state.hasPrefix("Failed:"))
+    #expect(stats.decodeErrors > 0)
+    #expect(stats.decodeErrors <= 2)
+    #expect(stats.recoverySkippedFrames > 0)
+    #expect(stats.missingFrameSignals == 1)
+    #expect(stats.decoded >= accessUnits.count - laterIDR)
+    let last = try #require(source.nextFrame(at: 0))
+    #expect(last.time > 11)
+    #expect(stats.hardware)
+    #expect(stats.queued == 1)
+}
+
 @Test func h264SamplePreservesSupplementalNALUnits() {
     let sps = Data([0x67, 1]), pps = Data([0x68, 2])
     let sei = Data([0x06, 3]), aud = Data([0x09, 4]), slice = Data([0x65, 5])

@@ -14,6 +14,18 @@ The ad-hoc designated requirement was code-hash-bound. The certificate-backed re
 
 ## Live Video
 
+### Reference-Chain Recovery and Retained Timeline
+
+Added a hardware integration test that deliberately skips access units 1 through 19, injects a truncated delta slice at unit 20, and continues through later IDR frames. Before recovery gating, a diagnostic run observed 228 asynchronous delta-frame failures, no synchronous failures, and eventual recovery. This experiment contains both missing and damaged data; it does not prove that the earlier real-service failures had the same cause. Temporary diagnostic prints were removed.
+
+The paced regression drains pending VT callbacks between test submissions so the recovery decision is deterministic. It first failed because recoverySkippedFrames stayed zero. After the fix, known-bad reference chains suppress dependent delta submissions until an IDR, with skips reported separately from decode failures. The test requires at least one actual VT error, no more than two bad-data reports, positive recovery skips, and successfully decoded frames beyond 11 seconds. Parameter sets are still processed while recovering. An additional state test ensures a late failure from an older submission cannot invalidate a newer recovery IDR. Existing first-frame/stall deadlines and rate-limited keyframe requests remain in force.
+
+The latest 128 typed events remain in memory, containing relative time, configuration number, submitted-unit number, error classification and sampled loss/NACK values. They never contain video payloads, account data or network addresses. The library retains the last stream timeline after cleanup and exposes it in a selectable disclosure panel. A live preview verified configuration, IDR, first-frame, network-change and stop events after confirmed Session ended. A separate unit test verifies bounded size, ordering, correlated submission IDs and rejection of late updates after stop.
+
+All 34 tests passed in 4.115 seconds and the release build succeeded. The controlled corruption test verifies recovery, not the origin of the intermittent cloud failures.
+
+The final recovery-build WESTUS2 preview showed hardware H.264 at 1920×1080, average decode/presentation 58.2/57.0 FPS, zero decode errors/recovery skips, 41039 received video packets, zero reported loss and one NACK. The session was explicitly ended and cleanup confirmed. Thus the live run validates the normal path; the injected-damage hardware test validates the recovery branch.
+
 ### Expanded Diagnostics and NAL Preservation
 
 Added bounded counters for VT configurations, synchronous/asynchronous bad-data errors, and IDR-associated failures. Every two seconds, at most one in-flight WebRTC statistics request reads only numeric inbound-video packetsReceived, packetsLost, and nackCount. Unsupported or not-yet-available fields display n/a, not zero. Complete reports, addresses, identifiers, credentials, and video payloads are never recorded. Late callbacks cannot update stopped video state.

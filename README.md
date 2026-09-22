@@ -56,6 +56,8 @@ The **Region** picker defaults to the service-selected region and offers only re
 
 The window distinguishes waiting for resources, provisioning, video negotiation, and streaming. Once provisioned, the native rendering window displays received H.264 video. This is a video-only preview: no audio playback, microphone/camera capture, or controller input. Choose **End Session**, press **Command-0**, or close the rendering window to stop the stream and release the session. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing the library window alone does not end a stream.
 
+After stopping, expand **Last stream diagnostics** to inspect the latest 128 numeric/typed events, retained only in memory until the next session, catalog reset or app exit. The overlay distinguishes actual decode errors from frames skipped while waiting for a recovery keyframe, and shows sampled video RTP loss and NACK counts. Unavailable network counters display `n/a`; a zero decoder missing-frame hint does not prove zero network loss.
+
 This is a supervised video-preview increment, not a playable client. The stream keeps one latest decoded frame and uses the existing zero-pixel-copy Metal surface import. Startup without video and prolonged frame stalls trigger cleanup. Crash/force-quit recovery, reconnect, TURN fallback, and renewal of credentials during long sessions are deferred. A failed creation request without a returned session address can have an uncertain server outcome, which is reported explicitly. See [the session specification](.scratch/cloud-sessions/spec.md) and [video specification](.scratch/cloud-video/spec.md).
 
 ## Local Video

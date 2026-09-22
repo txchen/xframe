@@ -20,6 +20,22 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     private var started: Double?
     private var lastFrameAt: Double?
     private var needsKeyframe = false
+    private let createdAt = CACurrentMediaTime()
+    private var submittedUnits = 0
+    private var events: [StreamDiagnosticEvent] = []
+    static let eventLimit = 128
+
+    // Call only with lock held. Memory use stays bounded even on a broken stream.
+    private func record(_ kind: StreamDiagnosticEvent.Kind, unit: Int? = nil,
+                        synchronous: Bool? = nil, keyframe: Bool? = nil) {
+        events.append(StreamDiagnosticEvent(milliseconds: Int((CACurrentMediaTime() - createdAt) * 1000),
+            kind: kind, configuration: stats.decoderConfigurations, accessUnit: unit,
+            synchronous: synchronous, keyframe: keyframe,
+            packetsLost: stats.videoPacketsLost, nacks: stats.videoNacks))
+        if events.count > Self.eventLimit { events.removeFirst(events.count - Self.eventLimit) }
+    }
+    func diagnosticEvents() -> [StreamDiagnosticEvent] { lock.withLock { events } }
+    func diagnosticsText() -> String { diagnosticEvents().map(\.line).joined(separator: "\n") }
 
     override init() {
         super.init()
@@ -35,7 +51,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         lock.withLock {
             guard !stopped else { return }
             let now = CACurrentMediaTime()
-            if started == nil { started = now }
+            if started == nil { started = now; record(.firstFrame) }
             lastFrameAt = now
             stats.decoded += 1
             stats.state = "Cloud video \(frame.width)×\(frame.height) · H.264"
@@ -45,23 +61,31 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func hardwareVerified() { lock.withLock { stats.hardware = true } }
-    func decoderConfigured() { lock.withLock { stats.decoderConfigurations += 1 } }
+    func skippedForRecovery() { lock.withLock { if !stopped { stats.recoverySkippedFrames += 1 } } }
+    func decoderConfigured() {
+        lock.withLock { guard !stopped else { return }; stats.decoderConfigurations += 1; record(.configured) }
+    }
     func networkSample(received: Int?, lost: Int?, nacks: Int?) {
         lock.withLock {
             guard !stopped else { return }
+            let changed = lost != stats.videoPacketsLost || nacks != stats.videoNacks
             stats.videoPacketsReceived = received
             stats.videoPacketsLost = lost
             stats.videoNacks = nacks
+            if changed { record(.networkChange) }
         }
     }
-    func submittedAccessUnit(keyframe: Bool, missingFrames: Bool) {
+    @discardableResult func submittedAccessUnit(keyframe: Bool, missingFrames: Bool) -> Int {
         lock.withLock {
-            guard !stopped else { return }
+            guard !stopped else { return 0 }
+            submittedUnits += 1
             if keyframe { stats.keyframeSubmissions += 1 }
             if missingFrames { stats.missingFrameSignals += 1 }
+            if keyframe { record(.idrSubmitted, unit: submittedUnits) }
+            return submittedUnits
         }
     }
-    func recoverableDecodeError(synchronous: Bool = false, keyframe: Bool = false) {
+    func recoverableDecodeError(synchronous: Bool = false, keyframe: Bool = false, unit: Int? = nil) {
         lock.withLock {
             if !stopped {
                 stats.decodeErrors += 1
@@ -70,13 +94,24 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
                 if keyframe { stats.keyframeDecodeErrors += 1 }
                 if stats.decoded == 0 { stats.errorsBeforeFirstFrame += 1 }
                 needsKeyframe = true
+                record(.badData, unit: unit, synchronous: synchronous, keyframe: keyframe)
             }
         }
     }
     func takeKeyframeRequest() -> Bool {
-        lock.withLock { let value = needsKeyframe; needsKeyframe = false; return value }
+        lock.withLock {
+            guard !stopped else { return false }
+            let value = needsKeyframe; needsKeyframe = false
+            if value { record(.keyframeRequestDequeued) }
+            return value
+        }
     }
-    func stop() { lock.withLock { stopped = true; latest = nil; stats.state = "Stopped" } }
+    func stop() {
+        lock.withLock {
+            if !stopped { record(.stopped) }
+            stopped = true; latest = nil; stats.state = "Stopped"
+        }
+    }
     func fail(_ message: String) { lock.withLock { stopped = true; latest = nil; stats.state = "Failed: " + message } }
     func nextFrame(at hostTime: Double) -> VideoFrame? {
         lock.withLock { let value = latest; latest = nil; return stopped ? nil : value }

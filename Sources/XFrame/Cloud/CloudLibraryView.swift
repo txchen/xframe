@@ -28,6 +28,14 @@ struct CloudLibraryView: View {
             }
             List(filtered, selection: Binding(get: { library.selection }, set: { library.selection = $0 })) { game in Text(game.name).tag(game.id) }
             Text(library.status).font(.headline)
+            if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {
+                DisclosureGroup("Last stream diagnostics (latest 128 events)") {
+                    ScrollView {
+                        Text(diagnostics).font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                    }.frame(height: 140)
+                }
+            }
             if let error = library.viewError ?? library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
             HStack {
                 if library.loading || library.ending { ProgressView().controlSize(.small) }

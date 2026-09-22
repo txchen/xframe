@@ -46,6 +46,15 @@ enum H264AccessUnit {
     }
 }
 
+struct H264RecoveryState {
+    private(set) var needsIDR = false
+    private var latestIDRUnit = 0
+    mutating func failed(unit: Int?) {
+        if unit == nil || unit! >= latestIDRUnit { needsIDR = true }
+    }
+    mutating func submittedIDR(unit: Int) { latestIDRUnit = unit; needsIDR = false }
+}
+
 final class HardwareH264Factory: NSObject, RTCVideoDecoderFactory {
     private let output: LiveVideo
     init(output: LiveVideo) { self.output = output }
@@ -61,6 +70,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     private let output: LiveVideo
     private let callbackLock = NSLock()
     private var callback: RTCVideoDecoderCallback?
+    private var recovery = H264RecoveryState() // Protected by callbackLock.
     private var session: VTDecompressionSession?
     private var format: CMVideoFormatDescription?
     private var sps: Data?
@@ -71,10 +81,11 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     func implementationName() -> String { "XFrame VideoToolbox Hardware H264" }
     // Shared by synchronous and asynchronous decode failures; tested without
     // relying on nondeterministic network packet loss.
-    func handleDecodeFailure(_ status: OSStatus, synchronous: Bool = false, keyframe: Bool = false) {
+    func handleDecodeFailure(_ status: OSStatus, synchronous: Bool = false, keyframe: Bool = false, unit: Int? = nil) {
         if status == noErr { return } // VideoToolbox may intentionally drop a frame.
         if status == kVTVideoDecoderBadDataErr {
-            output.recoverableDecodeError(synchronous: synchronous, keyframe: keyframe); return
+            callbackLock.withLock { recovery.failed(unit: unit) }
+            output.recoverableDecodeError(synchronous: synchronous, keyframe: keyframe, unit: unit); return
         }
         output.fail("Hardware H.264 decoding failed (\(status)).")
     }
@@ -84,12 +95,18 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
             VTDecompressionSessionInvalidate(session)
         }
         session = nil; format = nil; sps = nil; pps = nil
+        callbackLock.withLock { recovery = H264RecoveryState() }
         return 0
+    }
+    func waitForPendingFrames() {
+        if let session { VTDecompressionSessionWaitForAsynchronousFrames(session) }
     }
     func decode(_ encodedImage: RTCEncodedImage, missingFrames: Bool,
                 codecSpecificInfo info: (any RTCCodecSpecificInfo)?, renderTimeMs: Int64) -> Int {
         let units = H264AccessUnit.nalUnits(encodedImage.buffer)
         guard !units.isEmpty else { return -1 }
+        let keyframe = units.contains { ($0.first! & 31) == 5 }
+        let wasRecovering = callbackLock.withLock { recovery.needsIDR }
         let nextSPS = units.first { ($0.first! & 31) == 7 } ?? sps
         let nextPPS = units.first { ($0.first! & 31) == 8 } ?? pps
         guard let nextSPS, let nextPPS else { return -1 }
@@ -98,10 +115,17 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 _ = release()
                 try configure(sps: nextSPS, pps: nextPPS)
                 sps = nextSPS; pps = nextPPS
+                if wasRecovering { callbackLock.withLock { recovery.failed(unit: nil) } }
             }
             guard let session, let format else { return -1 }
             let payload = H264AccessUnit.samplePayload(units)
             guard !payload.isEmpty else { return 0 }
+            // Continue accepting SPS/PPS while recovering, but do not submit
+            // dependent pictures until a new IDR rebuilds the reference chain.
+            if !keyframe && callbackLock.withLock({ recovery.needsIDR }) {
+                output.skippedForRecovery()
+                return 0
+            }
             var block: CMBlockBuffer?
             guard CMBlockBufferCreateWithMemoryBlock(allocator: nil, memoryBlock: nil, blockLength: payload.count,
                 blockAllocator: nil, customBlockSource: nil, offsetToData: 0, dataLength: payload.count,
@@ -119,12 +143,12 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 sampleSizeEntryCount: 1, sampleSizeArray: &size, sampleBufferOut: &sample) == noErr, let sample else { return -1 }
             let stamp = encodedImage.timeStamp
             let rotation = encodedImage.rotation
-            let keyframe = units.contains { ($0.first! & 31) == 5 }
-            output.submittedAccessUnit(keyframe: keyframe, missingFrames: missingFrames)
+            let unit = output.submittedAccessUnit(keyframe: keyframe, missingFrames: missingFrames)
+            if keyframe { callbackLock.withLock { recovery.submittedIDR(unit: unit) } }
             let result = VTDecompressionSessionDecodeFrame(session, sampleBuffer: sample,
                 flags: [._EnableAsynchronousDecompression], infoFlagsOut: nil) { [self] status, _, buffer, _, _ in
                 guard status == noErr, let buffer else {
-                    handleDecodeFailure(status, keyframe: keyframe); return
+                    handleDecodeFailure(status, keyframe: keyframe, unit: unit); return
                 }
                 let frame = RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: buffer), rotation: rotation,
                                           timeStampNs: renderTimeMs * 1_000_000)
@@ -132,7 +156,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 let callback = callbackLock.withLock { self.callback }
                 callback?(frame)
             }
-            if result != noErr { handleDecodeFailure(result, synchronous: true, keyframe: keyframe) }
+            if result != noErr { handleDecodeFailure(result, synchronous: true, keyframe: keyframe, unit: unit) }
             return result == noErr ? 0 : -1
         } catch {
             output.fail("Hardware H.264 decoder initialization failed.")
