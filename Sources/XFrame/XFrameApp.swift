@@ -73,6 +73,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     stats.state, stats.hardware ? "Yes" : "Pending",
                     decodeRate, presentRate,
                     stats.dropped, stats.queued, stats.capacity, stats.decodeErrors)
+                if stats.capacity == 1 {
+                    self?.diagnostics.stringValue += "\nErrors before first frame \(stats.errorsBeforeFirstFrame) · IDR submissions \(stats.keyframeSubmissions) · Missing-frame signals \(stats.missingFrameSignals)"
+                }
             }
             window.contentView = content
             window.isReleasedWhenClosed = false

@@ -14,6 +14,14 @@ The ad-hoc designated requirement was code-hash-bound. The certificate-backed re
 
 ## Live Video
 
+### Startup Error Counters Follow-up
+
+A changed build adds bounded numeric diagnostics: recoverable errors before the first rendered decoded frame, submitted H.264 IDR access units, and WebRTC decoder missingFrames hints. No video payloads, credentials, SDP, or candidate addresses are logged. These are diagnostic counters, not a fix or complete packet-loss telemetry.
+
+A WESTUS2 Fortnite run showed 60 recoverable errors, zero before the first frame, 12 IDR submissions, and zero missing-frame hints. A later observation showed 60 errors, 13 IDR submissions, and zero hints while average decode/presentation rose from 48.9/47.3 to 55.4/54.1 FPS. The queue remained 1/1. The hypothesis that all errors occur before initial decoded output is false for this run. Zero missing-frame hints does not prove zero packet loss. IDR submission counts do not indicate successful IDR decode and cannot establish the error cause.
+
+The session was explicitly ended and the library confirmed Session ended. Next investigation should distinguish synchronous versus asynchronous VT failures, associate failures with IDR/delta access units and parameter-set changes, and correlate them with inbound RTP statistics before changing decoding behavior. All 29 tests passed with the new counters; the release build succeeded.
+
 ### Recovery Build Acceptance (2026-09-22 UTC)
 
 The same installed build restarted and restored the account in approximately two seconds; the user confirmed that no password prompt appeared. This verifies one same-binary restart only. Rebuild-related repeated authorization remains unresolved.

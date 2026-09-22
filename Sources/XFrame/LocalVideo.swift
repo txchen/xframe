@@ -12,6 +12,9 @@ struct VideoFrame: @unchecked Sendable {
 struct PlaybackStats: Sendable {
     var capacity = 16
     var decodeErrors = 0
+    var errorsBeforeFirstFrame = 0
+    var keyframeSubmissions = 0
+    var missingFrameSignals = 0
     var state = "Loading"
     var hardware = false
     var decoded = 0

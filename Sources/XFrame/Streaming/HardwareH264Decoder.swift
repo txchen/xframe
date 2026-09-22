@@ -105,6 +105,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 sampleSizeEntryCount: 1, sampleSizeArray: &size, sampleBufferOut: &sample) == noErr, let sample else { return -1 }
             let stamp = encodedImage.timeStamp
             let rotation = encodedImage.rotation
+            output.submittedAccessUnit(keyframe: units.contains { ($0.first! & 31) == 5 }, missingFrames: missingFrames)
             let result = VTDecompressionSessionDecodeFrame(session, sampleBuffer: sample,
                 flags: [._EnableAsynchronousDecompression], infoFlagsOut: nil) { [self] status, _, buffer, _, _ in
                 guard status == noErr, let buffer else { handleDecodeFailure(status); return }

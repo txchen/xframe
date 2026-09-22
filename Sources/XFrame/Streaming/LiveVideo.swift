@@ -45,8 +45,21 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func hardwareVerified() { lock.withLock { stats.hardware = true } }
+    func submittedAccessUnit(keyframe: Bool, missingFrames: Bool) {
+        lock.withLock {
+            guard !stopped else { return }
+            if keyframe { stats.keyframeSubmissions += 1 }
+            if missingFrames { stats.missingFrameSignals += 1 }
+        }
+    }
     func recoverableDecodeError() {
-        lock.withLock { if !stopped { stats.decodeErrors += 1; needsKeyframe = true } }
+        lock.withLock {
+            if !stopped {
+                stats.decodeErrors += 1
+                if stats.decoded == 0 { stats.errorsBeforeFirstFrame += 1 }
+                needsKeyframe = true
+            }
+        }
     }
     func takeKeyframeRequest() -> Bool {
         lock.withLock { let value = needsKeyframe; needsKeyframe = false; return value }
