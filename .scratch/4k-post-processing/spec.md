@@ -30,6 +30,7 @@ Research reference index (2026-09-22):
 - [Frame interpolation research](frame-interpolation-research.md): candidate algorithms, input contracts, dynamic cadence, latency and prototype gates.
 - [OpenDLSS-NR on Metal](opendlss-nr-metal-research.md): network portability, numerical parity, existing native implementations and M1/M5 hardware differences.
 - [Veyra macOS portability](veyra-macos-portability.md): native ports versus Wine/GPTK paths.
+- [MLX-DLSS experiment](../mlx-dlss-experiment/spec.md): user-selected experimental baseline, pinned build setup and outstanding model/toolchain prerequisites.
 
 The user also has an M5 MacBook Air for evaluation. Its GPU configuration, memory, OS and sustained performance have not been measured; keep M1 Mac mini as the initial acceptance device and add the M5 Air to prototype comparisons.
 

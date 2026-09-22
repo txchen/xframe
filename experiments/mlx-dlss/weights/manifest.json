@@ -1,0 +1,64 @@
+{
+  "upstream_commit": "0ca2deab092fe6f3e331bf4f616271dbc64521d0",
+  "source_receipt": {
+    "fg": {
+      "source": "https://github.com/NVIDIA/DLSS/blob/a291cc7d2cc642a51566f3dfd5376f635cd1b284/lib/Linux_x86_64/rel/libnvidia-ngx-dlssg.so.310.7.0",
+      "sha256": "676cfeace1bf675a281cf234df619f24cef16a1259f36119ebdf01138468a057"
+    },
+    "nr": {
+      "source": "https://github.com/zhubaohi/FF7R-DLSS5/releases/download/v1/nvidia.zip",
+      "archive_sha256": "731fececf3d66fb07a0302382b4b2ae6cc30055e5218efd2c5dd590c9edcdfde",
+      "dll_sha256": "e16bcf15e16e13f527491cdf7845b2fe6521a738d8f7c9c721866a8496e1fc8e",
+      "mlx_supported_hash_match": false,
+      "provenance": "community redistribution, not verified official release or Authenticode signature"
+    }
+  },
+  "models": [
+    {
+      "name": "framegen",
+      "archive_sha256": "605be7430a5c6821c6d3cd849c021a97473e180c0577d331dd56654807359237",
+      "parts": [
+        {
+          "name": "framegen.safetensors.zip",
+          "bytes": 2684627,
+          "sha256": "605be7430a5c6821c6d3cd849c021a97473e180c0577d331dd56654807359237"
+        }
+      ],
+      "members": [
+        {
+          "name": "framegen.safetensors",
+          "bytes": 2891168,
+          "sha256": "21faede75312631273f930a6fc1aed17f1eb5ac4a476a485551afc6d7ced2958"
+        }
+      ]
+    },
+    {
+      "name": "NeuralRendering",
+      "archive_sha256": "31f51b6d68395ef9622c60dcd4bbcb364025ebe0ed06c55eb37c33d29e840077",
+      "parts": [
+        {
+          "name": "NeuralRendering.dlssmodel.zip.part01",
+          "bytes": 67108864,
+          "sha256": "59b7854d6c8d5b1268c4bb38185c6868f73641838073095c50b62078322a7186"
+        },
+        {
+          "name": "NeuralRendering.dlssmodel.zip.part02",
+          "bytes": 60264895,
+          "sha256": "9fd25934a7911bfb84536aea75dee8a22e133bd8f886b6f1b708bef7d5eb7961"
+        }
+      ],
+      "members": [
+        {
+          "name": "NeuralRendering.dlssmodel/manifest.json",
+          "bytes": 101028,
+          "sha256": "65aa5edb9d2b352092a4992c5f0338669dbb0ace0f7a98e09824936f6d2d8b6b"
+        },
+        {
+          "name": "NeuralRendering.dlssmodel/weights.safetensors",
+          "bytes": 291576650,
+          "sha256": "7769f8a4c48b0b4a79d04110c401fa1c73687f5a5454549d70f4dae2bffa65e1"
+        }
+      ]
+    }
+  ]
+}
