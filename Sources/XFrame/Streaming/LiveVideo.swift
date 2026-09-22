@@ -3,6 +3,7 @@ import QuartzCore
 @preconcurrency import WebRTC
 
 protocol VideoSource: AnyObject, Sendable {
+    var performance: PlaybackPerformance { get }
     func stop()
     func snapshot() -> PlaybackStats
     func nextFrame(at hostTime: Double) -> VideoFrame?
@@ -13,6 +14,7 @@ protocol VideoSource: AnyObject, Sendable {
 // The network decoder owns reordering. The display keeps only the newest frame,
 // never an unbounded queue or a Task per decoded image.
 final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Sendable {
+    let performance = PlaybackPerformance()
     private let lock = NSLock()
     private var latest: VideoFrame?
     private var stats = PlaybackStats()
@@ -41,6 +43,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func diagnosticReport() -> StreamDiagnosticReport {
         lock.withLock {
             var snapshot = stats
+            snapshot.timings = performance.snapshot()
             snapshot.queued = latest == nil ? 0 : 1
             return StreamDiagnosticReport(stats: snapshot,
                 outcome: failed ? .failed : (stopped ? .stopped : .active),
@@ -131,6 +134,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func stop() {
+        performance.stop()
         lock.withLock {
             if !stopped { record(.stopped) }
             if endedAt == nil { endedAt = CACurrentMediaTime() }
@@ -138,6 +142,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func fail(_ message: String) {
+        performance.stop()
         lock.withLock {
             guard !stopped else { return }
             failed = true; endedAt = CACurrentMediaTime()
@@ -151,6 +156,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func snapshot() -> PlaybackStats {
         lock.withLock {
             var result = stats
+            result.timings = performance.snapshot()
             result.queued = latest == nil ? 0 : 1
             result.elapsed = started.map { (endedAt ?? CACurrentMediaTime()) - $0 } ?? 0
             return result

@@ -20,7 +20,8 @@ struct StreamDiagnosticReport: Encodable, Sendable {
         let packetsReceived: Int?
         let energy: Double?
     }
-    let schemaVersion = 1
+    let schemaVersion = 2
+    let timings: PlaybackTimingSnapshot
     let outcome: Outcome
     let durationSeconds: Double
     let video: Video
@@ -29,6 +30,7 @@ struct StreamDiagnosticReport: Encodable, Sendable {
 
     init(stats: PlaybackStats, outcome: Outcome, duration: Double, events: [StreamDiagnosticEvent]) {
         self.outcome = outcome
+        timings = stats.timings
         durationSeconds = duration.isFinite ? max(0, duration) : 0
         video = Video(hardware: stats.hardware, decoded: stats.decoded, presented: stats.presented,
             skipped: stats.dropped, queued: stats.queued, peakQueue: stats.peakQueue,

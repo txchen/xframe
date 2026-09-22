@@ -7,9 +7,11 @@ struct VideoFrame: @unchecked Sendable {
     let buffer: CVPixelBuffer
     let time: Double
     let id: Int
+    let arrivedAt = CACurrentMediaTime()
 }
 
 struct PlaybackStats: Sendable {
+    var timings = PlaybackTimingSnapshot()
     var capacity = 16
     var decodeErrors = 0
     var recoverySkippedFrames = 0
@@ -42,6 +44,7 @@ struct PlaybackStats: Sendable {
 // All mutable fields are protected by condition. The reader and VT session are
 // confined to the worker. Cancellation wakes a producer blocked by backpressure.
 final class LocalVideo: VideoSource, @unchecked Sendable {
+    let performance = PlaybackPerformance()
     static let capacity = 16
     private let condition = NSCondition()
     private var frames: [VideoFrame] = []
@@ -64,6 +67,7 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
     }
 
     func stop() {
+        performance.stop()
         condition.lock()
         stopped = true
         stats.state = "Stopped"
@@ -75,6 +79,7 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
     func snapshot() -> PlaybackStats {
         condition.lock(); defer { condition.unlock() }
         var result = stats
+        result.timings = performance.snapshot()
         result.queued = frames.count
         result.inputFinished = finished
         if let anchor { result.elapsed = max(0, (endTime > 0 ? endTime : CACurrentMediaTime()) - anchor) }
@@ -131,6 +136,7 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
     }
 
     func fail(_ message: String) {
+        performance.stop()
         condition.lock(); defer { condition.unlock() }
         if stopped { return }
         stats.state = "Failed: \(message)"
@@ -228,8 +234,11 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
                     throw RenderError.unavailable("Unsupported video timestamps: presentation must not precede decoding.")
                 }
                 // With both flags clear, the callback completes before this returns.
+                let submittedAt = CACurrentMediaTime()
                 let result = VTDecompressionSessionDecodeFrame(session, sampleBuffer: sample, flags: [], infoFlagsOut: nil) {
-                    [self] status, _, buffer, pts, _ in receive(status: status, buffer: buffer, time: pts)
+                    [self] status, _, buffer, pts, _ in
+                    if status == noErr, buffer != nil { performance.record(.decode, seconds: CACurrentMediaTime() - submittedAt) }
+                    receive(status: status, buffer: buffer, time: pts)
                 }
                 guard result == noErr else { throw RenderError.unavailable("H.264 decode failed (\(result)).") }
                 updateWatermark(decodeTime.seconds)

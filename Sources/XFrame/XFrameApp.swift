@@ -57,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             diagnostics.textColor = .white
             diagnostics.backgroundColor = NSColor.black.withAlphaComponent(0.8)
             diagnostics.drawsBackground = true
-            diagnostics.maximumNumberOfLines = 6
+            diagnostics.maximumNumberOfLines = 7
             diagnostics.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(diagnostics)
             NSLayoutConstraint.activate([
@@ -80,6 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     let audioState = !stats.audioAttached ? "Waiting" : (stats.audioMuted || stats.audioVolume == 0 ? "Muted" : "Enabled")
                     self?.diagnostics.stringValue += "\nAudio \(audioState) · Volume \(Int(stats.audioVolume * 100))% · Packets \(stats.audioPacketsReceived.map(String.init) ?? "n/a") · Energy \(stats.audioEnergy.map { String(format: "%.3f", $0) } ?? "n/a")"
                 }
+                let timing = stats.timings
+                let values = [timing.decode, timing.frameWait, timing.gpu, timing.presentation]
+                    .map { $0.map { String(format: "%.2f", $0.p95MS) } ?? "n/a" }.joined(separator: "/")
+                self?.diagnostics.stringValue += "\nLocal p95 ms decode/wait/GPU/present \(values) · Latest 256 samples"
             }
             window.contentView = content
             window.isReleasedWhenClosed = false

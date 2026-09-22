@@ -19,6 +19,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let inFlight = DispatchSemaphore(value: 3)
     private var lastDrawableSize = CGSize.zero
     private var lastReport = 0.0
+    private var work = RenderWorkState()
     var report: ((PlaybackStats) -> Void)?
 
     init(view: MTKView) throws {
@@ -63,6 +64,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         self.source?.stop()
         self.source = source
         currentVideo = nil
+        work = RenderWorkState()
         lastDrawableSize = .zero
         view.enableSetNeedsDisplay = source == nil
         view.isPaused = source == nil
@@ -84,14 +86,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         guard inFlight.wait(timeout: .now()) == .success else { return }
         var committed = false
         defer { if !committed { inFlight.signal() } }
-        guard view.drawableSize.width > 0, view.drawableSize.height > 0,
-              let pass = view.currentRenderPassDescriptor,
-              let drawable = view.currentDrawable,
-              let command = queue.makeCommandBuffer() else { return }
+        guard view.drawableSize.width > 0, view.drawableSize.height > 0 else { return }
 
         let next = source?.nextFrame(at: now)
         if let next {
-            do { currentVideo = try VideoTextures(frame: next, cache: cache) }
+            do { currentVideo = try VideoTextures(frame: next, cache: cache); work.receivedFrame() }
             catch {
                 source?.fail(error.localizedDescription)
                 if let source { report?(source.snapshot()) }
@@ -99,7 +98,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                 return
             }
         }
-        if source != nil && next == nil && lastDrawableSize == view.drawableSize { return }
+        guard work.needsDraw(hasSource: source != nil, resized: lastDrawableSize != view.drawableSize) else { return }
+        // Acquire scarce drawables only after determining that work is necessary.
+        guard let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
+              let command = queue.makeCommandBuffer() else { return }
         guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { return }
         lastDrawableSize = view.drawableSize
 
@@ -135,13 +137,23 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             if command.status == .error {
                 activeSource?.fail("Metal rendering failed: \(command.error?.localizedDescription ?? "Unknown GPU error")")
             }
+            if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
+                activeSource?.performance.record(.gpu, seconds: command.gpuEndTime - command.gpuStartTime)
+            }
             permit.signal()
         }
-        if next != nil, let source {
-            drawable.addPresentedHandler { _ in source.didPresent() }
+        if work.pendingFrame, let source, let frame = currentVideo?.frame {
+            source.performance.record(.frameWait, seconds: CACurrentMediaTime() - frame.arrivedAt)
+            drawable.addPresentedHandler { presented in
+                source.didPresent()
+                if presented.presentedTime > 0 {
+                    source.performance.record(.presentation, seconds: presented.presentedTime - frame.arrivedAt)
+                }
+            }
         }
         command.present(drawable)
         committed = true
+        work.submitted()
         command.commit()
     }
 }

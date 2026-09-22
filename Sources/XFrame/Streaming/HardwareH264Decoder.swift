@@ -1,5 +1,6 @@
 import Foundation
 import VideoToolbox
+import QuartzCore
 @preconcurrency import WebRTC
 
 enum H264AccessUnit {
@@ -145,6 +146,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
             let rotation = encodedImage.rotation
             let unit = output.submittedAccessUnit(keyframe: keyframe, missingFrames: missingFrames)
             if keyframe { callbackLock.withLock { recovery.submittedIDR(unit: unit) } }
+            let submittedAt = CACurrentMediaTime()
             let result = VTDecompressionSessionDecodeFrame(session, sampleBuffer: sample,
                 flags: [._EnableAsynchronousDecompression], infoFlagsOut: nil) { [self] status, _, buffer, _, _ in
                 guard status == noErr, let buffer else {
@@ -153,6 +155,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 let frame = RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: buffer), rotation: rotation,
                                           timeStampNs: renderTimeMs * 1_000_000)
                 frame.timeStamp = Int32(bitPattern: stamp)
+                output.performance.record(.decode, seconds: CACurrentMediaTime() - submittedAt)
                 let callback = callbackLock.withLock { self.callback }
                 callback?(frame)
             }

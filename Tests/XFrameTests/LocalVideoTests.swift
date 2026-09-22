@@ -52,6 +52,11 @@ func hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall: Bool)
     #expect(stats.peakQueue <= LocalVideo.capacity)
     #expect(stats.queued == 0)
     #expect(stats.presented == 0) // Decoding is not proof of display presentation.
+    #expect(stats.timings.decode?.count == 720)
+    #expect(stats.timings.gpu == nil)
+    if !simulateStall, let timing = stats.timings.decode {
+        print("LOCAL_DECODE_BASELINE samples=\(timing.count) recent=\(timing.recentCount) mean_ms=\(timing.meanMS) p95_ms=\(timing.p95MS)")
+    }
 }
 
 @Test func cancellationReleasesFullQueue() async throws {
@@ -76,4 +81,34 @@ func hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall: Bool)
         try await Task.sleep(for: .milliseconds(5))
     }
     #expect(video.snapshot().state.hasPrefix("Failed:"))
+}
+
+@Test func repeatedLocalCancellationReleasesSourceAndQueue() async throws {
+    var residentKB: [Int] = []
+    for _ in 0..<12 {
+        var source: LocalVideo? = LocalVideo(url: try fixture())
+        weak var released = source
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while source!.snapshot().queued < LocalVideo.capacity && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        #expect(source!.snapshot().queued == LocalVideo.capacity)
+        source!.stop()
+        #expect(source!.snapshot().queued == 0)
+        source = nil
+        while released != nil && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(2)) }
+        #expect(released == nil, "Decode worker must release the stopped source.")
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/bin/ps")
+        process.arguments = ["-o", "rss=", "-p", String(ProcessInfo.processInfo.processIdentifier)]
+        process.standardOutput = pipe
+        try process.run()
+        let output = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        if let rss = Int(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)) {
+            residentKB.append(rss)
+        }
+    }
+    print("LOCAL_CANCEL_RSS_KB \(residentKB)") // Observational, not a leak threshold.
 }
