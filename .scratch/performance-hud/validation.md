@@ -34,3 +34,7 @@ Release build and strict signature verification passed (`.build/hud-chord-fix-bu
 ## Final Xbox One acceptance — 2026-09-22
 
 After restarting the rebuilt app and launching Palworld, the user repeated the View+Menu test and reported: “这次正常了, 每次都能顺利切换” (“Normal this time; every attempt switches successfully”). Repeated physical HUD cycling is accepted. The test prompt also requested no recording/game-menu popups and standalone View/Menu checks; the reply gave an overall normal result without separately enumerating those checks. PS4 / DualShock 4 and other controller models remain untested.
+
+## Recent FPS correction
+
+121 tests pass (`.build/rolling-fps-tests.log`), including a 100-second 30 fps history followed by 60 fps, two-second convergence, stop-to-zero, recovery and fresh source warmup. Signed build: `.build/rolling-fps-build.log`. Live check passed in the signed app: recent rates labelled `2s` and separate `SESSION avg`; captured both a 30 fps and a 60 fps fresh cloud session. A 30-to-60 transition is verified by the deterministic meter test, not inferred from those separate live sessions.

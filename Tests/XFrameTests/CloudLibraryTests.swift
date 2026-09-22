@@ -221,3 +221,55 @@ private actor FakeCloud: CloudServing {
     #expect(library.streamPreferences == second)
     #expect(CloudLibrary(preferencesStore: store).streamPreferences == second)
 }
+
+@Test @MainActor func sleepDuringCreationRetainsHandleForCleanupAndWakeDoesNotLaunch() async throws {
+    let fake = FakeCloud()
+    let library = try await loaded(fake)
+    library.start(cloudGame)
+    library.systemWillSleep()
+    library.systemWillSleep()
+    try await eventually { !library.ownsSession }
+    #expect(library.retryGame == nil)
+    library.start(cloudGame) // Cannot allocate while sleeping.
+    #expect(!library.ownsSession)
+    library.systemDidWake()
+    #expect(library.retryGame == cloudGame)
+    #expect(await fake.creates == 1)
+    #expect(await fake.deletes == 1)
+    library.retry()
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(await fake.creates == 2)
+    #expect(await fake.deletes == 2)
+}
+
+@Test @MainActor func wakeRetriesFailedSleepCleanupBeforeAllowingPlay() async throws {
+    let fake = FakeCloud(failDelete: true)
+    let library = try await loaded(fake)
+    library.start(cloudGame)
+    try await eventually { library.ready }
+    library.systemWillSleep()
+    try await eventually { library.status.contains("cleanup failed") }
+    library.retry()
+    #expect(library.ownsSession && library.retryGame == nil)
+    library.systemDidWake()
+    try await eventually { !library.ownsSession }
+    #expect(library.retryGame == cloudGame)
+    #expect(await fake.creates == 1)
+    #expect(await fake.deletes == 2)
+}
+
+@Test @MainActor func failedStartOffersRetryOnlyAfterCleanupAndResetClearsIt() async throws {
+    let fake = FakeCloud(states: ["Failed"], failDelete: true)
+    let library = try await loaded(fake)
+    library.start(cloudGame)
+    try await eventually { library.status.contains("cleanup failed") }
+    #expect(library.retryGame == nil)
+    library.retry()
+    #expect(await fake.creates == 1)
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(library.retryGame == cloudGame)
+    library.reset()
+    #expect(library.retryGame == nil)
+}

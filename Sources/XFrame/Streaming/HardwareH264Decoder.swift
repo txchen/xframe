@@ -107,16 +107,27 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
         let units = H264AccessUnit.nalUnits(encodedImage.buffer)
         guard !units.isEmpty else { return -1 }
         let keyframe = units.contains { ($0.first! & 31) == 5 }
-        let wasRecovering = callbackLock.withLock { recovery.needsIDR }
         let nextSPS = units.first { ($0.first! & 31) == 7 } ?? sps
         let nextPPS = units.first { ($0.first! & 31) == 8 } ?? pps
         guard let nextSPS, let nextPPS else { return -1 }
         do {
             if session == nil || nextSPS != sps || nextPPS != pps {
-                _ = release()
-                try configure(sps: nextSPS, pps: nextPPS)
+                let nextFormat = try makeFormat(sps: nextSPS, pps: nextPPS)
+                if let session, VTDecompressionSessionCanAcceptFormatDescription(session, formatDescription: nextFormat) {
+                    // Compatible SPS/PPS changes must not discard reference pictures.
+                    format = nextFormat
+                    output.connectionEvent(.decoderFormatUpdated)
+                } else {
+                    _ = release()
+                    try configure(format: nextFormat)
+                    // A new VT session has no references. Request an IDR before
+                    // submitting dependent pictures, including initial delta input.
+                    if !keyframe {
+                        callbackLock.withLock { recovery.failed(unit: nil) }
+                        output.requestKeyframe()
+                    }
+                }
                 sps = nextSPS; pps = nextPPS
-                if wasRecovering { callbackLock.withLock { recovery.failed(unit: nil) } }
             }
             guard let session, let format else { return -1 }
             let payload = H264AccessUnit.samplePayload(units)
@@ -167,7 +178,8 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
         }
     }
 
-    private func configure(sps: Data, pps: Data) throws {
+    private func makeFormat(sps: Data, pps: Data) throws -> CMVideoFormatDescription {
+        var format: CMVideoFormatDescription?
         let status = sps.withUnsafeBytes { s in pps.withUnsafeBytes { p in
             let pointers = [s.baseAddress!.assumingMemoryBound(to: UInt8.self), p.baseAddress!.assumingMemoryBound(to: UInt8.self)]
             let sizes = [sps.count, pps.count]
@@ -176,6 +188,11 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 formatDescriptionOut: &format)
         } }
         guard status == noErr, let format else { throw CloudError.response }
+        return format
+    }
+
+    private func configure(format: CMVideoFormatDescription) throws {
+        self.format = format
         let decoder = [kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder: true] as CFDictionary
         let attributes: [CFString: Any] = [kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
             kCVPixelBufferMetalCompatibilityKey: true, kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]]

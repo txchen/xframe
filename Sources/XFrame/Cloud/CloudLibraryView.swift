@@ -107,6 +107,8 @@ struct CloudLibraryView: View {
                 Text(title).font(.system(size: 13, weight: selected ? .semibold : .medium))
                 Spacer(minLength: 0)
             }.padding(.horizontal, 12).padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
                 .foregroundStyle(selected ? LibraryStyle.accent : LibraryStyle.secondary)
                 .background(selected ? LibraryStyle.accent.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 8))
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
@@ -146,6 +148,9 @@ struct CloudLibraryView: View {
                 if library.ownsSession {
                     Button("End Session") { library.end() }.disabled(library.ending)
                 } else {
+                    if let game = library.retryGame {
+                        Button("Retry \(game.name)") { library.retry() }.disabled(account.isBusy)
+                    }
                     Button {
                         if let game = library.selectedGame { library.start(game) }
                     } label: {
@@ -169,7 +174,7 @@ struct CloudLibraryView: View {
                 }), in: 0...1) { Text("Game volume") }.frame(width: 130)
                 Text("\(Int(library.audioVolume * 100))%").monospacedDigit().frame(width: 42)
                 Spacer()
-                Text(library.controllerEnabled ? "Controller enabled · Microphone off" : "Controller: enable in View menu · Microphone off").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
+                Text(library.keyboardEnabled && library.controllerEnabled ? "Keyboard + Controller · automatic switching" : library.keyboardEnabled ? "Keyboard enabled · View > Keyboard Controls" : library.controllerEnabled ? "Controller enabled · Microphone off" : "Input: enable in View menu · Microphone off").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
             }
             if let error = library.viewError ?? library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
             if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {

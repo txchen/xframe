@@ -19,11 +19,13 @@ enum PerformanceHUDText {
         let decode = decimal(stats.elapsed > 0 ? Double(stats.decoded) / stats.elapsed : nil)
         let present = decimal(stats.elapsed > 0 ? Double(stats.presented) / stats.elapsed : nil)
         let bitrate = decimal(stats.videoBitrateMbps)
-        let rate = "STREAM avg \(decode) · OUT avg \(present) fps"
+        let average = "SESSION avg IN \(decode) · OUT \(present) fps"
+        let rate = stats.isLive ? "STREAM \(decimal(stats.recentDecodedFPS)) · OUT \(decimal(stats.recentPresentedFPS)) fps · 2s" : average
         let profile = quality.map { $0 == .hq ? "HQ" : "SQ" } ?? "n/a"
         let video = stats.isLive ? "\(profile) requested · VIDEO \(bitrate) Mbps · \(stats.hardware ? "HW" : "HW pending")" : "LOCAL VIDEO · \(stats.hardware ? "HW" : "HW pending")"
+        let recovery = stats.connectionRecovering ? "Connection interrupted — recovering…\n" : ""
         if preset == .compact {
-            return "\(rate)\n\(video)" + (stats.isLive ? "\nLatency est. \(decimal(stats.pipelineLatencyEstimateMS)) ms" : "")
+            return recovery + "\(rate)\n\(video)" + (stats.isLive ? "\nLatency est. \(decimal(stats.pipelineLatencyEstimateMS)) ms" : "")
         }
         let volume = stats.audioVolume.isFinite ? Int(min(1, max(0, stats.audioVolume)) * 100) : 0
         let timing = stats.timings
@@ -38,7 +40,7 @@ enum PerformanceHUDText {
             lines += ["MEAN ms queue / GPU queue / GPU / display  " + [timing.frameWait, timing.gpuQueue, timing.gpu, timing.displayWait].map { decimal($0?.meanMS) }.joined(separator: " / "),
                 "LOCAL present mean \(decimal(timing.presentation?.meanMS)) ms · p95 \(decimal(timing.presentation?.p95MS)) ms"]
             let pacing = timing.pacing
-            lines += ["TOTAL in \(stats.decoded) · out \(stats.presented) · ticks \(pacing.drawTicks)",
+            lines += [average, "TOTAL in \(stats.decoded) · out \(stats.presented) · ticks \(pacing.drawTicks)",
                 "SKIP inbox \(pacing.inboxReplaced) · renderer \(pacing.rendererReplaced) · busy \(pacing.busyTicks) · drawable \(pacing.drawableMisses) · not shown \(pacing.notPresented)",
                 "P95 ms arrival / draw / drawable \(decimal(pacing.arrivalInterval?.p95MS)) / \(decimal(pacing.drawInterval?.p95MS)) / \(decimal(pacing.drawableWait?.p95MS))"]
             lines += ["NET packets \(count(stats.videoPacketsReceived)) · lost \(count(stats.videoPacketsLost)) · NACK \(count(stats.videoNacks))",
@@ -46,7 +48,7 @@ enum PerformanceHUDText {
                 "AUDIO \(!stats.audioAttached ? "waiting" : (stats.audioMuted ? "muted" : "on")) · volume \(volume)%",
                 controller]
         }
-        return lines.joined(separator: "\n")
+        return recovery + lines.joined(separator: "\n")
     }
 }
 

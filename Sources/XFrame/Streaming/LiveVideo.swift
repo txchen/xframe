@@ -24,6 +24,8 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     private var frames: [VideoFrame] = []
     private var stats = PlaybackStats()
     private var bitrateMeter = VideoBitrateMeter()
+    private var decodedRate = SlidingFrameRate()
+    private var presentedRate = SlidingFrameRate()
     private var latencyMeter = VideoLatencyMeter()
     private var bitrateSampleAt: Double?
     private var stopped = false
@@ -46,6 +48,13 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             packetsLost: stats.videoPacketsLost, nacks: stats.videoNacks))
         if events.count > Self.eventLimit { events.removeFirst(events.count - Self.eventLimit) }
     }
+    func connectionEvent(_ kind: StreamDiagnosticEvent.Kind) {
+        lock.withLock { if !stopped { record(kind) } }
+    }
+    func setRecovering(_ recovering: Bool) {
+        lock.withLock { if !stopped { stats.connectionRecovering = recovering } }
+    }
+    func requestKeyframe() { lock.withLock { if !stopped { needsKeyframe = true } } }
     func diagnosticEvents() -> [StreamDiagnosticEvent] { lock.withLock { events } }
     func diagnosticsText() -> String { diagnosticEvents().map(\.line).joined(separator: "\n") }
     func diagnosticReport() -> StreamDiagnosticReport {
@@ -84,6 +93,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             lastFrameAt = now
             performance.note(.arrival, at: now)
             stats.decoded += 1
+            decodedRate.note(at: now)
             stats.state = "Cloud video \(frame.width)×\(frame.height) · H.264"
             if frames.count == stats.capacity {
                 frames.removeFirst()
@@ -155,6 +165,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             }
         }
     }
+    var hasKeyframeRequest: Bool { lock.withLock { !stopped && needsKeyframe } }
     func takeKeyframeRequest() -> Bool {
         lock.withLock {
             guard !stopped else { return false }
@@ -168,15 +179,19 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         lock.withLock {
             if !stopped { record(.stopped) }
             if endedAt == nil { endedAt = CACurrentMediaTime() }
+            stats.connectionRecovering = false
             stopped = true; frames.removeAll()
-            stats.state = "Stopped"
+            if !failed { stats.state = "Stopped" }
         }
     }
-    func fail(_ message: String) {
+    func fail(_ message: String) { fail(message, kind: .decoderFailed) }
+    func fail(_ message: String, kind: StreamDiagnosticEvent.Kind) {
         performance.stop()
         lock.withLock {
             guard !stopped else { return }
+            record(kind)
             failed = true; endedAt = CACurrentMediaTime()
+            stats.connectionRecovering = false
             stopped = true; frames.removeAll()
             stats.state = "Failed: " + message
         }
@@ -202,7 +217,10 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func didMissPresentation() { lock.withLock { if !stopped { stats.dropped += 1; performance.note(.notPresented) } } }
-    func didPresent() { lock.withLock { if !stopped { stats.presented += 1 } } }
+    func didPresent() { lock.withLock { if !stopped {
+        stats.presented += 1
+        presentedRate.note(at: CACurrentMediaTime())
+    } } }
     func didSkipFrame() { lock.withLock { if !stopped { stats.dropped += 1; performance.note(.rendererReplaced) } } }
     var streamState: (state: String, hasFrames: Bool) {
         lock.withLock { (stats.state, stats.decoded > 0) }
@@ -217,6 +235,9 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
                 result.networkRoundTripMS = nil
                 result.jitterBufferMS = nil
             }
+            let sampleAt = endedAt ?? CACurrentMediaTime()
+            result.recentDecodedFPS = decodedRate.rate(at: sampleAt)
+            result.recentPresentedFPS = presentedRate.rate(at: sampleAt)
             result.elapsed = started.map { (endedAt ?? CACurrentMediaTime()) - $0 } ?? 0
             return result
         }

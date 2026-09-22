@@ -68,6 +68,27 @@ final class CloudLibrary {
     private(set) var ending = false
     private(set) var ready = false
     private(set) var activeGame: String?
+    private var activeGameID: String?
+    private var retryGameID: String?
+    private var sleeping = false
+    var retryGame: CloudGame? {
+        guard !ownsSession && !loading && !sleeping else { return nil }
+        return games.first { $0.id == retryGameID && $0.access.playable }
+    }
+    func retry() { if let game = retryGame { start(game) } }
+
+    func systemWillSleep() {
+        sleeping = true
+        guard ownsSession else { return }
+        retryGameID = activeGameID
+        connection?.video.connectionEvent(.systemSleep)
+        end()
+    }
+    func systemDidWake() {
+        sleeping = false
+        // Retry only cleanup; never allocate a cloud console on wake.
+        if ownsSession && cancelRequested && task == nil { end() }
+    }
     private(set) var lastVideoDiagnostics: String?
     private(set) var lastStreamReport: StreamDiagnosticReport?
     private(set) var audioMuted = false
@@ -77,7 +98,21 @@ final class CloudLibrary {
         audioVolume = volume.isFinite ? min(1, max(0, volume)) : 0
         connection?.configureAudio(muted: audioMuted, volume: audioVolume)
     }
-    var controllerEnabled = false { didSet { connection?.controllerEnabled = controllerEnabled } }
+    var controllerEnabled = false {
+        didSet {
+            connection?.controllerEnabled = controllerEnabled
+        }
+    }
+    var keyboardEnabled = false {
+        didSet {
+            connection?.keyboardEnabled = keyboardEnabled
+        }
+    }
+    @discardableResult
+    func keyboardEvent(code: UInt16, down: Bool, repeatKey: Bool, shortcut: Bool) -> Bool {
+        connection?.keyboardEvent(code: code, down: down, repeatKey: repeatKey, shortcut: shortcut) ?? false
+    }
+    func releaseKeyboard() { connection?.releaseKeyboard() }
     var playbackFocused = false { didSet { connection?.playbackFocused = playbackFocused } }
     var controllerStatus: String { connection?.controllerStatus ?? "Controller input off" }
     @ObservationIgnored private var service: (any CloudServing)?
@@ -101,6 +136,7 @@ final class CloudLibrary {
 
     func reset() {
         guard !ownsSession && !loading else { return }
+        retryGameID = nil
         games = []
         artworkRevisions = [:]
         catalogLoaded = false
@@ -118,6 +154,7 @@ final class CloudLibrary {
         guard !ownsSession && !loading else { return }
         self.service = service
         loading = true
+        retryGameID = nil
         games = []
         artworkRevisions = [:]
         selection = nil
@@ -138,7 +175,7 @@ final class CloudLibrary {
     }
 
     func start(_ game: CloudGame) {
-        guard !ownsSession && !loading, games.contains(game), let service else { return }
+        guard !ownsSession && !loading && !sleeping, games.contains(game), let service else { return }
         guard game.access.playable else {
             errorMessage = game.access.entitled == false
                 ? "This account has no entitlement for this game. Check ownership or subscription, then refresh the library."
@@ -152,6 +189,8 @@ final class CloudLibrary {
         ready = false
         errorMessage = nil
         activeGame = game.name
+        activeGameID = game.id
+        retryGameID = nil
         lastVideoDiagnostics = nil
         lastStreamReport = nil
         status = "Starting \(game.name)…"
@@ -189,6 +228,7 @@ final class CloudLibrary {
                             self.connection = connection
                             connection.cyclePerformanceOverlay = { [weak library = self] in library?.cyclePerformanceOverlay?() }
                             connection.controllerEnabled = controllerEnabled
+                            connection.keyboardEnabled = keyboardEnabled
                             connection.playbackFocused = playbackFocused
                             connection.configureAudio(muted: audioMuted, volume: audioVolume)
                             displayVideo?(connection.video)
@@ -216,12 +256,15 @@ final class CloudLibrary {
                     games[index].access.entitled = false
                     selection = nil
                 }
-                if !cancelRequested { fail(error) }
+                if !cancelRequested { retryGameID = game.id; fail(error) }
                 if handle != nil { await cleanup() }
                 else {
                     // A failed POST can have reached the service. Do not claim confirmed cleanup.
                     ownsSession = false
                     activeStreamPreferences = nil
+                    activeGame = nil
+                    activeGameID = nil
+                    retryGameID = nil // Unknown allocation: do not offer an automatic retry shortcut.
                     status = "Start failed; no session address was received. Server allocation could not be confirmed."
                     task = nil
                 }
@@ -233,7 +276,9 @@ final class CloudLibrary {
         guard ownsSession && !ending else { return }
         cancelRequested = true
         status = "Ending session…"
-        // Creation and polling complete naturally; interrupt only the ready-state idle timer.
+        // Release local media/input now, even if signaling is awaiting an HTTP callback.
+        connection?.close()
+        // Creation and polling complete naturally so returned handles can be deleted.
         if ready { task?.cancel() }
         else if task == nil { task = Task { await cleanup() } }
     }
@@ -260,8 +305,9 @@ final class CloudLibrary {
             self.handle = nil
             ownsSession = false
             activeGame = nil
+            activeGameID = nil
             activeStreamPreferences = nil
-            status = "Session ended"
+            status = retryGameID == nil ? "Session ended" : "Session ended — ready to retry"
         } else { status = "Session cleanup failed — retry End Session before quitting." }
     }
 

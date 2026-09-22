@@ -55,13 +55,17 @@ import Testing
     stats.isLive = true
     stats.capacity = LiveVideo.displayCapacity
     stats.elapsed = 2
-    stats.decoded = 120
-    stats.presented = 110
+    stats.decoded = 60
+    stats.presented = 60
+    stats.recentDecodedFPS = 60
+    stats.recentPresentedFPS = 55
     stats.videoBitrateMbps = 15.5
     #expect(PerformanceHUDPreset.compact.next == .detailed)
     #expect(PerformanceHUDPreset.detailed.next == .hidden)
     #expect(PerformanceHUDPreset.hidden.next == .compact)
     let compact = PerformanceHUDText.render(stats, preset: .compact, controller: "Gamepad")
+    #expect(compact.contains("2s") && !compact.contains("SESSION avg"))
+    #expect(PerformanceHUDText.render(stats, preset: .detailed, controller: "Gamepad").contains("SESSION avg IN 30.0"))
     #expect(compact.split(separator: "\n").count == 3)
     #expect(compact.contains("60.0") && compact.contains("55.0") && compact.contains("15.5 Mbps"))
     #expect(PerformanceHUDText.render(stats, preset: .detailed, controller: "Gamepad").contains("Game FPS not measured"))

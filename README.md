@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Console remote play, controller input, and MetalFX are not implemented yet.
+The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Single-controller input and an opt-in keyboard gamepad fallback are implemented. Console remote play and MetalFX remain pending.
 
 ## Requirements
 
@@ -33,6 +33,8 @@ Known limitation: the self-signed certificate stabilizes the designated requirem
 The script explicitly selects SwiftPM's native build engine because the default `swiftbuild` engine fails to initialize with the standalone Command Line Tools on the development machine. That engine is deprecated; revisit this workaround with future toolchain updates.
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
+
+For game input, choose **View → Enable Controller Input** or **View → Enable Keyboard Input** (both can be enabled; the last device with a fresh button press or deliberate stick/trigger motion takes control). Keyboard mode maps physical key positions to the Xbox controller: WASD moves, arrows look, J/Space=A, K=B, U=X, I=Y, Q/E=LB/RB, Z/C=LT/RT, F/T/H/G=D-pad, L/O=stick clicks, Return=Menu and Tab=View. **View → Keyboard Controls…** shows the mapping. Only the focused cloud playback window captures game keys; Command/Control/Option shortcuts remain available. Keyboard sticks/triggers are digital, and custom bindings/mouse look are not implemented. See [keyboard validation](.scratch/keyboard-input/validation.md) for the current live acceptance limits.
 
 ## Xbox Account
 

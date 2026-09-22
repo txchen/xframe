@@ -12,6 +12,7 @@ struct VideoFrame: @unchecked Sendable {
 
 struct PlaybackStats: Sendable {
     var isLive = false
+    var connectionRecovering = false
     var framePacing: FramePacingMode = .balanced
     var pipelineLatencyEstimateMS: Double? {
         let parts = [networkRoundTripMS, jitterBufferMS, timings.decode?.meanMS, timings.presentation?.meanMS]
@@ -48,6 +49,8 @@ struct PlaybackStats: Sendable {
     var dropped = 0
     var queued = 0
     var peakQueue = 0
+    var recentDecodedFPS: Double?
+    var recentPresentedFPS: Double?
     var elapsed = 0.0
     var inputFinished = false
 }

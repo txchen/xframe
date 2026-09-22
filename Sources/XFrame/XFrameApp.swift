@@ -28,9 +28,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let diagnostics = PerformanceHUDView()
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
     private var hudMenuItems: [NSMenuItem] = []
+    private var controllerMenuItem: NSMenuItem?
+    private var keyboardMenuItem: NSMenuItem?
+    private var keyboardMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMenu()
+        keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
+            guard let self else { return event }
+            return self.handleKeyboard(event)
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemWillSleep(_:)),
+            name: NSWorkspace.willSleepNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemDidWake(_:)),
+            name: NSWorkspace.didWakeNotification, object: nil)
         do {
             guard let device = MTLCreateSystemDefaultDevice() else {
                 throw RenderError.unavailable("A Metal-capable GPU is required.")
@@ -116,7 +127,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showCloudLibrary()
         return true
     }
-    func applicationWillTerminate(_ notification: Notification) { playback?.stop(); account.cancel() }
+    func applicationWillTerminate(_ notification: Notification) {
+        if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        playback?.stop(); account.cancel()
+    }
+    @objc private func systemWillSleep(_ notification: Notification) { account.library.systemWillSleep() }
+    @objc private func systemDidWake(_ notification: Notification) { account.library.systemDidWake() }
 
     @objc private func showXboxAccount() {
         showCloudLibrary()
@@ -197,7 +214,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     @objc private func toggleControllerInput(_ sender: NSMenuItem) {
         account.library.controllerEnabled.toggle()
-        sender.state = account.library.controllerEnabled ? .on : .off
+        refreshInputMenu()
+    }
+    @objc private func toggleKeyboardInput(_ sender: NSMenuItem) {
+        account.library.keyboardEnabled.toggle()
+        refreshInputMenu()
+    }
+    private func refreshInputMenu() {
+        controllerMenuItem?.state = account.library.controllerEnabled ? .on : .off
+        keyboardMenuItem?.state = account.library.keyboardEnabled ? .on : .off
+    }
+    @objc private func showKeyboardControls() {
+        let alert = NSAlert()
+        alert.messageText = "Keyboard Controls"
+        alert.informativeText = KeyboardGamepad.controls
+        alert.runModal()
+    }
+    private func handleKeyboard(_ event: NSEvent) -> NSEvent? {
+        guard account.library.keyboardEnabled, account.library.ready,
+              NSApp.isActive, let window, event.window === window, window.isKeyWindow,
+              window.attachedSheet == nil else { return event }
+        let shortcut = !event.modifierFlags.intersection([.command, .control, .option]).isEmpty
+        if event.type == .flagsChanged {
+            if shortcut { account.library.releaseKeyboard() }
+            return event
+        }
+        let consumed = account.library.keyboardEvent(code: event.keyCode, down: event.type == .keyDown,
+            repeatKey: event.isARepeat, shortcut: shortcut)
+        return consumed ? nil : event
     }
 
     func windowDidResize(_ notification: Notification) { refreshVideoView() }
@@ -283,7 +327,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let viewMenu = NSMenu(title: "View")
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.control, .command]
-        viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "").target = self
+        controllerMenuItem = viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "")
+        controllerMenuItem?.target = self
+        keyboardMenuItem = viewMenu.addItem(withTitle: "Enable Keyboard Input", action: #selector(toggleKeyboardInput(_:)), keyEquivalent: "")
+        keyboardMenuItem?.target = self
+        viewMenu.addItem(withTitle: "Keyboard Controls…", action: #selector(showKeyboardControls), keyEquivalent: "").target = self
         let cycle = viewMenu.addItem(withTitle: "Cycle Performance Overlay", action: #selector(cyclePerformanceHUD), keyEquivalent: "d")
         cycle.keyEquivalentModifierMask = [.command, .shift]
         cycle.target = self

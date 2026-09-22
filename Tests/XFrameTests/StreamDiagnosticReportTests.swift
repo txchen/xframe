@@ -12,7 +12,7 @@ import Testing
     let data = try report.encoded()
     let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     #expect(Set(json.keys) == ["schemaVersion", "outcome", "durationSeconds", "video", "audio", "events", "timings", "framePacing"])
-    #expect(json["schemaVersion"] as? Int == 6)
+    #expect(json["schemaVersion"] as? Int == 7)
     let video = try #require(json["video"] as? [String: Any])
     #expect(video["decoded"] as? Int == 123)
     #expect(video["packetsLost"] == nil)
@@ -75,4 +75,12 @@ import Testing
     try document.data.write(to: file, options: .atomic)
     #expect(try Data(contentsOf: file) == report.encoded())
     #expect(try JSONSerialization.jsonObject(with: Data(contentsOf: file)) is [String: Any])
+}
+
+@Test func closingFailedVideoPreservesFailureForWatchdogAndHUD() {
+    let source = LiveVideo()
+    source.fail("decoder stopped")
+    source.stop()
+    #expect(source.streamState.state == "Failed: decoder stopped")
+    #expect(source.snapshot().state == "Failed: decoder stopped")
 }

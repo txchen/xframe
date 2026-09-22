@@ -21,7 +21,7 @@ struct StreamDiagnosticReport: Encodable, Sendable {
         let packetsReceived: Int?
         let energy: Double?
     }
-    let schemaVersion = 6
+    let schemaVersion = 7
     let framePacing: FramePacingMode
     let timings: PlaybackTimingSnapshot
     let outcome: Outcome

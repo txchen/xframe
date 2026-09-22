@@ -295,3 +295,44 @@ import Testing
     source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 5))
     #expect(source.snapshot().queued == 0)
 }
+
+// Reproduce the observed configure -> delta badData -> later IDR sequence using
+// a valid fixture and an SPS level update, without capturing game media.
+@Test func decoderParameterChangePreservesOrRebuildsReferenceChain() throws {
+    let bytes = try Data(contentsOf: URL(fileURLWithPath: ".build/fixtures/h264-1080p60.h264"))
+    var units: [[Data]] = []
+    var current: [Data] = []
+    for nal in H264AccessUnit.nalUnits(bytes) {
+        if nal.first! & 31 == 9, !current.isEmpty { units.append(current); current = [] }
+        current.append(nal)
+    }
+    if !current.isEmpty { units.append(current) }
+    var sps = try #require(units[0].first { $0.first! & 31 == 7 })
+    let pps = try #require(units[0].first { $0.first! & 31 == 8 })
+    // level_idc changes capability signalling, not slice/reference picture layout.
+    sps[3] = sps[3] == 42 ? 51 : 42
+    let source = LiveVideo()
+    let decoder = HardwareH264Decoder(output: source)
+    decoder.setCallback { source.renderFrame($0) }
+    _ = decoder.startDecode(withNumberOfCores: 1)
+    let laterIDR = try #require((11..<units.count).first { index in
+        units[index].contains { $0.first! & 31 == 5 }
+    })
+    let count = min(units.count, laterIDR + 10)
+    for index in 0..<count {
+        var nals = units[index]
+        if index == 10 { nals = [sps, pps] + nals }
+        var data = Data()
+        for nal in nals { data.append(contentsOf: [0,0,0,1]); data.append(nal) }
+        let image = RTCEncodedImage()
+        image.buffer = data; image.timeStamp = UInt32(index * 1500); image.rotation = ._0
+        _ = decoder.decode(image, missingFrames: false, codecSpecificInfo: nil, renderTimeMs: Int64(index * 1000 / 60))
+        decoder.waitForPendingFrames()
+    }
+    _ = decoder.release()
+    #expect(source.snapshot().decodeErrors == 0)
+    let stats = source.snapshot()
+    #expect(stats.decoded >= count - laterIDR)
+    #expect(stats.decoded + stats.recoverySkippedFrames == count)
+    #expect(stats.hardware)
+}

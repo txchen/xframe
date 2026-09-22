@@ -3,14 +3,25 @@ import QuartzCore
 @preconcurrency import WebRTC
 
 enum StreamError: Error, LocalizedError {
-    case signaling, connection, firstFrame, stalled, decoder(String)
+    case signaling, connection, firstFrame, stalled, heartbeat, decoder(String)
     var errorDescription: String? {
         switch self {
         case .signaling: "WebRTC negotiation failed."
         case .connection: "The WebRTC connection failed or was closed."
         case .firstFrame: "No hardware-decoded video frame arrived within 45 seconds."
+        case .heartbeat: "The cloud session heartbeat failed. End the session and retry."
         case .stalled: "Cloud video stopped receiving frames."
         case .decoder(let reason): "Video pipeline failure: " + reason
+        }
+    }
+    var diagnosticKind: StreamDiagnosticEvent.Kind {
+        switch self {
+        case .signaling: .startupFailed
+        case .connection: .transportFailed
+        case .firstFrame: .firstFrameTimeout
+        case .stalled: .videoStalled
+        case .heartbeat: .heartbeatFailed
+        case .decoder: .decoderFailed
         }
     }
 }
@@ -27,8 +38,41 @@ final class CloudVideoConnection {
         audio.configure(muted: muted, volume: volume)
         video.audioPlayback(attached: audio.hasTrack, muted: audio.muted, volume: audio.volume)
     }
-    var controllerEnabled = false { didSet { updateControllerCapture(); if !controllerEnabled { input.release(); hudShortcut.reset() } } }
-    var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { input.release(); hudShortcut.reset() } } }
+    var controllerEnabled = false { didSet { updateControllerCapture(); releaseInput() } }
+    var keyboardEnabled = false { didSet { updateControllerCapture(); releaseInput() } }
+    var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { releaseInput() } } }
+    private var keyboard = KeyboardGamepad()
+    private var ownership = InputOwnership()
+    private var inputEnabled: Bool { keyboardEnabled || controllerEnabled }
+    private var inputConnected: Bool { keyboardEnabled || (controllerEnabled && gamepad.connected) }
+    private func releaseInput() {
+        keyboard.release(); input.release(); hudShortcut.reset()
+        ownership.reset(controller: gamepad.sample())
+    }
+    private func handoffInput() {
+        keyboard.release(); input.release(); hudShortcut.reset()
+        input.update(GamepadSnapshot(), ownsInput: ownsController)
+    }
+    private func controllerEvent(_ state: GamepadSnapshot) {
+        if ownership.observeController(state, enabled: controllerEnabled && ownsController) { handoffInput() }
+        if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) { processGamepad(state) }
+    }
+    @discardableResult
+    func keyboardEvent(code: UInt16, down: Bool, repeatKey: Bool, shortcut: Bool) -> Bool {
+        guard keyboardEnabled && playbackFocused && !closed else { return false }
+        if shortcut { releaseKeyboard(); return false }
+        // Validate the key before it can take ownership. Repeats and key-up never claim.
+        var probe = keyboard
+        let handled = probe.handle(code: code, down: down, repeatKey: repeatKey)
+        guard handled else { return false }
+        if down && !repeatKey && ownsController && ownership.claimKeyboard() { handoffInput() }
+        if ownership.active == .keyboard {
+            keyboard.handle(code: code, down: down, repeatKey: repeatKey)
+            processGamepad(keyboard.snapshot)
+        }
+        return true
+    }
+    func releaseKeyboard() { if ownership.active == .keyboard { releaseInput() } }
     private func updateControllerCapture() {
         gamepad.capturesSystemGestures = controllerEnabled && playbackFocused
     }
@@ -43,7 +87,7 @@ final class CloudVideoConnection {
     private var blockedSince: Double?
     private(set) var controllerStatus = "Controller input off"
     private var ownsController: Bool {
-        controllerEnabled && playbackFocused && gamepad.connected && advertised && !closed
+        inputEnabled && playbackFocused && inputConnected && advertised && !closed && !recovering && health.disconnectedAt == nil && blockedSince == nil
     }
 
     private var factory: RTCPeerConnectionFactory?
@@ -54,6 +98,9 @@ final class CloudVideoConnection {
     private var candidates: [CloudICECandidate] = []
     private var gatheringComplete = false
     private var connectionFailed = false
+    private var health = StreamHealth()
+    private var recovering = false
+    private let heartbeat = StreamHeartbeat()
     private var handshakeReady = false
     private var controlStarted = false
     private var inputStarted = false
@@ -63,12 +110,45 @@ final class CloudVideoConnection {
     private let correlationID = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 
     func run(service: any CloudSignaling, session: URL, report: (String) -> Void) async throws {
+        try await withLifecycle {
+            try await runSession(service: service, session: session, report: report)
+        }
+    }
+
+    // Keep failure recording ahead of teardown, including failures before first output.
+    func withLifecycle(_ operation: () async throws -> Void) async throws {
         defer { close() }
+        try Task.checkCancellation()
+        guard !closed else { throw CancellationError() }
+        do { try await operation() }
+        catch {
+            if !Task.isCancelled && !(error is CancellationError) && !closed {
+                video.fail((error as? LocalizedError)?.errorDescription ?? "Stream failed",
+                           kind: (error as? StreamError)?.diagnosticKind ?? .startupFailed)
+            }
+            throw error
+        }
+    }
+
+    private func checkActive() throws {
+        try Task.checkCancellation()
+        guard !closed else { throw CancellationError() }
+    }
+
+    private func runSession(service: any CloudSignaling, session: URL, report: (String) -> Void) async throws {
         gamepad.changed = { [weak self] state in
             guard let self else { return }
-            self.processGamepad(state)
+            self.controllerEvent(state)
         }
-        gamepad.replaced = { [weak self] in self?.input.release(); self?.hudShortcut.reset() }
+        gamepad.replaced = { [weak self] in
+            guard let self else { return }
+            if self.ownership.active == .keyboard {
+                self.ownership.reset(controller: self.gamepad.sample())
+                _ = self.ownership.claimKeyboard()
+                return
+            }
+            self.releaseInput()
+        }
         inputTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 self?.tickInput()
@@ -104,18 +184,23 @@ final class CloudVideoConnection {
         received(audioReceiver.receiver.track)
         report("Negotiating H.264 video…")
         let offer = try await makeOffer(peer)
+        try checkActive()
         try await setDescription(peer, sdp: offer, local: true)
+        try checkActive()
         let answer = try await service.exchangeSDP(at: session, offer: offer)
-        try Task.checkCancellation()
+        try checkActive()
         try await setDescription(peer, sdp: answer, local: false)
         let gatherDeadline = ContinuousClock.now.advanced(by: .seconds(8))
         while !gatheringComplete && ContinuousClock.now < gatherDeadline {
             try await Task.sleep(for: .milliseconds(100))
         }
+        try checkActive()
         guard !candidates.isEmpty else { throw StreamError.connection }
         report("Connecting encrypted video transport…")
         let remote = try await service.exchangeICE(at: session, candidates: candidates)
+        try checkActive()
         for candidate in remote {
+            try checkActive()
             if candidate.candidate.contains("end-of-candidates") { continue }
             let raw = candidate.candidate.hasPrefix("a=") ? String(candidate.candidate.dropFirst(2)) : candidate.candidate
             let ice = RTCIceCandidate(sdp: raw, sdpMLineIndex: candidate.sdpMLineIndex, sdpMid: candidate.sdpMid)
@@ -126,14 +211,18 @@ final class CloudVideoConnection {
                 }
             }
         }
+        try checkActive()
         let keepAliveInterval = try await service.keepAliveInterval(at: session)
-        let deadline = ContinuousClock.now.advanced(by: .seconds(45))
-        var nextKeepAlive = ContinuousClock.now
-        var nextKeyframeRequest = ContinuousClock.now
+        try checkActive()
+        heartbeat.start(interval: keepAliveInterval, pulse: { try await service.keepAlive(at: session) }) { [weak self] kind in
+            self?.video.connectionEvent(kind)
+        }
+        let startedAt = CACurrentMediaTime()
         var nextStatsSample = ContinuousClock.now
         var reportedStreaming = false
         while true {
-            try Task.checkCancellation()
+            try checkActive()
+            guard heartbeat.failure == nil else { throw StreamError.heartbeat }
             guard !connectionFailed else { throw StreamError.connection }
             let stats = video.streamState
             if ContinuousClock.now >= nextStatsSample {
@@ -141,22 +230,41 @@ final class CloudVideoConnection {
                 nextStatsSample = ContinuousClock.now.advanced(by: .seconds(1))
             }
             if stats.state.hasPrefix("Failed:") { throw StreamError.decoder(stats.state) }
-            if stats.hasFrames {
-                if !reportedStreaming {
-                    report("Streaming H.264 video and game audio")
-                    reportedStreaming = true
+            let now = CACurrentMediaTime()
+            let action = health.action(now: now, startedAt: startedAt, frameAge: video.secondsSinceFrame, inputBlockedAt: blockedSince)
+            switch action {
+            case .transportFailed: throw StreamError.connection
+            case .firstFrameTimeout: throw StreamError.firstFrame
+            case .stalled: throw StreamError.stalled
+            case .recovering:
+                if !recovering {
+                    recovering = true
+                    video.setRecovering(true)
+                    releaseInput()
+                    video.connectionEvent(.recoveryStarted)
+                    report("Connection interrupted — recovering…")
                 }
+            case .playing:
+                if recovering {
+                    recovering = false
+                    video.setRecovering(false)
+                    video.connectionEvent(.recoveryCompleted)
+                }
+                if !reportedStreaming {
+                    reportedStreaming = true
+                    report("Streaming H.264 video and game audio")
+                }
+            case .waiting: break
             }
-            else if ContinuousClock.now > deadline { throw StreamError.firstFrame }
-            if let age = video.secondsSinceFrame, age > 15 { throw StreamError.stalled }
-            if ContinuousClock.now >= nextKeyframeRequest, channels["control"]?.readyState == .open,
-               video.takeKeyframeRequest() {
-                send(["message": "videoKeyframeRequested", "ifrRequested": true], on: "control")
-                nextKeyframeRequest = ContinuousClock.now.advanced(by: .seconds(1))
-            }
-            if ContinuousClock.now >= nextKeepAlive {
-                try await service.keepAlive(at: session)
-                nextKeepAlive = ContinuousClock.now.advanced(by: .seconds(keepAliveInterval))
+            if recovering { reportedStreaming = false }
+            // Retain a pending decoder request until the channel can send it.
+            if channels["control"]?.readyState == .open {
+                if health.shouldRequestKeyframe(now: now, recovering: recovering, decoderRequested: video.hasKeyframeRequest) {
+                    _ = video.takeKeyframeRequest()
+                    if !send(["message": "videoKeyframeRequested", "ifrRequested": true], on: "control") {
+                        video.requestKeyframe()
+                    }
+                }
             }
             try await Task.sleep(for: .milliseconds(250))
         }
@@ -200,9 +308,10 @@ final class CloudVideoConnection {
 
     func close() {
         guard !closed else { return }
+        heartbeat.stop()
         inputTask?.cancel()
         inputTask = nil
-        input.release()
+        releaseInput()
         if advertised {
             _ = input.send(timestampMS: CACurrentMediaTime() * 1000) { [self] data in
                 channels["input"]?.sendData(RTCDataBuffer(data: data, isBinary: true)) ?? false
@@ -242,11 +351,26 @@ final class CloudVideoConnection {
         }
     }
     fileprivate func channelClosed(_ name: String) {
-        if !closed && ["input", "control", "message"].contains(name) { connectionFailed = true }
+        if !closed && ["input", "control", "message"].contains(name) {
+            video.connectionEvent(.dataChannelClosed)
+            connectionFailed = true
+        }
     }
     fileprivate func generated(_ candidate: CloudICECandidate) { if !closed { candidates.append(candidate) } }
     fileprivate func gathered() { gatheringComplete = true }
-    fileprivate func failed() { connectionFailed = true }
+    fileprivate func transportChanged(_ state: StreamHealth.Transport) {
+        guard !closed else { return }
+        let wasDisconnected = health.disconnectedAt != nil
+        health.updateTransport(state, now: CACurrentMediaTime())
+        if state == .failed { video.connectionEvent(.iceFailed) }
+        if state == .disconnected && !wasDisconnected {
+            releaseInput()
+            video.connectionEvent(.transportDisconnected)
+        } else if state == .connected && wasDisconnected {
+            video.connectionEvent(.transportRecovered)
+            video.requestKeyframe()
+        }
+    }
     fileprivate func received(_ track: RTCMediaStreamTrack?) {
         guard !closed else { return }
         if let track = track as? RTCVideoTrack {
@@ -306,7 +430,12 @@ final class CloudVideoConnection {
               let channel = channels["input"], channel.readyState == .open,
               channels["control"]?.readyState == .open else {
             input.release()
-            controllerStatus = controllerEnabled ? "Controller waiting for transport" : "Controller input off"
+            controllerStatus = inputEnabled ? "Input waiting for transport" : "Game input off"
+            return
+        }
+        if health.disconnectedAt != nil {
+            releaseInput(); blockedSince = nil
+            controllerStatus = "Controller paused — connection interrupted"
             return
         }
         if !gamepadReset {
@@ -314,7 +443,7 @@ final class CloudVideoConnection {
             gamepadReset = true
             addAfter = now + 0.5
         }
-        let wanted = controllerEnabled && gamepad.connected
+        let wanted = inputEnabled && inputConnected
         if advertised && !wanted {
             input.release()
             guard sendInput(on: channel, now: now) else { return }
@@ -327,11 +456,13 @@ final class CloudVideoConnection {
             advertised = true
             input.release()
         }
-        processGamepad(gamepad.sample())
+        controllerEvent(gamepad.sample())
+        if ownership.active == .keyboard { processGamepad(keyboard.snapshot) }
+        else if ownership.active == nil && keyboardEnabled { processGamepad(GamepadSnapshot()) }
         if advertised { _ = sendInput(on: channel, now: now) }
-        let name = gamepad.name ?? "Gamepad"
-        if !controllerEnabled { controllerStatus = "Controller input off (View menu)" }
-        else if !gamepad.connected { controllerStatus = "Connect a controller" }
+        let name = ownership.active == .keyboard ? "Keyboard" : ownership.active == .controller || !keyboardEnabled ? (gamepad.name ?? "Gamepad") : "Keyboard / Controller · awaiting input"
+        if !inputEnabled { controllerStatus = "Game input off (View menu)" }
+        else if !inputConnected { controllerStatus = "Connect a controller" }
         else if !playbackFocused { controllerStatus = "\(name) · paused (focus playback)" }
         else if !advertised { controllerStatus = "\(name) · connecting" }
         else if blockedSince != nil { controllerStatus = "\(name) · input transport blocked" }
@@ -352,13 +483,16 @@ final class CloudVideoConnection {
 
     private func sendInput(on channel: RTCDataChannel, now: Double) -> Bool {
         // Keep WebRTC's queue small too, so stale held states cannot accumulate indefinitely.
-        let accepted = input.send(timestampMS: now * 1000) { data in
+        let accepted = input.send(timestampMS: now * 1000, minimumButtonHoldMS: ownership.active == .keyboard ? 50 : 0) { data in
             channel.bufferedAmount < 4096 && channel.sendData(RTCDataBuffer(data: data, isBinary: true))
         }
-        if accepted { blockedSince = nil }
-        else {
-            if blockedSince == nil { blockedSince = now }
-            if now - (blockedSince ?? now) > 2 { connectionFailed = true }
+        if accepted {
+            if blockedSince != nil { video.connectionEvent(.inputSendRecovered) }
+            blockedSince = nil
+        } else if blockedSince == nil {
+            blockedSince = now
+            releaseInput()
+            video.connectionEvent(.inputSendBlocked)
         }
         return accepted
     }
@@ -388,7 +522,14 @@ private final class PeerEvents: NSObject, RTCPeerConnectionDelegate, RTCDataChan
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
-        if newState == .failed || newState == .closed { Task { @MainActor [weak owner] in owner?.failed() } }
+        let state: StreamHealth.Transport
+        switch newState {
+        case .connected, .completed: state = .connected
+        case .disconnected: state = .disconnected
+        case .failed, .closed: state = .failed
+        default: state = .connecting
+        }
+        Task { @MainActor [weak owner] in owner?.transportChanged(state) }
     }
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {
         if newState == .complete { Task { @MainActor [weak owner] in owner?.gathered() } }

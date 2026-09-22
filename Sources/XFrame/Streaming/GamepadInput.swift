@@ -5,6 +5,8 @@ struct GamepadInput {
     private(set) var encoder = GamepadPacketEncoder()
     private(set) var queue: [GamepadSnapshot] = []
     private(set) var armed = false
+    private var sent = GamepadSnapshot()
+    private var pressedAtMS = 0.0
     private var ownsInput = false
     private var latest = GamepadSnapshot()
     private(set) var needsNeutral = true
@@ -48,13 +50,22 @@ struct GamepadInput {
 
     // Commit the sequence and dequeue only when the transport accepts the bytes.
     @discardableResult
-    mutating func send(timestampMS: Double, transport: (Data) -> Bool) -> Bool {
-        let state = needsNeutral ? GamepadSnapshot() : (queue.first ?? latest)
+    mutating func send(timestampMS: Double, minimumButtonHoldMS: Double = 0, transport: (Data) -> Bool) -> Bool {
+        let next = queue.first ?? latest
+        let releasing = !sent.buttons.subtracting(next.buttons).isEmpty ||
+            (sent.leftTrigger > 0 && next.leftTrigger == 0) || (sent.rightTrigger > 0 && next.rightTrigger == 0)
+        let holding = !needsNeutral && releasing && timestampMS - pressedAtMS < minimumButtonHoldMS
+        let state = needsNeutral ? GamepadSnapshot() : holding ? sent : next
         var candidate = encoder
         guard let packet = try? candidate.packet(state, timestampMS: timestampMS), transport(packet) else { return false }
         encoder = candidate
+        if !state.buttons.subtracting(sent.buttons).isEmpty ||
+            (state.leftTrigger > 0 && sent.leftTrigger == 0) || (state.rightTrigger > 0 && sent.rightTrigger == 0) {
+            pressedAtMS = timestampMS
+        }
+        sent = state
         if needsNeutral { needsNeutral = false }
-        else if !queue.isEmpty { queue.removeFirst() }
+        else if !holding && !queue.isEmpty { queue.removeFirst() }
         return true
     }
 }

@@ -3,6 +3,11 @@ import Foundation
 // Deliberately limited schema: no arbitrary messages, media, tokens or addresses.
 struct StreamDiagnosticEvent: Sendable, Codable {
     enum Kind: String, Sendable, Codable {
+        case transportDisconnected, transportRecovered, recoveryStarted, recoveryCompleted
+        case startupFailed, transportFailed, firstFrameTimeout, videoStalled, decoderFailed, heartbeatFailed
+        case heartbeatRetry, heartbeatRecovered, systemSleep
+        case inputSendBlocked, inputSendRecovered, dataChannelClosed, iceFailed
+        case decoderFormatUpdated
         case configured, firstFrame, idrSubmitted, badData, keyframeRequestDequeued, networkChange, stopped
     }
     let milliseconds: Int
