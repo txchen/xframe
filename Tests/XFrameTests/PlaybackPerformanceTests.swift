@@ -24,9 +24,21 @@ import Testing
     #expect(!work.needsDraw(hasSource: true, resized: false))
     #expect(work.needsDraw(hasSource: false, resized: false))
     #expect(work.needsDraw(hasSource: true, resized: true))
-    work.receivedFrame()
+    let firstReplaced = work.receivedFrame()
+    let nextReplaced = work.receivedFrame()
+    #expect(!firstReplaced)
+    #expect(nextReplaced) // A pending frame replaced before submission is a skip.
     for _ in 0..<5 { #expect(work.needsDraw(hasSource: true, resized: false)) }
     work.submitted()
     #expect(!work.pendingFrame)
     #expect(!work.needsDraw(hasSource: true, resized: false))
+}
+
+@Test func replacedRendererFramesCountAsSkipsButLateCallbacksDoNot() {
+    let source = LiveVideo()
+    source.didSkipFrame()
+    #expect(source.snapshot().dropped == 1)
+    source.stop()
+    source.didSkipFrame()
+    #expect(source.snapshot().dropped == 1)
 }

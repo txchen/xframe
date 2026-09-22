@@ -87,7 +87,7 @@ func hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall: Bool)
     var residentKB: [Int] = []
     for _ in 0..<12 {
         var source: LocalVideo? = LocalVideo(url: try fixture())
-        weak var released = source
+        weak let released = source
         let deadline = ContinuousClock.now.advanced(by: .seconds(5))
         while source!.snapshot().queued < LocalVideo.capacity && ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(2))

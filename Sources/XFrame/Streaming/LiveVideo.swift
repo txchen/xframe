@@ -8,6 +8,7 @@ protocol VideoSource: AnyObject, Sendable {
     func snapshot() -> PlaybackStats
     func nextFrame(at hostTime: Double) -> VideoFrame?
     func didPresent()
+    func didSkipFrame()
     func fail(_ message: String)
 }
 
@@ -153,6 +154,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         lock.withLock { let value = latest; latest = nil; return stopped ? nil : value }
     }
     func didPresent() { lock.withLock { if !stopped { stats.presented += 1 } } }
+    func didSkipFrame() { lock.withLock { if !stopped { stats.dropped += 1 } } }
     func snapshot() -> PlaybackStats {
         lock.withLock {
             var result = stats

@@ -66,6 +66,14 @@ For repeatable, non-interactive regression checks, run `bash scripts/check-headl
 
 This is a supervised video-preview increment, not a playable client. The stream keeps one latest decoded frame and uses the existing zero-pixel-copy Metal surface import. Startup without video and prolonged frame stalls trigger cleanup. Crash/force-quit recovery, reconnect, TURN fallback, and renewal of credentials during long sessions are deferred. A failed creation request without a returned session address can have an uncertain server outcome, which is reported explicitly. See [the session specification](.scratch/cloud-sessions/spec.md) and [video specification](.scratch/cloud-video/spec.md).
 
+## Diagnostics and Offline Groundwork
+
+Playback diagnostics now include bounded recent p95 timings for decode submission-to-callback, decoded-frame waiting, GPU execution and receipt-to-presentation. JSON stream reports use schema version 2 and retain at most 256 samples per stage. Missing GPU/display timestamps remain `n/a`; these overlapping local intervals are not network or controller-to-photon latency. See [timing definitions and regression results](.scratch/playback-performance/validation.md).
+
+The library caches derived query results, supports page-local arrow selection, and provides **Reload Artwork** in a card's context menu. The underlying model has automated coverage; keyboard focus and real failed-image retry still need supervised UI acceptance.
+
+Controller groundwork is available as a pure, reference-tested packet encoder, but is deliberately not wired to GameController or the live input channel. Microphone and controller input therefore remain disabled. See [the input boundary and hardware checklist](.scratch/controller-input/spec.md).
+
 ## Local Video
 
 - **Command-O**: open an H.264 MP4 or MOV file.

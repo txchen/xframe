@@ -134,6 +134,10 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
         guard !stopped else { return }
         stats.presented += 1
     }
+    func didSkipFrame() {
+        condition.lock(); defer { condition.unlock() }
+        if !stopped { stats.dropped += 1 }
+    }
 
     func fail(_ message: String) {
         performance.stop()

@@ -24,3 +24,19 @@ After adding isolated RSS reporting and multi-title keyboard/cache invalidation 
 - Real hardware fixtures verify decode timing collection without claiming presentation. GPU and presentation values remain n/a in these headless tests.
 - Renderer callback timing and changed drawable-acquisition order compile, but visible Metal presentation/resize and actual GPU/presentation distributions still require a supervised runtime check.
 - No lowering of render frequency, buffer-count tuning or compressed-byte rewrite was performed without measurements.
+
+## Offscreen GPU execution
+
+`metalImportsNV12AndConvertsVideoRangeOnTheGPU` runs the production `VideoTextures` import and the actual repository Metal shader against a synthetic IOSurface NV12 fixture, without a window or drawable. Both BT.601 and BT.709 cases passed. GPU readback verifies limited-range black/white and a non-neutral chroma patch (within one output code value). The two tiny 24 x 8 passes reported 0.064 and 0.073 ms GPU execution in the initial isolated run; these are correctness-test timings, not a 1080p streaming performance claim.
+
+CPU pixel writes and readback, and synchronous GPU waiting, exist only in the test. Production decoded pixels still travel through the native surface/texture path. This closes the offscreen shader/import execution gap, not the pending visible drawable/presentation acceptance gap.
+
+## Optimized configuration
+
+`bash scripts/test.sh -c release` passed all 58 tests in 3.891 seconds after compilation. The successful 720-frame decode recorded latest-256 mean 2.502 ms and p95 2.583 ms. Build configuration and concurrent scheduling differ from the Debug baselines above; do not interpret this comparison as the gain from moving drawable acquisition.
+
+## Final state
+
+Renderer pending-frame replacement now increments skipped-frame counters, including when a drawable was unavailable; late callbacks after stop do not change them. An intermediate test build exposed a Swift Testing macro restriction on mutating methods inside `#expect`; the test now evaluates the mutation before asserting the result. No runtime failure was hidden.
+
+Final `bash scripts/check-headless.sh 3` passed all 59 tests in each round (177 test executions) and the signed release build. Logs: `.build/headless-checks/run.MBhWLe/`. The application was not relaunched, so the running UI is intentionally unchanged until the next supervised restart.

@@ -90,7 +90,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
         let next = source?.nextFrame(at: now)
         if let next {
-            do { currentVideo = try VideoTextures(frame: next, cache: cache); work.receivedFrame() }
+            do {
+                currentVideo = try VideoTextures(frame: next, cache: cache)
+                if work.receivedFrame() { source?.didSkipFrame() }
+            }
             catch {
                 source?.fail(error.localizedDescription)
                 if let source { report?(source.snapshot()) }
@@ -159,7 +162,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 }
 
 // Retain both CoreVideo texture wrappers and the decode surface until GPU completion.
-private final class VideoTextures: @unchecked Sendable {
+final class VideoTextures: @unchecked Sendable {
     let frame: VideoFrame
     let planes: [CVMetalTexture]
     let luma: any MTLTexture

@@ -55,7 +55,11 @@ final class PlaybackPerformance: @unchecked Sendable {
 // Preserve a newly consumed frame when the drawable is temporarily unavailable.
 struct RenderWorkState {
     private(set) var pendingFrame = false
-    mutating func receivedFrame() { pendingFrame = true }
+    @discardableResult mutating func receivedFrame() -> Bool {
+        let replaced = pendingFrame
+        pendingFrame = true
+        return replaced
+    }
     func needsDraw(hasSource: Bool, resized: Bool) -> Bool { !hasSource || pendingFrame || resized }
     mutating func submitted() { pendingFrame = false }
 }
