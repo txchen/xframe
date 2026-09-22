@@ -26,6 +26,8 @@ bash scripts/setup-development-signing.sh
 
 This creates `XFrame Local Development`, does not change system trust, and does not store private key material in the repo. Builds automatically use it when present. Set `XFRAME_SIGNING_IDENTITY` to select another certificate-backed identity. Otherwise the build warns and falls back to ad-hoc signing, which changes the application's Keychain identity after code changes. Moving from an ad-hoc build to the certificate may require a new Always Allow approval. Do not allow all applications to read your stored login just to suppress prompts.
 
+Known limitation: the self-signed certificate stabilizes the designated requirement, but the legacy Keychain partition restriction remains tied to the binary's code directory hash. Changed builds can therefore prompt again despite Always Allow. It is not a complete repeated-authorization fix. See [the diagnosis](.scratch/keychain-access/diagnosis.md).
+
 The script explicitly selects SwiftPM's native build engine because the default `swiftbuild` engine fails to initialize with the standalone Command Line Tools on the development machine. That engine is deprecated; revisit this workaround with future toolchain updates.
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
@@ -38,15 +40,19 @@ The account window opens at startup. Reopen it with **Account → Xbox Account�
 2. Enter the displayed code in your browser and complete sign-in using a personal Microsoft account with an Xbox profile. Never share the code with anyone else.
 3. XFrame exchanges the authorization for Xbox and xCloud credentials, then shows the gamertag, offering, available regions, and credential expiration. This does not yet start a game or prove that every catalog title is playable.
 
-Only the Microsoft refresh token is saved in macOS Keychain, without iCloud synchronization. Other tokens stay in memory. Startup restores the saved sign-in; **Check Access Again** refreshes it manually. **Sign Out** cancels pending requests and removes XFrame's saved sign-in, but does not sign out your browser or revoke Microsoft's server-side grants. **Cancel** preserves any previously saved sign-in.
+Development builds currently save only the Microsoft refresh token in `~/Library/Application Support/XFrame/Credentials/microsoft-refresh-token`, outside the repository. This is an **unencrypted file**, with an owner-only directory (0700) and file (0600); other processes running as the same user may still read it. Writes use a private temporary file and atomic replacement. Unsafe file ownership/permissions and file symlinks are rejected when reading. Other tokens stay in memory. Startup restores the saved sign-in; **Check Access Again** refreshes it manually. **Sign Out** removes the local token file, but does not sign out your browser or revoke Microsoft's server-side grants. **Cancel** preserves any previously saved sign-in.
+
+The default credential store does not access Keychain, including for migration. Switching from an older build therefore requires one Microsoft sign-in if no local file exists. Old Keychain entries are left untouched, including by Sign Out in this mode. Signing the app may still use a Keychain-backed signing private key; that is separate from login storage. This temporary development exception must be removed before release; see [the migration-back issue](.scratch/keychain-access/issues/01-restore-keychain.md).
 
 This development implementation follows [XStreaming's authentication flow](https://github.com/Geocld/XStreaming/blob/383e19d324f2d3029d1c304752f4d38a9360bb95/src/xal/msal.ts), including its public Microsoft client identifier. It is not an XFrame-owned app registration, and Microsoft's consent screen may identify the public client rather than XFrame. Service compatibility is not guaranteed. No region-spoofing headers are sent. A rejected catalog offering (HTTP 403) triggers a separate free-to-play check, clearly labeled in the UI.
 
-Real account login and Keychain restoration across a confirmed full process restart have been verified on the development Mac. Automated authentication tests use stubbed services. See [the authentication specification](.scratch/xcloud-auth/spec.md) and [validation record](.scratch/xcloud-auth/validation.md).
+Earlier builds verified real account login and Keychain restoration. File-store tests verify private permissions, refresh-token replacement, fresh-instance restoration, deletion, and rejection of unsafe paths. Real Microsoft login, on-disk owner-only permissions, and automatic file-backed account restoration across a full same-build restart have now been verified. Changed-build restoration remains a separate acceptance check. Automated authentication tests use stubbed services. See [the authentication specification](.scratch/xcloud-auth/spec.md) and [validation record](.scratch/xcloud-auth/validation.md).
 
 ## Cloud Games and Sessions
 
 Open **Account → Cloud Games…** (**Shift-Command-G**), choose **Load Games**, search, select a game, and choose **Start Session**. The account's title list is hydrated with English names from Microsoft's public catalog; it may not be exhaustive, and launch eligibility is ultimately checked by the service.
+
+The **Region** picker defaults to the service-selected region and offers only regions returned for the signed-in account. Choosing a region clears the old catalog; load games again before starting. Selection is locked while loading or owning a session. **Requested region** identifies the chosen service endpoint, not a guaranteed physical streaming location: the service may redirect the session. The selection is kept for the current app run, not saved across restarts. No region spoofing or latency-based automatic selection is performed.
 
 The window distinguishes waiting for resources, provisioning, video negotiation, and streaming. Once provisioned, the native rendering window displays received H.264 video. This is a video-only preview: no audio playback, microphone/camera capture, or controller input. Choose **End Session**, press **Command-0**, or close the rendering window to stop the stream and release the session. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing the library window alone does not end a stream.
 
@@ -94,7 +100,7 @@ The fixed source image is scaled using bilinear filtering. Enlarging it does not
 - `TestPattern.swift`: one-time test image generation and texture upload.
 - `Shaders.metal`: textured quad with bilinear sampling.
 - `LocalVideo.swift`: compressed file reading, hardware decoding, bounded frame queue, playback clock, and counters.
-- `Auth/`: device-code authentication, Xbox/xCloud exchanges, Keychain storage, and account UI.
+- `Auth/`: device-code authentication, Xbox/xCloud exchanges, temporary private-file storage, retained legacy Keychain implementation, and account UI.
 - `Cloud/`: authenticated title discovery, public title metadata, session ownership/cleanup, and searchable game UI.
 - `Streaming/`: SDP/ICE exchange, WebRTC control handshake, hardware H.264 decoder, and the single-frame live display source.
 

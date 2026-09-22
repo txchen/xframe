@@ -11,6 +11,14 @@ struct CloudLibraryView: View {
             Text("Cloud Games").font(.title.bold())
             Text("H.264 video preview. Audio and controller input are disabled. End the session when finished.")
                 .foregroundStyle(.secondary)
+            Picker("Region", selection: Binding(get: { account.selectedRegion }, set: { account.selectRegion($0) })) {
+                Text("Automatic (service default)").tag("")
+                ForEach(account.regionNames, id: \.self) { Text($0).tag($0) }
+            }.disabled(account.isBusy || library.loading || library.ownsSession || account.regionNames.isEmpty)
+            Text("Requested region: \(account.requestedRegion ?? "Not available"). The service may redirect the session.")
+                .font(.caption).foregroundStyle(.secondary)
+            Text("Changing region clears the catalog. Load Games again before starting a session.")
+                .font(.caption).foregroundStyle(.secondary)
             HStack {
                 TextField("Search games", text: Binding(get: { library.search }, set: { library.search = $0 }))
                 Button("Load Games") {

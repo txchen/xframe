@@ -36,6 +36,7 @@ protocol CloudServing: Sendable {
 }
 
 struct CloudService: CloudServing {
+    let regionName: String
     private let token: String
     private let host: URL
     private let expires: Date
@@ -43,10 +44,14 @@ struct CloudService: CloudServing {
     private let session: URLSession
     private let transferToken: @Sendable () async throws -> String
 
-    init(credential: CloudToken, expires: Date, session: URLSession? = nil,
+    init(credential: CloudToken, expires: Date, regionName: String? = nil, session: URLSession? = nil,
          transferToken: @escaping @Sendable () async throws -> String = { throw CloudError.expired }) throws {
-        guard let region = credential.offeringSettings.regions.first(where: { $0.isDefault == true }) ?? credential.offeringSettings.regions.first,
+        let regions = credential.offeringSettings.regions
+        let selected = regionName.map { name in regions.first(where: { $0.name == name }) }
+            ?? (regions.first(where: { $0.isDefault == true }) ?? regions.first)
+        guard let region = selected,
               Self.trusted(region.baseUri) else { throw CloudError.response }
+        self.regionName = region.name
         host = region.baseUri
         token = credential.gsToken
         market = credential.market ?? "US"

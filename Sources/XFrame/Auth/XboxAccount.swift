@@ -13,13 +13,24 @@ final class XboxAccount {
     private(set) var accessExpires: Date?
     private(set) var offering: CloudOffering?
     private(set) var regionNames: [String] = []
+    private(set) var selectedRegion = ""
+    private(set) var defaultRegion: String?
+    var requestedRegion: String? { selectedRegion.isEmpty ? defaultRegion : selectedRegion }
+
+    func selectRegion(_ name: String) {
+        guard !isBusy && !library.loading && !library.ownsSession,
+              name.isEmpty || regionNames.contains(name), name != selectedRegion else { return }
+        selectedRegion = name
+        library.reset()
+    }
     private(set) var hasSavedSignIn = false
     private(set) var isBusy = false
     let library = CloudLibrary()
 
     func cloudService() throws -> CloudService {
         guard let cloudCredential, let accessExpires, accessExpires > Date(), !isBusy else { throw CloudError.expired }
-        return try CloudService(credential: cloudCredential, expires: accessExpires, transferToken: { [weak self] in
+        return try CloudService(credential: cloudCredential, expires: accessExpires,
+                                regionName: selectedRegion.isEmpty ? nil : selectedRegion, transferToken: { [weak self] in
             guard let self else { throw CloudError.expired }
             return try await self.consoleTransferToken()
         })
@@ -38,7 +49,7 @@ final class XboxAccount {
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
 
-    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = KeychainCredentialStore()) {
+    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore()) {
         self.service = service
         self.store = store
     }
@@ -109,7 +120,7 @@ final class XboxAccount {
             status = "Signed out of XFrame"
         } catch {
             status = "Could not remove saved sign-in"
-            errorMessage = (error as? AuthError)?.localizedDescription ?? "Keychain removal failed."
+            errorMessage = (error as? AuthError)?.localizedDescription ?? "Local sign-in file removal failed."
         }
     }
 
@@ -163,6 +174,9 @@ final class XboxAccount {
         cloudCredential = cloud
         offering = selected
         regionNames = cloud.offeringSettings.regions.map(\.name)
+        defaultRegion = (cloud.offeringSettings.regions.first(where: { $0.isDefault == true })
+            ?? cloud.offeringSettings.regions.first)?.name
+        if !regionNames.contains(selectedRegion) { selectedRegion = "" }
         accessExpires = Date().addingTimeInterval(Double(cloud.durationInSeconds))
         status = "xCloud credentials verified"
     }
@@ -188,6 +202,7 @@ final class XboxAccount {
     private func clearDeviceCode() { userCode = nil; verificationURL = nil; codeExpires = nil }
     private func clearAccess() {
         cloudCredential = nil; accessExpires = nil; offering = nil; regionNames = []
+        defaultRegion = nil
         library.reset()
     }
 }

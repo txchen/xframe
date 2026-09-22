@@ -5,6 +5,24 @@ import Testing
 @preconcurrency import WebRTC
 @testable import XFrame
 
+@Test func cloudRegionSelectionUsesOnlyAuthorizedEndpoints() throws {
+    let regions = [
+        CloudToken.Settings.Region(name: "WESTUS", baseUri: URL(string: "https://west.gssv.xboxlive.com")!, isDefault: false),
+        CloudToken.Settings.Region(name: "WESTUS2", baseUri: URL(string: "https://west2.gssv.xboxlive.com")!, isDefault: true)
+    ]
+    let token = CloudToken(gsToken: "test", durationInSeconds: 3600, market: "US",
+                          offeringSettings: .init(regions: regions))
+    let expires = Date().addingTimeInterval(3600)
+    #expect(try CloudService(credential: token, expires: expires).regionName == "WESTUS2")
+    #expect(try CloudService(credential: token, expires: expires, regionName: "WESTUS").regionName == "WESTUS")
+    #expect(throws: (any Error).self) {
+        try CloudService(credential: token, expires: expires, regionName: "UNKNOWN")
+    }
+    let fallback = CloudToken(gsToken: "test", durationInSeconds: 3600, market: "US",
+                             offeringSettings: .init(regions: [regions[0]]))
+    #expect(try CloudService(credential: fallback, expires: expires).regionName == "WESTUS")
+}
+
 @Test func annexBParsingAndLengthPrefixes() {
     let data = Data([0, 0, 0, 1, 0x67, 3, 4, 0, 0, 1, 0x68, 5, 0, 0, 1, 0x65, 6, 7])
     let units = H264AccessUnit.nalUnits(data)

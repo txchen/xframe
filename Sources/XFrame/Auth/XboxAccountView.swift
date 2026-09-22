@@ -47,7 +47,7 @@ struct XboxAccountView: View {
                 Spacer()
                 if account.hasSavedSignIn { Button("Sign Out") { account.signOut() } }
             }.disabled(account.library.ownsSession || account.library.loading)
-            Text("Saved sign-in is kept in macOS Keychain. Sign Out removes it from XFrame; your browser's Microsoft session stays signed in.")
+            Text("Development mode: sign-in is saved in an owner-only, unencrypted local file, not Keychain. Sign Out removes that file; legacy Keychain entries and browser sign-in are unchanged.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(24)
