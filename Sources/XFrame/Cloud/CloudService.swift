@@ -61,7 +61,7 @@ enum CloudError: Error, LocalizedError {
 
 protocol CloudServing: Sendable {
     func games() async throws -> [CloudGame]
-    func create(title: String) async throws -> URL
+    func create(title: String, preferences: CloudStreamPreferences) async throws -> URL
     func state(at: URL) async throws -> CloudSessionState
     func configuration(at: URL) async throws
     func connect(at: URL) async throws
@@ -170,18 +170,22 @@ struct CloudService: CloudServing {
             return try decode(Products.self, result).Products
     }
 
-    func create(title: String) async throws -> URL {
+    func create(title: String, preferences: CloudStreamPreferences = .init()) async throws -> URL {
         let body: [String: Any] = ["clientSessionId": UUID().uuidString, "titleId": title,
             "systemUpdateGroup": "", "serverId": "", "fallbackRegionNames": [String](),
             "settings": ["nanoVersion": "V3;WebrtcTransport.dll", "enableTextToSpeech": false,
-                "highContrast": 0, "locale": "en-US", "useIceConnection": false,
-                "timezoneOffsetMinutes": -TimeZone.current.secondsFromGMT() / 60, "sdkType": "web", "osName": "macos"]]
+                "highContrast": 0, "locale": preferences.language.rawValue, "useIceConnection": false,
+                "timezoneOffsetMinutes": -TimeZone.current.secondsFromGMT() / 60, "sdkType": "web", "osName": preferences.quality.osName]]
+        let hq = preferences.quality == .hq
+        var hardware: [String: Any] = [
+            "hw": ["make": hq ? "Microsoft" : "Apple", "model": hq ? "unknown" : "Mac", "platformType": "desktop", "sdktype": "web"],
+            "os": ["name": preferences.quality.osName, "ver": hq ? "22631.2715" : "27", "platform": "desktop"],
+            "displayInfo": ["dimensions": ["widthInPixels": preferences.quality.width, "heightInPixels": preferences.quality.height],
+                            "pixelDensity": ["dpiX": 1, "dpiY": 1]]]
+        if hq { hardware["browser"] = ["browserName": "edge", "browserVersion": "140.0.3485.66"] }
         let device: [String: Any] = ["appInfo": ["env": ["clientAppId": "www.xbox.com", "clientAppType": "browser",
             "clientAppVersion": "29.9.35", "clientSdkVersion": "10.6.8", "httpEnvironment": "prod", "sdkInstallId": ""]],
-            "dev": ["hw": ["make": "Apple", "model": "Mac", "platformType": "desktop", "sdktype": "web"],
-                    "os": ["name": "macos", "ver": "27", "platform": "desktop"],
-                    "displayInfo": ["dimensions": ["widthInPixels": 1920, "heightInPixels": 1080],
-                                    "pixelDensity": ["dpiX": 1, "dpiY": 1]]]]
+            "dev": hardware]
         let deviceHeader = String(decoding: try JSONSerialization.data(withJSONObject: device), as: UTF8.self)
         let data = try await request(host.appendingPathComponent("v5/sessions/cloud/play"), method: "POST",
             body: JSONSerialization.data(withJSONObject: body), headers: ["X-MS-Device-Info": deviceHeader])

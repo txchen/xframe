@@ -1,0 +1,4 @@
+[
+  {"time":1790095240000,"skipped":834,"stream":60.0,"out":53.2,"note":"Approximate timestamp from adjacent clock tool observation; live HUD capture on 2026-09-22."},
+  {"time":1790095278000,"skipped":1203,"stream":60.0,"out":52.6,"note":"Approximate timestamp from adjacent clock tool observation; uncertainty of a few seconds does not change failure verdict."}
+]

@@ -11,6 +11,14 @@ struct VideoFrame: @unchecked Sendable {
 }
 
 struct PlaybackStats: Sendable {
+    var isLive = false
+    var framePacing: FramePacingMode = .balanced
+    var pipelineLatencyEstimateMS: Double? {
+        let parts = [networkRoundTripMS, jitterBufferMS, timings.decode?.meanMS, timings.presentation?.meanMS]
+        guard parts.allSatisfy({ $0.map { $0.isFinite && $0 >= 0 } ?? false }) else { return nil }
+        let value = parts.compactMap { $0 }.reduce(0, +)
+        return value.isFinite ? value : nil
+    }
     var timings = PlaybackTimingSnapshot()
     var capacity = 16
     var decodeErrors = 0
@@ -22,6 +30,9 @@ struct PlaybackStats: Sendable {
     var synchronousDecodeErrors = 0
     var asynchronousDecodeErrors = 0
     var keyframeDecodeErrors = 0
+    var networkRoundTripMS: Double?
+    var jitterBufferMS: Double?
+    var videoBitrateMbps: Double?
     var videoPacketsReceived: Int?
     var videoPacketsLost: Int?
     var videoNacks: Int?
@@ -133,6 +144,10 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
         condition.lock(); defer { condition.unlock() }
         guard !stopped else { return }
         stats.presented += 1
+    }
+    func didMissPresentation() {
+        condition.lock(); defer { condition.unlock() }
+        if !stopped { stats.dropped += 1; performance.note(.notPresented) }
     }
     func didSkipFrame() {
         condition.lock(); defer { condition.unlock() }

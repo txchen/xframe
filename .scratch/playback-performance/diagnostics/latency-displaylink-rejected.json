@@ -1,0 +1,223 @@
+{
+  "audio" : {
+    "attached" : true,
+    "energy" : 0.06362383247153829,
+    "muted" : false,
+    "packetsReceived" : 9451,
+    "volume" : 1
+  },
+  "durationSeconds" : 199.7762322499766,
+  "events" : [
+    {
+      "configuration" : 0,
+      "kind" : "networkChange",
+      "milliseconds" : 11332,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 1,
+      "kind" : "configured",
+      "milliseconds" : 13398,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 1,
+      "configuration" : 1,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 13398,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 1,
+      "kind" : "firstFrame",
+      "milliseconds" : 13403,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "configured",
+      "milliseconds" : 13407,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 2,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 13407,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 1800,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 43485,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 3599,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 73516,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 5398,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 103530,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 7197,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 133533,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 133706,
+      "nacks" : 1,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 8996,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 163544,
+      "nacks" : 1,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 10795,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 193488,
+      "nacks" : 1,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "stopped",
+      "milliseconds" : 199776,
+      "nacks" : 1,
+      "packetsLost" : 0
+    }
+  ],
+  "outcome" : "stopped",
+  "schemaVersion" : 5,
+  "timings" : {
+    "decode" : {
+      "count" : 11172,
+      "maxMS" : 3.3913750085048378,
+      "meanMS" : 2.8387784832375473,
+      "p50MS" : 2.916749974247068,
+      "p95MS" : 3.195416706148535,
+      "recentCount" : 256
+    },
+    "displayWait" : {
+      "count" : 11050,
+      "maxMS" : 57.12758342269808,
+      "meanMS" : 48.61579759153756,
+      "p50MS" : 48.56133344583213,
+      "p95MS" : 49.01812510797754,
+      "recentCount" : 256
+    },
+    "frameWait" : {
+      "count" : 11068,
+      "maxMS" : 32.884583342820406,
+      "meanMS" : 20.67505859326957,
+      "p50MS" : 20.368499972391874,
+      "p95MS" : 23.819083347916603,
+      "recentCount" : 256
+    },
+    "gpu" : {
+      "count" : 11068,
+      "maxMS" : 0.7024999940767884,
+      "meanMS" : 0.5282939430344413,
+      "p50MS" : 0.5328749539330602,
+      "p95MS" : 0.6636666948907077,
+      "recentCount" : 256
+    },
+    "gpuQueue" : {
+      "count" : 11068,
+      "maxMS" : 0.835249898955226,
+      "meanMS" : 0.5734377614317054,
+      "p50MS" : 0.5792499287053943,
+      "p95MS" : 0.6864583119750023,
+      "recentCount" : 256
+    },
+    "pacing" : {
+      "arrivalInterval" : {
+        "count" : 11171,
+        "maxMS" : 24.095666653010994,
+        "meanMS" : 16.682334635333973,
+        "p50MS" : 16.78554166574031,
+        "p95MS" : 17.85458333324641,
+        "recentCount" : 256
+      },
+      "busyTicks" : 0,
+      "drawInterval" : {
+        "count" : 11910,
+        "maxMS" : 41.96433332981542,
+        "meanMS" : 16.79763704441939,
+        "p50MS" : 16.669583332259208,
+        "p95MS" : 16.759541700594127,
+        "recentCount" : 256
+      },
+      "drawTicks" : 11911,
+      "drawableMisses" : 0,
+      "drawableWait" : {
+        "count" : 11069,
+        "maxMS" : 0.016375037375837564,
+        "meanMS" : 0.009722982667881297,
+        "p50MS" : 0.009791634511202574,
+        "p95MS" : 0.013916636817157269,
+        "recentCount" : 256
+      },
+      "inboxReplaced" : 102,
+      "notPresented" : 18,
+      "rendererReplaced" : 0
+    },
+    "presentation" : {
+      "count" : 11050,
+      "maxMS" : 90.7766250311397,
+      "meanMS" : 70.39258788927327,
+      "p50MS" : 70.05854166345671,
+      "p95MS" : 73.55895836371928,
+      "recentCount" : 256
+    }
+  },
+  "video" : {
+    "asynchronousErrors" : 0,
+    "bitrateMbps" : 14.386145889878089,
+    "configurations" : 2,
+    "decodeErrors" : 0,
+    "decoded" : 11172,
+    "errorsBeforeFirstFrame" : 0,
+    "hardware" : true,
+    "idrErrors" : 0,
+    "idrSubmissions" : 8,
+    "missingFrameSignals" : 0,
+    "nacks" : 1,
+    "packetsLost" : 0,
+    "packetsReceived" : 311009,
+    "peakQueue" : 2,
+    "presented" : 11050,
+    "queued" : 0,
+    "recoverySkips" : 0,
+    "skipped" : 120,
+    "synchronousErrors" : 0
+  }
+}

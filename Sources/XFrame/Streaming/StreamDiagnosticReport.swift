@@ -13,6 +13,7 @@ struct StreamDiagnosticReport: Encodable, Sendable {
         let configurations, idrSubmissions, missingFrameSignals: Int
         let synchronousErrors, asynchronousErrors, idrErrors: Int
         let packetsReceived, packetsLost, nacks: Int?
+        let bitrateMbps: Double?
     }
     struct Audio: Encodable, Sendable {
         let attached, muted: Bool
@@ -20,7 +21,8 @@ struct StreamDiagnosticReport: Encodable, Sendable {
         let packetsReceived: Int?
         let energy: Double?
     }
-    let schemaVersion = 2
+    let schemaVersion = 6
+    let framePacing: FramePacingMode
     let timings: PlaybackTimingSnapshot
     let outcome: Outcome
     let durationSeconds: Double
@@ -30,6 +32,7 @@ struct StreamDiagnosticReport: Encodable, Sendable {
 
     init(stats: PlaybackStats, outcome: Outcome, duration: Double, events: [StreamDiagnosticEvent]) {
         self.outcome = outcome
+        framePacing = stats.framePacing
         timings = stats.timings
         durationSeconds = duration.isFinite ? max(0, duration) : 0
         video = Video(hardware: stats.hardware, decoded: stats.decoded, presented: stats.presented,
@@ -39,7 +42,8 @@ struct StreamDiagnosticReport: Encodable, Sendable {
             idrSubmissions: stats.keyframeSubmissions, missingFrameSignals: stats.missingFrameSignals,
             synchronousErrors: stats.synchronousDecodeErrors, asynchronousErrors: stats.asynchronousDecodeErrors,
             idrErrors: stats.keyframeDecodeErrors, packetsReceived: stats.videoPacketsReceived,
-            packetsLost: stats.videoPacketsLost, nacks: stats.videoNacks)
+            packetsLost: stats.videoPacketsLost, nacks: stats.videoNacks,
+            bitrateMbps: stats.videoBitrateMbps.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil })
         audio = Audio(attached: stats.audioAttached, muted: stats.audioMuted,
             volume: stats.audioVolume.isFinite ? min(1, max(0, stats.audioVolume)) : 0,
             packetsReceived: stats.audioPacketsReceived,

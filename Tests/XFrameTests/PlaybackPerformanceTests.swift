@@ -42,3 +42,23 @@ import Testing
     source.didSkipFrame()
     #expect(source.snapshot().dropped == 1)
 }
+
+@Test func pacingCountersDistinguishInboxAndRendererLossAndFreezeOnStop() throws {
+    let performance = PlaybackPerformance()
+    performance.note(.arrival, at: 1)
+    performance.note(.arrival, at: 1.020)
+    performance.note(.draw, at: 1)
+    performance.note(.draw, at: 1.016)
+    performance.note(.inboxReplaced)
+    performance.note(.rendererReplaced)
+    performance.note(.busy)
+    performance.note(.drawableMiss)
+    let pacing = performance.snapshot().pacing
+    #expect(pacing.inboxReplaced == 1 && pacing.rendererReplaced == 1)
+    #expect(pacing.busyTicks == 1 && pacing.drawableMisses == 1 && pacing.drawTicks == 2)
+    #expect(abs(try #require(pacing.arrivalInterval).meanMS - 20) < 0.001)
+    #expect(abs(try #require(pacing.drawInterval).meanMS - 16) < 0.001)
+    performance.stop()
+    performance.note(.inboxReplaced)
+    #expect(performance.snapshot().pacing == pacing)
+}

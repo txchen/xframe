@@ -16,3 +16,13 @@ Add a bounded serial regression runner that verifies fixtures and runs tests rep
 - Export data can be written/read without UI; the native save dialog remains a manual UI acceptance item.
 - Full test suite and release build pass with no display interaction.
 - Repeated suite results are recorded with exact totals; do not claim a long-duration soak from a short run.
+
+## HUD bitrate increment
+
+Schema version 3 adds optional video.bitrateMbps to the allowlist, sanitized to finite nonnegative values. It measures received video RTP payload, not all network traffic. Live stats expire after three seconds; missing/first/new-report-ID/reset samples remain unavailable. HUD visibility does not stop diagnostic collection.
+
+- 2026-09-22: Schema 4 adds bounded numeric pacing summaries under timings.pacing (arrival/draw/drawable waits and categorized render/inbox counters); top-level privacy allowlist remains unchanged.
+
+Schema 5 adds numeric gpuQueue/displayWait timing windows and a notPresented pacing counter. Failed drawable presentation timestamps are excluded from displayed-frame counts. The explicit export allowlist still excludes identifiers, URLs, addresses, tokens and video content.
+
+Schema 6 adds the allowlisted framePacing enum (balanced/lowLatency), captured from the active video source rather than next-session preferences.

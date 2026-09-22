@@ -1,0 +1,26 @@
+{
+  "three_before": {
+    "time": 1790100463920,
+    "decoded": 1859,
+    "presented": 1840,
+    "skipped": 15,
+    "meanMS": 61.4,
+    "p95MS": 64.2
+  },
+  "two": {
+    "time": 1790100510970,
+    "decoded": 4695,
+    "presented": 4670,
+    "skipped": 22,
+    "meanMS": 47.8,
+    "p95MS": 50.4
+  },
+  "three_after": {
+    "time": 1790100566970,
+    "decoded": 8020,
+    "presented": 7981,
+    "skipped": 36,
+    "meanMS": 58.2,
+    "p95MS": 60.8
+  }
+}

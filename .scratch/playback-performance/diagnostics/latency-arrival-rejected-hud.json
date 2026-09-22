@@ -1,0 +1,9 @@
+{
+  "source": "read-only HUD, steady windowed playback, controller disconnected by final sample",
+  "time": 1790100326144,
+  "decoded": 11187,
+  "presented": 11156,
+  "skipped": 27,
+  "meanMS": 76.7,
+  "p95MS": 78.6
+}

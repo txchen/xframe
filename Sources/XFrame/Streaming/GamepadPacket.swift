@@ -1,8 +1,7 @@
 import Foundation
 
-// Offline groundwork only: not connected to controller discovery or WebRTC.
 // State uses browser-oriented Y (positive down); the wire encoder negates Y.
-// A future GameController adapter must convert its positive-up Y exactly once.
+// NativeGamepad converts GameController positive-up Y exactly once.
 enum GamepadButton: UInt16, CaseIterable, Sendable {
     case nexus = 0x0002, menu = 0x0004, view = 0x0008
     case a = 0x0010, b = 0x0020, x = 0x0040, y = 0x0080
@@ -43,6 +42,10 @@ struct GamepadSnapshot: Sendable, Equatable {
         self.leftX = bounded(leftX, minimum: -1); self.leftY = bounded(leftY, minimum: -1)
         self.rightX = bounded(rightX, minimum: -1); self.rightY = bounded(rightY, minimum: -1)
         self.leftTrigger = bounded(leftTrigger, minimum: 0); self.rightTrigger = bounded(rightTrigger, minimum: 0)
+    }
+    func replacingButtons(_ buttons: Set<GamepadButton>) -> Self {
+        Self(buttons: buttons, leftX: leftX, leftY: leftY, rightX: rightX, rightY: rightY,
+             leftTrigger: leftTrigger, rightTrigger: rightTrigger)
     }
     var physicality: UInt32 {
         var mask = buttons.reduce(UInt32(0)) { $0 | $1.physicality }

@@ -1,0 +1,59 @@
+{
+  "detailed": [
+    {
+      "time": 1790098565140,
+      "decoded": 1436,
+      "presented": 1425,
+      "skipped": 8
+    },
+    {
+      "time": 1790098602859,
+      "decoded": 3725,
+      "presented": 3699,
+      "skipped": 23
+    }
+  ],
+  "hidden": [
+    {
+      "time": 1790098602859,
+      "decoded": 3725,
+      "presented": 3699,
+      "skipped": 23
+    },
+    {
+      "time": 1790098643811,
+      "decoded": 6195,
+      "presented": 6163,
+      "skipped": 30
+    }
+  ],
+  "notes": "Native HUD snapshots update at 1 Hz. Hidden/compact endpoint reads briefly switch to Detailed; elapsed times and inferred rates have approximately 1 second sampling boundary uncertainty. Controller input remained active.",
+  "compact": [
+    {
+      "time": 1790098643811,
+      "decoded": 6195,
+      "presented": 6163,
+      "skipped": 30
+    },
+    {
+      "time": 1790098676861,
+      "decoded": 8122,
+      "presented": 8083,
+      "skipped": 37
+    }
+  ],
+  "continued_detailed_with_profiler": [
+    {
+      "time": 1790098676861,
+      "decoded": 8122,
+      "presented": 8083,
+      "skipped": 37
+    },
+    {
+      "time": 1790098729064,
+      "decoded": 11260,
+      "presented": 11195,
+      "skipped": 63
+    }
+  ]
+}

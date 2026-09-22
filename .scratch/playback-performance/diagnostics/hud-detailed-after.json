@@ -1,0 +1,14 @@
+[
+  {
+    "time": 1790098565140,
+    "decoded": 1436,
+    "presented": 1425,
+    "skipped": 8
+  },
+  {
+    "time": 1790098602859,
+    "decoded": 3725,
+    "presented": 3699,
+    "skipped": 23
+  }
+]

@@ -48,6 +48,12 @@ final class CloudLibrary {
         query.pageIndex = page.index
         if selectedGame == nil { selection = nil }
     }
+    var showingStreamSettings = false
+    var streamPreferences: CloudStreamPreferences {
+        didSet { preferencesStore.save(streamPreferences) }
+    }
+    private(set) var activeStreamPreferences: CloudStreamPreferences?
+    @ObservationIgnored private let preferencesStore: CloudStreamPreferencesStore
     var selection: String?
     var viewError: String?
     var diagnosticDocument: StreamDiagnosticDocument?
@@ -71,16 +77,23 @@ final class CloudLibrary {
         audioVolume = volume.isFinite ? min(1, max(0, volume)) : 0
         connection?.configureAudio(muted: audioMuted, volume: audioVolume)
     }
+    var controllerEnabled = false { didSet { connection?.controllerEnabled = controllerEnabled } }
+    var playbackFocused = false { didSet { connection?.playbackFocused = playbackFocused } }
+    var controllerStatus: String { connection?.controllerStatus ?? "Controller input off" }
     @ObservationIgnored private var service: (any CloudServing)?
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var cancelRequested = false
     @ObservationIgnored private var connection: CloudVideoConnection?
+    @ObservationIgnored var cyclePerformanceOverlay: (() -> Void)?
     @ObservationIgnored var displayVideo: ((LiveVideo?) -> Void)?
     @ObservationIgnored private let sleep: @Sendable () async throws -> Void
 
     init(favoritesStore: GameFavoritesStore = GameFavoritesStore(defaults: .standard),
+         preferencesStore: CloudStreamPreferencesStore = .init(defaults: .standard),
          sleep: @escaping @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(2)) }) {
+        self.preferencesStore = preferencesStore
+        streamPreferences = preferencesStore.load()
         self.favoritesStore = favoritesStore
         favorites = favoritesStore.load()
         self.sleep = sleep
@@ -132,6 +145,8 @@ final class CloudLibrary {
                 : "Access has not been verified. Refresh the library before starting this game."
             return
         }
+        let launchPreferences = streamPreferences
+        activeStreamPreferences = launchPreferences
         ownsSession = true
         cancelRequested = false
         ready = false
@@ -143,7 +158,7 @@ final class CloudLibrary {
         task = Task {
             do {
                 // Do not cancel a creation POST: retain the returned handle so it can be deleted.
-                handle = try await service.create(title: game.id)
+                handle = try await service.create(title: game.id, preferences: launchPreferences)
                 if cancelRequested { await cleanup(); return }
                 let deadline = ContinuousClock.now.advanced(by: .seconds(600))
                 var connected = false
@@ -170,8 +185,11 @@ final class CloudLibrary {
                         if cancelRequested { await cleanup(); return }
                         ready = true
                         if let signaling = service as? any CloudSignaling {
-                            let connection = CloudVideoConnection()
+                            let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing)
                             self.connection = connection
+                            connection.cyclePerformanceOverlay = { [weak library = self] in library?.cyclePerformanceOverlay?() }
+                            connection.controllerEnabled = controllerEnabled
+                            connection.playbackFocused = playbackFocused
                             connection.configureAudio(muted: audioMuted, volume: audioVolume)
                             displayVideo?(connection.video)
                             try await connection.run(service: signaling, session: handle!) { [weak self] message in
@@ -203,6 +221,7 @@ final class CloudLibrary {
                 else {
                     // A failed POST can have reached the service. Do not claim confirmed cleanup.
                     ownsSession = false
+                    activeStreamPreferences = nil
                     status = "Start failed; no session address was received. Server allocation could not be confirmed."
                     task = nil
                 }
@@ -241,6 +260,7 @@ final class CloudLibrary {
             self.handle = nil
             ownsSession = false
             activeGame = nil
+            activeStreamPreferences = nil
             status = "Session ended"
         } else { status = "Session cleanup failed — retry End Session before quitting." }
     }

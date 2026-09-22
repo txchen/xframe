@@ -7,6 +7,7 @@ private let sessionURL = URL(string: "https://test.gssv-play-prod.xboxlive.com/v
 
 private actor FakeCloud: CloudServing {
     var creates = 0
+    var launches: [CloudStreamPreferences] = []
     var deletes = 0
     var connects = 0
     var failDelete = false
@@ -17,8 +18,9 @@ private actor FakeCloud: CloudServing {
         self.states = states; self.failDelete = failDelete; self.catalog = catalog
     }
     func games() async throws -> [CloudGame] { catalog }
-    func create(title: String) async throws -> URL {
+    func create(title: String, preferences: CloudStreamPreferences) async throws -> URL {
         creates += 1
+        launches.append(preferences)
         try await Task.sleep(for: .milliseconds(30))
         return sessionURL
     }
@@ -189,4 +191,33 @@ private actor FakeCloud: CloudServing {
                  "/v5/sessions/cloud/active", "/v5/sessions/cloud/abc?secret=yes", "/v5/sessions/cloud/abc/state"] {
         #expect(throws: (any Error).self) { try CloudService.sessionURL(path, relativeTo: host) }
     }
+}
+
+@Test @MainActor func streamPreferencesAreCapturedAtStartAndChangesApplyToNextSession() async throws {
+    let suite = "XFrameTests.LaunchPreferences.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let store = CloudStreamPreferencesStore(defaults: defaults)
+    let fake = FakeCloud()
+    let library = CloudLibrary(preferencesStore: store)
+    library.load(using: fake)
+    try await eventually { !library.loading }
+    let first = CloudStreamPreferences(quality: .hq, language: .simplifiedChinese, framePacing: .lowLatency)
+    let second = CloudStreamPreferences(quality: .standard, language: .traditionalChinese)
+    library.streamPreferences = first
+    library.start(cloudGame)
+    library.streamPreferences = second // Before the async create task gets to run.
+    #expect(library.activeStreamPreferences == first)
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(await fake.launches == [first])
+    #expect(library.activeStreamPreferences == nil)
+    library.start(cloudGame)
+    #expect(library.activeStreamPreferences == second)
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(await fake.launches == [first, second])
+    library.reset()
+    #expect(library.streamPreferences == second)
+    #expect(CloudLibrary(preferencesStore: store).streamPreferences == second)
 }

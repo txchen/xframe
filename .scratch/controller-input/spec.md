@@ -9,3 +9,19 @@ This module is intentionally not connected to WebRTC or macOS GameController. Do
 ## Verification result
 
 All four offline input tests passed, including byte-for-byte reference fixtures and sequence max-to-zero rollover, as part of the final 57-test suite repeated three times. No physical controller was present or required.
+
+## Live integration increment — 2026-09-22
+
+The user has authorized physical Xbox One Bluetooth integration. This supersedes the offline-only restriction above. Support one extended GameController at index zero, with immutable event snapshots and a 16 ms send tick. Convert Apple's positive-up Y once at the adapter boundary. Keep a bounded FIFO for press/release edges, retry failed sends, and prioritize neutralization on focus loss, device replacement/disconnect and disabling input. Only the active playback window owns input. Reacquisition requires all controls released before accepting new presses.
+
+Wait for the message handshake, successful control authorization and successful input metadata send before advertising/sending. Reset remote index zero before adding it after 500 ms, following the pinned reference. Abort the session on prolonged input transport congestion rather than silently leaving held input. Teardown attempts neutral and removal before closing transport; delivery after transport failure cannot be guaranteed.
+
+Expose an explicit View > Enable Controller Input toggle, initially off until physical host acceptance. Show device/input state in playback diagnostics. Rumble and multiple controllers remain deferred. Automated state-machine/adapter checks, signed build, physical discovery, and actual cloud-game response are separate acceptance gates.
+
+### Supervised result
+
+On 2026-09-22 the user confirmed Xbox One Bluetooth input in Palworld: menu navigation/A/B, in-game sticks, LT/RT, shoulders, stick clicks and Menu/View; held movement stopped correctly across focus loss/reacquisition. See `validation.md` for automated results and remaining reconnect/lifecycle checks.
+
+### Accepted controller coverage
+
+The user accepted basic Xbox One Bluetooth functionality on 2026-09-22 after Palworld testing. PS4 / DualShock 4 and all other controller models remain untested. This acceptance does not include rumble or guarantee immediate release after abrupt battery removal.

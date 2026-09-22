@@ -1,0 +1,370 @@
+{
+  "audio" : {
+    "attached" : true,
+    "energy" : 0.24832621078772102,
+    "muted" : false,
+    "packetsReceived" : 35734,
+    "volume" : 1
+  },
+  "durationSeconds" : 726.2002521250397,
+  "events" : [
+    {
+      "configuration" : 0,
+      "kind" : "networkChange",
+      "milliseconds" : 14415,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 1,
+      "kind" : "configured",
+      "milliseconds" : 14466,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 1,
+      "configuration" : 1,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 14466,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 1,
+      "kind" : "firstFrame",
+      "milliseconds" : 14471,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "configured",
+      "milliseconds" : 14475,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 2,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 14475,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 1800,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 44573,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 3599,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 74584,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 5398,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 104590,
+      "nacks" : 0,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 105022,
+      "nacks" : 1,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 7197,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 134614,
+      "nacks" : 1,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 135045,
+      "nacks" : 2,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 8996,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 164633,
+      "nacks" : 2,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 164783,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 10795,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 194585,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 12594,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 224635,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 14393,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 254580,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 16182,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 284606,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 17675,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 314589,
+      "nacks" : 3,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 317058,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 19138,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 344578,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 20735,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 374585,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 22320,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 404586,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 24068,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 434667,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 25867,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 464702,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 27666,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 494727,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 29465,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 524751,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 31264,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 554747,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 33063,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 584766,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 34862,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 614769,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 36661,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 644795,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 38460,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 674819,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "accessUnit" : 40259,
+      "configuration" : 2,
+      "kind" : "idrSubmitted",
+      "milliseconds" : 704829,
+      "nacks" : 4,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "networkChange",
+      "milliseconds" : 705589,
+      "nacks" : 5,
+      "packetsLost" : 0
+    },
+    {
+      "configuration" : 2,
+      "kind" : "stopped",
+      "milliseconds" : 726200,
+      "nacks" : 5,
+      "packetsLost" : 0
+    }
+  ],
+  "outcome" : "stopped",
+  "schemaVersion" : 4,
+  "timings" : {
+    "decode" : {
+      "count" : 41545,
+      "maxMS" : 3.688458353281021,
+      "meanMS" : 2.640668291860493,
+      "p50MS" : 2.6006249827332795,
+      "p95MS" : 3.2868332928046584,
+      "recentCount" : 256
+    },
+    "frameWait" : {
+      "count" : 41395,
+      "maxMS" : 20.96954162698239,
+      "meanMS" : 7.04750195404813,
+      "p50MS" : 4.845916642807424,
+      "p95MS" : 19.619791710283607,
+      "recentCount" : 256
+    },
+    "gpu" : {
+      "count" : 41396,
+      "maxMS" : 0.8239999879151583,
+      "meanMS" : 0.5416054700617678,
+      "p50MS" : 0.4941666265949607,
+      "p95MS" : 0.7037500035949051,
+      "recentCount" : 256
+    },
+    "pacing" : {
+      "arrivalInterval" : {
+        "count" : 41544,
+        "maxMS" : 18.715458340011537,
+        "meanMS" : 16.681007161650996,
+        "p50MS" : 16.7287916992791,
+        "p95MS" : 17.85029168240726,
+        "recentCount" : 256
+      },
+      "busyTicks" : 0,
+      "drawInterval" : {
+        "count" : 43537,
+        "maxMS" : 18.11399997677654,
+        "meanMS" : 16.66705224602083,
+        "p50MS" : 16.66533329989761,
+        "p95MS" : 17.39891670877114,
+        "recentCount" : 256
+      },
+      "drawTicks" : 43538,
+      "drawableMisses" : 0,
+      "drawableWait" : {
+        "count" : 41396,
+        "maxMS" : 0.13712496729567647,
+        "meanMS" : 0.07220995848911116,
+        "p50MS" : 0.07320835720747709,
+        "p95MS" : 0.10425003711134195,
+        "recentCount" : 256
+      },
+      "inboxReplaced" : 148,
+      "rendererReplaced" : 0
+    },
+    "presentation" : {
+      "count" : 41363,
+      "maxMS" : 44.6227082866244,
+      "meanMS" : 30.81747835403803,
+      "p50MS" : 28.525375004392117,
+      "p95MS" : 43.353374989237636,
+      "recentCount" : 256
+    }
+  },
+  "video" : {
+    "asynchronousErrors" : 0,
+    "bitrateMbps" : 14.84991650178349,
+    "configurations" : 2,
+    "decodeErrors" : 0,
+    "decoded" : 41545,
+    "errorsBeforeFirstFrame" : 0,
+    "hardware" : true,
+    "idrErrors" : 0,
+    "idrSubmissions" : 25,
+    "missingFrameSignals" : 0,
+    "nacks" : 5,
+    "packetsLost" : 0,
+    "packetsReceived" : 1190673,
+    "peakQueue" : 2,
+    "presented" : 41395,
+    "queued" : 0,
+    "recoverySkips" : 0,
+    "skipped" : 148,
+    "synchronousErrors" : 0
+  }
+}

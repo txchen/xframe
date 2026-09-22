@@ -18,13 +18,16 @@ enum XFrameApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow?
+    private var playbackPresentation: PlaybackWindowPresentation?
     private var renderer: MetalRenderer?
     private var videoView: MetalView?
     private var playback: LocalVideo?
     private var lastURL: URL?
     private lazy var account = XboxAccount()
     private var libraryWindow: NSWindow?
-    private let diagnostics = NSTextField(labelWithString: "Test pattern · Command-O to open an H.264 video")
+    private let diagnostics = PerformanceHUDView()
+    private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
+    private var hudMenuItems: [NSMenuItem] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMenu()
@@ -52,12 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             content.wantsLayer = true
             content.layer?.backgroundColor = NSColor.black.cgColor
             content.addSubview(view)
-            diagnostics.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
-            diagnostics.textColor = .white
-            diagnostics.backgroundColor = NSColor.black.withAlphaComponent(0.8)
-            diagnostics.drawsBackground = true
-            diagnostics.maximumNumberOfLines = 7
-            diagnostics.translatesAutoresizingMaskIntoConstraints = false
+            diagnostics.preset = hudPreset
             content.addSubview(diagnostics)
             NSLayoutConstraint.activate([
                 diagnostics.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
@@ -65,30 +63,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 diagnostics.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -12)
             ])
             renderer.report = { [weak self] stats in
-                let decodeRate = stats.elapsed > 0 ? Double(stats.decoded) / stats.elapsed : 0
-                let presentRate = stats.elapsed > 0 ? Double(stats.presented) / stats.elapsed : 0
-                self?.diagnostics.stringValue = String(format:
-                    "%@ · Hardware: %@\nDecode avg %.1f fps · Present avg %.1f fps · Skipped %d · Queue %d/%d · Decode errors %d",
-                    stats.state, stats.hardware ? "Yes" : "Pending",
-                    decodeRate, presentRate,
-                    stats.dropped, stats.queued, stats.capacity, stats.decodeErrors)
-                if stats.capacity == 1 {
-                    self?.diagnostics.stringValue += "\nErrors before first frame \(stats.errorsBeforeFirstFrame) · IDR submissions \(stats.keyframeSubmissions) · Missing-frame signals \(stats.missingFrameSignals)"
-                    self?.diagnostics.stringValue += "\nVT configurations \(stats.decoderConfigurations) · Errors sync/async \(stats.synchronousDecodeErrors)/\(stats.asynchronousDecodeErrors) · IDR errors \(stats.keyframeDecodeErrors) · Recovery skips \(stats.recoverySkippedFrames)"
-                    self?.diagnostics.stringValue += "\nVideo RTP received/lost \(stats.videoPacketsReceived.map(String.init) ?? "n/a")/\(stats.videoPacketsLost.map(String.init) ?? "n/a") · NACKs \(stats.videoNacks.map(String.init) ?? "n/a")"
-                    let audioState = !stats.audioAttached ? "Waiting" : (stats.audioMuted || stats.audioVolume == 0 ? "Muted" : "Enabled")
-                    self?.diagnostics.stringValue += "\nAudio \(audioState) · Volume \(Int(stats.audioVolume * 100))% · Packets \(stats.audioPacketsReceived.map(String.init) ?? "n/a") · Energy \(stats.audioEnergy.map { String(format: "%.3f", $0) } ?? "n/a")"
-                }
-                let timing = stats.timings
-                let values = [timing.decode, timing.frameWait, timing.gpu, timing.presentation]
-                    .map { $0.map { String(format: "%.2f", $0.p95MS) } ?? "n/a" }.joined(separator: "/")
-                self?.diagnostics.stringValue += "\nLocal p95 ms decode/wait/GPU/present \(values) · Latest 256 samples"
+                guard let self else { return }
+                self.diagnostics.update(stats, controller: self.account.library.controllerStatus,
+                    quality: self.account.library.activeStreamPreferences?.quality)
             }
             window.contentView = content
             window.isReleasedWhenClosed = false
             WindowPlacement.restore(window, name: "XFrame.Playback.v1",
                                     preferredContentSize: NSSize(width: 960, height: 540))
             self.window = window
+            playbackPresentation = PlaybackWindowPresentation(surface: window)
             view.updateBackingSize()
             NSApp.activate(ignoringOtherApps: true)
             account.library.displayVideo = { [weak self] source in
@@ -98,13 +82,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 renderer.play(source, in: view)
                 view.sourceName = source == nil ? "1920×1080" : "xCloud H.264"
                 view.updateBackingSize()
-                self.diagnostics.stringValue = source == nil ? "Cloud session ended" : "Connecting cloud video…"
+                self.diagnostics.showMessage(source == nil ? "Cloud session ended" : "Connecting cloud video…")
                 if source != nil {
-                    self.window?.makeKeyAndOrderFront(nil)
+                    self.playbackPresentation?.showWindowed()
                 } else {
                     self.hidePlaybackWindow()
                 }
             }
+            account.library.cyclePerformanceOverlay = { [weak self] in self?.cyclePerformanceHUD() }
             account.restore()
             showCloudLibrary()
         } catch {
@@ -177,11 +162,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let source = LocalVideo(url: url)
         playback = source
         lastURL = url
-        diagnostics.stringValue = "Loading \(url.lastPathComponent)…"
+        diagnostics.showMessage("Loading \(url.lastPathComponent)…")
         videoView.sourceName = url.lastPathComponent
         videoView.updateBackingSize()
         renderer.play(source, in: videoView)
-        window?.makeKeyAndOrderFront(nil)
+        playbackPresentation?.showWindowed()
     }
 
     @objc private func replayVideo() { if let lastURL { play(lastURL) } }
@@ -194,13 +179,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         renderer.play(nil, in: videoView)
         videoView.sourceName = "1920×1080"
         videoView.updateBackingSize()
-        diagnostics.stringValue = "Test pattern · Command-O to open an H.264 video"
-        window?.makeKeyAndOrderFront(nil)
+        diagnostics.showMessage("Test pattern · Command-O to open an H.264 video")
+        playbackPresentation?.showWindowed()
     }
 
     private func hidePlaybackWindow() {
-        window?.orderOut(nil)
+        playbackPresentation?.hide()
         showCloudLibrary()
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) { updateControllerFocus() }
+    func windowDidResignKey(_ notification: Notification) { account.library.playbackFocused = false }
+    func applicationDidBecomeActive(_ notification: Notification) { updateControllerFocus() }
+    func applicationDidResignActive(_ notification: Notification) { account.library.playbackFocused = false }
+    private func updateControllerFocus() {
+        account.library.playbackFocused = NSApp.isActive && window?.isKeyWindow == true
+    }
+    @objc private func toggleControllerInput(_ sender: NSMenuItem) {
+        account.library.controllerEnabled.toggle()
+        sender.state = account.library.controllerEnabled ? .on : .off
     }
 
     func windowDidResize(_ notification: Notification) { refreshVideoView() }
@@ -217,14 +214,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         hidePlaybackWindow()
         return false
     }
-    func windowDidEnterFullScreen(_ notification: Notification) { refreshVideoView() }
-    func windowDidExitFullScreen(_ notification: Notification) { refreshVideoView() }
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        playbackPresentation?.willTransitionFullScreen()
+    }
+    func windowWillExitFullScreen(_ notification: Notification) {
+        playbackPresentation?.willTransitionFullScreen()
+    }
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        playbackPresentation?.didTransitionFullScreen()
+        refreshVideoView()
+    }
+    func windowDidExitFullScreen(_ notification: Notification) {
+        playbackPresentation?.didTransitionFullScreen()
+        refreshVideoView()
+    }
+    func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+        playbackPresentation?.failedTransitionFullScreen()
+    }
+    func windowDidFailToExitFullScreen(_ window: NSWindow) {
+        playbackPresentation?.failedTransitionFullScreen()
+        diagnostics.showMessage("Unable to exit full screen. Use Control-Command-F, then retry.")
+    }
     func windowDidChangeScreen(_ notification: Notification) { refreshVideoView() }
 
     private func refreshVideoView() {
         guard let view = videoView else { return }
         view.updateBackingSize()
         view.draw()
+    }
+
+    @objc private func cyclePerformanceHUD() { setPerformanceHUD(hudPreset.next) }
+    @objc private func selectPerformanceHUD(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String,
+              let preset = PerformanceHUDPreset(rawValue: value) else { return }
+        setPerformanceHUD(preset)
+    }
+    private func setPerformanceHUD(_ preset: PerformanceHUDPreset) {
+        hudPreset = preset
+        diagnostics.preset = preset
+        UserDefaults.standard.set(preset.rawValue, forKey: "XFrame.PerformanceHUD")
+        for item in hudMenuItems {
+            item.state = item.representedObject as? String == preset.rawValue ? .on : .off
+        }
     }
 
     private func installMenu() {
@@ -252,6 +283,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let viewMenu = NSMenu(title: "View")
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.control, .command]
+        viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "").target = self
+        let cycle = viewMenu.addItem(withTitle: "Cycle Performance Overlay", action: #selector(cyclePerformanceHUD), keyEquivalent: "d")
+        cycle.keyEquivalentModifierMask = [.command, .shift]
+        cycle.target = self
+        let performance = NSMenu(title: "Performance Overlay")
+        let presets = viewMenu.addItem(withTitle: "Performance Overlay", action: nil, keyEquivalent: "")
+        presets.submenu = performance
+        for preset in PerformanceHUDPreset.allCases {
+            let item = performance.addItem(withTitle: preset.title, action: #selector(selectPerformanceHUD(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = preset.rawValue
+            item.state = preset == hudPreset ? .on : .off
+            hudMenuItems.append(item)
+        }
         viewItem.submenu = viewMenu
         NSApp.mainMenu = menu
     }
@@ -292,8 +337,10 @@ final class MetalView: MTKView {
     func updateBackingSize() {
         let pixels = convertToBacking(bounds).size
         guard pixels.width > 0, pixels.height > 0 else { return }
-        if drawableSize != pixels { drawableSize = pixels }
-        window?.title = "XFrame — \(sourceName) → \(Int(pixels.width))×\(Int(pixels.height)) px"
-        needsDisplay = true
+        let resized = drawableSize != pixels
+        if resized { drawableSize = pixels }
+        let title = "XFrame — \(sourceName) · View \(Int(bounds.width))×\(Int(bounds.height)) pt · Canvas \(Int(pixels.width))×\(Int(pixels.height)) px"
+        if window?.title != title { window?.title = title }
+        if resized { needsDisplay = true }
     }
 }

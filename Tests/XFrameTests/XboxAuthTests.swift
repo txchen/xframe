@@ -14,10 +14,26 @@ private final class AuthScript: @unchecked Sendable {
     private var replies: [Reply]
     private(set) var paths: [String] = []
     private var intervals: [Int] = []
+    private var launches: [(Data, String?)] = []
+    var launchRequests: [(Data, String?)] { lock.withLock { launches } }
     init(_ replies: [Reply]) { self.replies = replies }
     func reply(for request: URLRequest) -> Reply {
         lock.withLock {
             paths.append(request.url!.absoluteString)
+            if request.url?.path == "/v5/sessions/cloud/play" {
+                var body = request.httpBody ?? Data()
+                if body.isEmpty, let stream = request.httpBodyStream {
+                    stream.open()
+                    defer { stream.close() }
+                    var buffer = [UInt8](repeating: 0, count: 4096)
+                    while true {
+                        let count = stream.read(&buffer, maxLength: buffer.count)
+                        if count <= 0 { break }
+                        body.append(contentsOf: buffer.prefix(count))
+                    }
+                }
+                launches.append((body, request.value(forHTTPHeaderField: "X-MS-Device-Info")))
+            }
             if request.url?.host == "catalog.gamepass.com" {
                 guard request.value(forHTTPHeaderField: "ms-cv") != nil,
                       request.value(forHTTPHeaderField: "calling-app-name") != nil,
@@ -280,4 +296,38 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(account.userCode == nil)
     #expect(store.token == nil)
     #expect(account.status == "Signed out of XFrame")
+}
+
+@Test func cloudLaunchSendsSelectedLanguageAndConsistentQualityProfile() async throws {
+    for preferences in [CloudStreamPreferences(),
+                        CloudStreamPreferences(quality: .hq, language: .simplifiedChinese),
+                        CloudStreamPreferences(quality: .hq, language: .traditionalChinese)] {
+        let harness = AuthHarness([Reply(202, #"{"sessionPath":"/v5/sessions/cloud/test-session"}"#)])
+        let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+        let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+        _ = try await service.create(title: "TEST", preferences: preferences)
+        let captured = try #require(harness.script.launchRequests.first)
+        let body = try #require(JSONSerialization.jsonObject(with: captured.0) as? [String: Any])
+        let settings = try #require(body["settings"] as? [String: Any])
+        let header = try #require(captured.1)
+        let device = try #require(JSONSerialization.jsonObject(with: Data(header.utf8)) as? [String: Any])
+        let dev = try #require(device["dev"] as? [String: Any])
+        let os = try #require(dev["os"] as? [String: Any])
+        let display = try #require(dev["displayInfo"] as? [String: Any])
+        let dimensions = try #require(display["dimensions"] as? [String: Int])
+        let hq = preferences.quality == .hq
+        #expect(body["titleId"] as? String == "TEST")
+        #expect(settings["locale"] as? String == preferences.language.rawValue)
+        #expect(settings["osName"] as? String == (hq ? "tizen" : "macos"))
+        #expect(os["name"] as? String == (hq ? "tizen" : "macos"))
+        #expect(os["ver"] as? String == (hq ? "22631.2715" : "27"))
+        let hardware = try #require(dev["hw"] as? [String: String])
+        #expect(hardware["make"] == (hq ? "Microsoft" : "Apple"))
+        if hq {
+            let browser = try #require(dev["browser"] as? [String: String])
+            #expect(browser["browserName"] == "edge" && browser["browserVersion"] == "140.0.3485.66")
+        } else { #expect(dev["browser"] == nil) }
+        #expect(dimensions["widthInPixels"] == (hq ? 4096 : 1920))
+        #expect(dimensions["heightInPixels"] == (hq ? 2160 : 1080))
+    }
 }

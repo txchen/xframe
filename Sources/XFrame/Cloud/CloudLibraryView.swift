@@ -42,6 +42,9 @@ struct CloudLibraryView: View {
                     XboxAccountView(account: account)
                 }.background(LibraryStyle.canvas).preferredColorScheme(.dark)
             }
+            .sheet(isPresented: Binding(get: { library.showingStreamSettings }, set: { library.showingStreamSettings = $0 })) {
+                CloudStreamSettingsView(library: library)
+            }
             .onChange(of: account.hasCloudAccess) { _, _ in account.showingAccount = false }
             .fileExporter(isPresented: Binding(get: { library.exportingDiagnostics }, set: { library.exportingDiagnostics = $0 }),
                           document: library.diagnosticDocument, contentType: .json, defaultFilename: "xframe-stream-diagnostics") { result in
@@ -63,6 +66,12 @@ struct CloudLibraryView: View {
                 collectionButton("Favorites", icon: "star", favorites: true)
             }.disabled(!account.hasCloudAccess)
             Spacer()
+            Button {
+                library.showingStreamSettings = true
+            } label: {
+                Label("Streaming Settings", systemImage: "slider.horizontal.3")
+                    .font(.system(size: 12, weight: .medium))
+            }.buttonStyle(.plain).accessibilityLabel("Streaming Settings")
             Button {
                 account.showingAccount = account.hasCloudAccess
             } label: {
@@ -148,6 +157,9 @@ struct CloudLibraryView: View {
                         .disabled(library.selectedGame?.access.playable != true || library.loading || account.isBusy)
                 }
             }
+            Text(library.activeStreamPreferences.map { "Session: \($0.summary)" }
+                 ?? "Next session: \(library.streamPreferences.summary)")
+                .font(.caption).foregroundStyle(LibraryStyle.secondary)
             HStack {
                 Toggle("Mute game audio", isOn: Binding(get: { library.audioMuted }, set: {
                     library.setAudio(muted: $0, volume: library.audioVolume)
@@ -157,7 +169,7 @@ struct CloudLibraryView: View {
                 }), in: 0...1) { Text("Game volume") }.frame(width: 130)
                 Text("\(Int(library.audioVolume * 100))%").monospacedDigit().frame(width: 42)
                 Spacer()
-                Text("Microphone & controller input disabled").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
+                Text(library.controllerEnabled ? "Controller enabled · Microphone off" : "Controller: enable in View menu · Microphone off").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
             }
             if let error = library.viewError ?? library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
             if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {

@@ -74,7 +74,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func draw(in view: MTKView) {
         let now = CACurrentMediaTime()
-        if let source, now - lastReport >= 0.5 {
+        source?.performance.note(.draw, at: now)
+        if let source, now - lastReport >= 1.0 {
             lastReport = now
             let stats = source.snapshot()
             report?(stats)
@@ -83,7 +84,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                 view.enableSetNeedsDisplay = true
             }
         }
-        guard inFlight.wait(timeout: .now()) == .success else { return }
+        guard inFlight.wait(timeout: .now()) == .success else { source?.performance.note(.busy); return }
         var committed = false
         defer { if !committed { inFlight.signal() } }
         guard view.drawableSize.width > 0, view.drawableSize.height > 0 else { return }
@@ -103,8 +104,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         guard work.needsDraw(hasSource: source != nil, resized: lastDrawableSize != view.drawableSize) else { return }
         // Acquire scarce drawables only after determining that work is necessary.
-        guard let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
-              let command = queue.makeCommandBuffer() else { return }
+        let drawableStarted = CACurrentMediaTime()
+        let renderPass = view.currentRenderPassDescriptor
+        let acquiredDrawable = view.currentDrawable
+        source?.performance.record(.drawableWait, seconds: CACurrentMediaTime() - drawableStarted)
+        guard let pass = renderPass, let drawable = acquiredDrawable,
+              let command = queue.makeCommandBuffer() else { source?.performance.note(.drawableMiss); return }
         guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { return }
         lastDrawableSize = view.drawableSize
 
@@ -135,24 +140,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let retainedVideo = currentVideo
         let permit = inFlight
         let activeSource = source
+        let sample: FramePresentation?
+        if work.pendingFrame, let source, let frame = currentVideo?.frame {
+            sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime())
+        } else { sample = nil }
         command.addCompletedHandler { command in
             withExtendedLifetime(retainedVideo) {}
             if command.status == .error {
                 activeSource?.fail("Metal rendering failed: \(command.error?.localizedDescription ?? "Unknown GPU error")")
             }
             if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
-                activeSource?.performance.record(.gpu, seconds: command.gpuEndTime - command.gpuStartTime)
+                sample?.gpuCompleted(start: command.gpuStartTime, end: command.gpuEndTime)
             }
             permit.signal()
         }
-        if work.pendingFrame, let source, let frame = currentVideo?.frame {
-            source.performance.record(.frameWait, seconds: CACurrentMediaTime() - frame.arrivedAt)
-            drawable.addPresentedHandler { presented in
-                source.didPresent()
-                if presented.presentedTime > 0 {
-                    source.performance.record(.presentation, seconds: presented.presentedTime - frame.arrivedAt)
-                }
-            }
+        if let sample {
+            drawable.addPresentedHandler { presented in sample.presented(at: presented.presentedTime) }
         }
         command.present(drawable)
         committed = true

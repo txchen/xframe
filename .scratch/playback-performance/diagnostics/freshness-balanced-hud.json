@@ -1,0 +1,57 @@
+{
+  "detailed": [
+    {
+      "time": 1790101200066,
+      "decoded": 2274,
+      "presented": 2260,
+      "skipped": 12,
+      "meanMS": 35.9,
+      "p95MS": 38.5
+    },
+    {
+      "time": 1790101270347,
+      "decoded": 6483,
+      "presented": 6451,
+      "skipped": 30,
+      "meanMS": 31.4,
+      "p95MS": 34.3
+    }
+  ],
+  "hidden": [
+    {
+      "time": 1790101270347,
+      "decoded": 6483,
+      "presented": 6451,
+      "skipped": 30,
+      "meanMS": 31.4,
+      "p95MS": 34.3
+    },
+    {
+      "time": 1790101333702,
+      "decoded": 10276,
+      "presented": 10227,
+      "skipped": 47,
+      "meanMS": 34.3,
+      "p95MS": 37
+    }
+  ],
+  "notes": "Final controller was disconnected. HUD snapshots refresh at 1 Hz; hidden/compact endpoint inspection briefly selects Detailed. Timing samples are recent windows, not session lifetime means.",
+  "compact": [
+    {
+      "time": 1790101333702,
+      "decoded": 10276,
+      "presented": 10227,
+      "skipped": 47,
+      "meanMS": 34.3,
+      "p95MS": 37
+    },
+    {
+      "time": 1790101413500,
+      "decoded": 15096,
+      "presented": 15028,
+      "skipped": 66,
+      "meanMS": 36.9,
+      "p95MS": 39.3
+    }
+  ]
+}

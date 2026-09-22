@@ -78,7 +78,7 @@ import Testing
     let last = try #require(source.nextFrame(at: 0))
     #expect(last.time > 11)
     #expect(stats.hardware)
-    #expect(stats.queued == 1)
+    #expect(stats.queued == LiveVideo.displayCapacity)
 }
 
 @Test func h264SamplePreservesSupplementalNALUnits() {
@@ -185,8 +185,8 @@ import Testing
     let stats = source.snapshot()
     #expect(stats.hardware)
     #expect(stats.decoded == 720)
-    #expect(stats.queued == 1)
-    #expect(stats.dropped == 719)
+    #expect(stats.queued == LiveVideo.displayCapacity)
+    #expect(stats.dropped == 720 - LiveVideo.displayCapacity)
     #expect(stats.keyframeSubmissions > 0)
     #expect(stats.missingFrameSignals == 0)
     source.recoverableDecodeError()
@@ -199,4 +199,99 @@ import Testing
     source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: frame.buffer), rotation: ._0, timeStampNs: 0))
     #expect(source.snapshot().decoded == 720)
     #expect(source.nextFrame(at: 0) == nil)
+}
+
+@Test func livePlaybackPreservesTwoFramesDeliveredBetweenDisplayTicks() throws {
+    var buffer: CVPixelBuffer?
+    #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
+    let pixelBuffer = try #require(buffer)
+    let source = LiveVideo()
+    for stamp: Int64 in [1_000_000_000, 1_016_666_667] {
+        source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: stamp))
+    }
+    // Two callbacks can fall between display ticks even with a 60 fps average.
+    #expect(source.nextFrame(at: 0)?.id == 1)
+    #expect(source.nextFrame(at: 0)?.id == 2)
+    #expect(source.nextFrame(at: 0) == nil)
+    #expect(source.snapshot().dropped == 0)
+}
+
+@Test func livePlaybackBoundsBacklogAndDropsStaleFramesAfterStalls() throws {
+    var buffer: CVPixelBuffer?
+    #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
+    let pixelBuffer = try #require(buffer)
+    let source = LiveVideo()
+    for stamp in 0..<10 {
+        source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: Int64(stamp)))
+    }
+    #expect(source.snapshot().queued == 2 && source.snapshot().peakQueue == 2)
+    #expect(source.snapshot().dropped == 8)
+    let first = try #require(source.nextFrame(at: 0))
+    #expect(first.id == 9)
+    // Simulate returning after a long blocked render callback; don't replay old input.
+    #expect(source.nextFrame(at: first.arrivedAt + 1) == nil)
+    #expect(source.snapshot().dropped == 9 && source.snapshot().queued == 0)
+    source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 11))
+    #expect(source.nextFrame(at: 0)?.id == 11)
+    source.stop()
+    #expect(source.snapshot().queued == 0)
+}
+
+@Test func livePlaybackPrefersFreshFrameAfterExcessBacklog() throws {
+    var buffer: CVPixelBuffer?
+    #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
+    let pixelBuffer = try #require(buffer)
+    let source = LiveVideo()
+    let start = CACurrentMediaTime()
+    for stamp: Int64 in [1, 2] {
+        source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: stamp))
+    }
+    // A renderer stalled for 30 ms must not replay the oldest queued frame.
+    #expect(source.nextFrame(at: start + 0.030)?.id == 2)
+    #expect(source.snapshot().dropped == 1)
+    #expect(source.nextFrame(at: start + 0.030) == nil)
+}
+
+@Test func livePlaybackKeepsOrdinaryOneFrameJitter() throws {
+    var buffer: CVPixelBuffer?
+    #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
+    let pixelBuffer = try #require(buffer)
+    let source = LiveVideo()
+    for stamp: Int64 in [1, 2] {
+        source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: stamp))
+    }
+    let consumeAt = CACurrentMediaTime() + 0.020
+    #expect(source.nextFrame(at: consumeAt)?.id == 1)
+    #expect(source.nextFrame(at: consumeAt)?.id == 2)
+    #expect(source.snapshot().dropped == 0)
+}
+
+@Test func lowLatencyKeepsNewestWaitingFrameAndStillExpiresAfterStall() throws {
+    var buffer: CVPixelBuffer?
+    #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
+        kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
+    let pixelBuffer = try #require(buffer)
+    let source = LiveVideo(framePacing: .lowLatency)
+    for stamp: Int64 in [1, 2, 3] {
+        source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: stamp))
+    }
+    #expect(source.snapshot().capacity == 1)
+    #expect(source.snapshot().peakQueue == 1)
+    #expect(source.snapshot().dropped == 2)
+    let newest = try #require(source.nextFrame(at: 0))
+    #expect(newest.id == 3)
+    #expect(source.nextFrame(at: 0) == nil)
+    source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 4))
+    #expect(source.nextFrame(at: newest.arrivedAt + 1) == nil)
+    #expect(source.snapshot().dropped == 3)
+    let report = try #require(JSONSerialization.jsonObject(with: source.diagnosticReport().encoded()) as? [String: Any])
+    #expect(report["framePacing"] as? String == "lowLatency")
+    #expect(PerformanceHUDText.render(source.snapshot(), preset: .detailed, controller: "").contains("PACING Low latency (experimental)"))
+    source.stop()
+    source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 5))
+    #expect(source.snapshot().queued == 0)
 }
