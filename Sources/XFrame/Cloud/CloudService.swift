@@ -4,6 +4,35 @@ struct CloudGame: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     let productID: String?
+    let posterURL: URL?
+    let categories: [String]
+    let publisher: String?
+
+    init(id: String, name: String, productID: String?, posterURL: URL? = nil,
+         categories: [String] = [], publisher: String? = nil) {
+        self.id = id; self.name = name; self.productID = productID
+        self.posterURL = posterURL; self.categories = categories; self.publisher = publisher
+    }
+}
+
+struct CloudProductMetadata: Decodable, Sendable {
+    struct Image: Decodable, Sendable { let URL: String? }
+    let ProductTitle: String?
+    let Image_Poster: Image?
+    let Image_Tile: Image?
+    let Categories: [String]?
+    let PublisherName: String?
+
+    var posterURL: URL? {
+        [Image_Poster?.URL, Image_Tile?.URL].compactMap { $0 }.compactMap(Self.imageURL).first
+    }
+    static func imageURL(_ raw: String) -> URL? {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: value.hasPrefix("//") ? "https:" + value : value),
+              url.scheme == "https", url.host == "store-images.s-microsoft.com",
+              url.user == nil, url.password == nil, url.port == nil, url.fragment == nil else { return nil }
+        return url
+    }
 }
 
 struct CloudSessionState: Decodable, Sendable {
@@ -89,30 +118,33 @@ struct CloudService: CloudServing {
         let titles = try decode(Titles.self, data).results
         let ids = Array(Set(titles.compactMap { $0.details?.productId })).sorted()
         let batches = stride(from: 0, to: ids.count, by: 100).map { Array(ids[$0..<min($0 + 100, ids.count)]) }
-        let names = try await withThrowingTaskGroup(of: [String: String].self) { group in
+        let products = try await withThrowingTaskGroup(of: [String: CloudProductMetadata].self) { group in
             var next = 0
             for _ in 0..<min(4, batches.count) {
                 let batch = batches[next]; next += 1
-                group.addTask { try await productNames(batch) }
+                group.addTask { try await productMetadata(batch) }
             }
-            var result: [String: String] = [:]
+            var result: [String: CloudProductMetadata] = [:]
             while let batch = try await group.next() {
                 result.merge(batch) { first, _ in first }
                 if next < batches.count {
                     let batch = batches[next]; next += 1
-                    group.addTask { try await productNames(batch) }
+                    group.addTask { try await productMetadata(batch) }
                 }
             }
             return result
         }
         var seen = Set<String>()
         return titles.filter { !$0.titleId.isEmpty && seen.insert($0.titleId).inserted }.map {
-            CloudGame(id: $0.titleId, name: names[$0.details?.productId ?? ""] ?? $0.details?.name ?? $0.titleId,
-                      productID: $0.details?.productId)
+            let metadata = products[$0.details?.productId ?? ""]
+            return CloudGame(id: $0.titleId, name: metadata?.ProductTitle ?? $0.details?.name ?? $0.titleId,
+                      productID: $0.details?.productId, posterURL: metadata?.posterURL,
+                      categories: Array(Set((metadata?.Categories ?? []).filter { !$0.isEmpty })).sorted(),
+                      publisher: metadata?.PublisherName)
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    private func productNames(_ ids: [String]) async throws -> [String: String] {
+    private func productMetadata(_ ids: [String]) async throws -> [String: CloudProductMetadata] {
             // Metadata is public: never send the streaming bearer token to the catalog.
             try Task.checkCancellation()
             var url = URLComponents(string: "https://catalog.gamepass.com/v3/products")!
@@ -120,12 +152,11 @@ struct CloudService: CloudServing {
                              .init(name: "hydration", value: "RemoteLowJade0")]
             let body = try JSONSerialization.data(withJSONObject: ["Products": ids])
             struct Products: Decodable {
-                struct Product: Decodable { let ProductTitle: String? }
-                let Products: [String: Product]
+                let Products: [String: CloudProductMetadata]
             }
             let result = try await request(url.url!, method: "POST", body: body, authenticated: false,
                 headers: ["ms-cv": "0", "calling-app-name": "Xbox Cloud Gaming Web", "calling-app-version": "24.17.63"])
-            return try decode(Products.self, result).Products.compactMapValues(\.ProductTitle)
+            return try decode(Products.self, result).Products
     }
 
     func create(title: String) async throws -> URL {

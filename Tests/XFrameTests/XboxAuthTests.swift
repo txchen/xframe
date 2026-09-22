@@ -152,6 +152,23 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
             ["play", "state", "connect", "state", "configuration", "test-session"])
 }
 
+@Test func catalogHydratesOptionalArtworkCategoriesAndPublisher() async throws {
+    let harness = AuthHarness([
+        Reply(#"{"results":[{"titleId":"TEST","details":{"productId":"PRODUCT"}},{"titleId":"TEST","details":{"name":"Duplicate"}},{"titleId":"FALLBACK","details":{"name":"Fallback Game"}}]}"#),
+        Reply(#"{"Products":{"PRODUCT":{"ProductTitle":"Test Game","Image_Poster":{"URL":"//store-images.s-microsoft.com/poster"},"Categories":["Action","Action",""],"PublisherName":"Publisher"}}}"#)
+    ])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let games = try await service.games()
+    #expect(games.count == 2)
+    let game = try #require(games.first { $0.id == "TEST" })
+    #expect(game.posterURL?.absoluteString == "https://store-images.s-microsoft.com/poster")
+    #expect(game.categories == ["Action"])
+    #expect(game.publisher == "Publisher")
+    let fallback = try #require(games.first { $0.id == "FALLBACK" })
+    #expect(fallback.name == "Fallback Game" && fallback.categories.isEmpty && fallback.posterURL == nil)
+}
+
 @Test func consoleTransferTokenUsesMicrosoftEndpoint() async throws {
     let harness = AuthHarness([Reply(#"{"access_token":"test-transfer","refresh_token":"test-rotation"}"#)])
     let token = try await harness.service.consoleTransferToken(refreshToken: "test-refresh")

@@ -3,7 +3,34 @@ import Observation
 
 @Observable @MainActor
 final class CloudLibrary {
-    var search = ""
+    var query = GameLibraryQuery()
+    var search: String {
+        get { query.search }
+        set { updateQuery { $0.search = newValue } }
+    }
+    private(set) var favorites: Set<String>
+    private(set) var catalogLoaded = false
+    @ObservationIgnored private let favoritesStore: GameFavoritesStore
+    var page: GameLibraryQuery.Page { query.page(in: games, favorites: favorites) }
+    var categories: [String] { Array(Set(games.flatMap(\.categories))).sorted() }
+    var selectedGame: CloudGame? { page.games.first { $0.id == selection } }
+
+    func updateQuery(_ change: (inout GameLibraryQuery) -> Void) {
+        change(&query)
+        query.pageIndex = 0
+        selection = nil
+    }
+    func goToPage(_ index: Int) {
+        query.pageIndex = min(max(0, index), page.count - 1)
+        selection = nil
+    }
+    func toggleFavorite(_ game: CloudGame) {
+        guard games.contains(game) else { return }
+        if !favorites.insert(game.id).inserted { favorites.remove(game.id) }
+        favoritesStore.save(favorites)
+        query.pageIndex = page.index
+        if selectedGame == nil { selection = nil }
+    }
     var selection: String?
     var viewError: String?
     var diagnosticDocument: StreamDiagnosticDocument?
@@ -33,13 +60,18 @@ final class CloudLibrary {
     @ObservationIgnored var displayVideo: ((LiveVideo?) -> Void)?
     @ObservationIgnored private let sleep: @Sendable () async throws -> Void
 
-    init(sleep: @escaping @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(2)) }) {
+    init(favoritesStore: GameFavoritesStore = GameFavoritesStore(defaults: .standard),
+         sleep: @escaping @Sendable () async throws -> Void = { try await Task.sleep(for: .seconds(2)) }) {
+        self.favoritesStore = favoritesStore
+        favorites = favoritesStore.load()
         self.sleep = sleep
     }
 
     func reset() {
         guard !ownsSession && !loading else { return }
         games = []
+        catalogLoaded = false
+        query = GameLibraryQuery()
         selection = nil
         service = nil
         errorMessage = nil
@@ -54,11 +86,19 @@ final class CloudLibrary {
         self.service = service
         loading = true
         games = []
+        selection = nil
+        query.pageIndex = 0
+        catalogLoaded = false
         errorMessage = nil
         status = "Loading cloud games…"
         task = Task {
             defer { loading = false; task = nil }
-            do { games = try await service.games(); status = "\(games.count) cloud games" }
+            do {
+                games = try await service.games()
+                catalogLoaded = true
+                if !categories.contains(query.category) { query.category = "" }
+                status = "\(games.count) cloud games"
+            }
             catch { fail(error) }
         }
     }

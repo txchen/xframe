@@ -34,6 +34,31 @@ private actor FakeCloud: CloudServing {
     }
 }
 
+@Test @MainActor func librarySearchClearsHiddenSelectionAndKeepsFavorites() async throws {
+    let suite = "XFrameTests.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let library = CloudLibrary(favoritesStore: GameFavoritesStore(defaults: defaults))
+    library.load(using: FakeCloud())
+    try await eventually { !library.loading }
+    #expect(library.catalogLoaded)
+    library.selection = cloudGame.id
+    #expect(library.selectedGame == cloudGame)
+    library.toggleFavorite(cloudGame)
+    library.search = "missing"
+    #expect(library.selection == nil && library.selectedGame == nil)
+    #expect(library.page.total == 0)
+    library.reset()
+    #expect(!library.catalogLoaded && library.query.search.isEmpty)
+    #expect(library.favorites.contains(cloudGame.id))
+    library.load(using: FakeCloud())
+    try await eventually { !library.loading }
+    library.updateQuery { $0.favoritesOnly = true }
+    library.selection = cloudGame.id
+    library.toggleFavorite(cloudGame)
+    #expect(library.page.total == 0 && library.selectedGame == nil && library.selection == nil)
+}
+
 @MainActor private func eventually(_ predicate: () -> Bool) async throws {
     let deadline = ContinuousClock.now.advanced(by: .seconds(3))
     while !predicate() && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(5)) }
