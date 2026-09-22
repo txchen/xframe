@@ -7,6 +7,7 @@ struct VideoFrame: @unchecked Sendable {
     let buffer: CVPixelBuffer
     let time: Double
     let id: Int
+    var sourceRTP: UInt32? = nil
     let arrivedAt = CACurrentMediaTime()
 }
 

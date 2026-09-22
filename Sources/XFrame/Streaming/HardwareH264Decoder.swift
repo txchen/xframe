@@ -104,6 +104,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     }
     func decode(_ encodedImage: RTCEncodedImage, missingFrames: Bool,
                 codecSpecificInfo info: (any RTCCodecSpecificInfo)?, renderTimeMs: Int64) -> Int {
+        output.frameTrace.note(.decoderInput, rtp: encodedImage.timeStamp)
         let units = H264AccessUnit.nalUnits(encodedImage.buffer)
         guard !units.isEmpty else { return -1 }
         let keyframe = units.contains { ($0.first! & 31) == 5 }
@@ -163,6 +164,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 guard status == noErr, let buffer else {
                     handleDecodeFailure(status, keyframe: keyframe, unit: unit); return
                 }
+                output.frameTrace.note(.decoded, rtp: stamp)
                 let frame = RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: buffer), rotation: rotation,
                                           timeStampNs: renderTimeMs * 1_000_000)
                 frame.timeStamp = Int32(bitPattern: stamp)

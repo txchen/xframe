@@ -17,6 +17,7 @@ protocol VideoSource: AnyObject, Sendable {
 // delivery jitter across display ticks; discard old frames after a render stall.
 final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Sendable {
     let performance = PlaybackPerformance()
+    let frameTrace = FrameTrace()
     private let lock = NSLock()
     static let displayCapacity = FramePacingMode.balanced.capacity
     static let maximumFrameAge = 0.050
@@ -69,7 +70,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             snapshot.queued = frames.count
             return StreamDiagnosticReport(stats: snapshot,
                 outcome: failed ? .failed : (stopped ? .stopped : .active),
-                duration: (endedAt ?? CACurrentMediaTime()) - createdAt, events: events)
+                duration: (endedAt ?? CACurrentMediaTime()) - createdAt, events: events, frameTrace: frameTrace.snapshot())
         }
     }
 
@@ -94,13 +95,14 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             performance.note(.arrival, at: now)
             stats.decoded += 1
             decodedRate.note(at: now)
+            frameTrace.note(.delivered, rtp: UInt32(bitPattern: frame.timeStamp), frameID: stats.decoded, at: now)
             stats.state = "Cloud video \(frame.width)×\(frame.height) · H.264"
             if frames.count == stats.capacity {
                 frames.removeFirst()
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: now)
             }
-            frames.append(VideoFrame(buffer: native.pixelBuffer, time: Double(frame.timeStampNs) / 1e9, id: stats.decoded))
+            frames.append(VideoFrame(buffer: native.pixelBuffer, time: Double(frame.timeStampNs) / 1e9, id: stats.decoded, sourceRTP: UInt32(bitPattern: frame.timeStamp)))
             stats.peakQueue = max(stats.peakQueue, frames.count)
         }
     }
@@ -176,6 +178,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     }
     func stop() {
         performance.stop()
+        frameTrace.stop()
         lock.withLock {
             if !stopped { record(.stopped) }
             if endedAt == nil { endedAt = CACurrentMediaTime() }
@@ -187,6 +190,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func fail(_ message: String) { fail(message, kind: .decoderFailed) }
     func fail(_ message: String, kind: StreamDiagnosticEvent.Kind) {
         performance.stop()
+        frameTrace.stop()
         lock.withLock {
             guard !stopped else { return }
             record(kind)

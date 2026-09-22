@@ -1,0 +1,6005 @@
+{
+  "frameTrace": [
+    {
+      "stage": "decoderInput",
+      "rtp": 0,
+      "seconds": 0.0
+    },
+    {
+      "stage": "decoded",
+      "rtp": 0,
+      "seconds": 0.004
+    },
+    {
+      "stage": "delivered",
+      "rtp": 0,
+      "seconds": 0.005
+    },
+    {
+      "stage": "presented",
+      "rtp": 0,
+      "seconds": 0.02
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 1552,
+      "seconds": 0.017244444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 1552,
+      "seconds": 0.021244444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 1552,
+      "seconds": 0.022244444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 1552,
+      "seconds": 0.03724444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 3103,
+      "seconds": 0.03447777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 3103,
+      "seconds": 0.03847777777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 3103,
+      "seconds": 0.03947777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 3103,
+      "seconds": 0.05447777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 4655,
+      "seconds": 0.051722222222222225
+    },
+    {
+      "stage": "decoded",
+      "rtp": 4655,
+      "seconds": 0.05572222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 4655,
+      "seconds": 0.05672222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 4655,
+      "seconds": 0.07172222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 6207,
+      "seconds": 0.06896666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 6207,
+      "seconds": 0.07296666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 6207,
+      "seconds": 0.07396666666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 6207,
+      "seconds": 0.08896666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 7760,
+      "seconds": 0.08622222222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 7760,
+      "seconds": 0.09022222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 7760,
+      "seconds": 0.09122222222222223
+    },
+    {
+      "stage": "presented",
+      "rtp": 7760,
+      "seconds": 0.10622222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 9312,
+      "seconds": 0.10346666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 9312,
+      "seconds": 0.10746666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 9312,
+      "seconds": 0.10846666666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 9312,
+      "seconds": 0.12346666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 10865,
+      "seconds": 0.12072222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 10865,
+      "seconds": 0.12472222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 10865,
+      "seconds": 0.1257222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 10865,
+      "seconds": 0.14072222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 12419,
+      "seconds": 0.13798888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 12419,
+      "seconds": 0.1419888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 12419,
+      "seconds": 0.1429888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 12419,
+      "seconds": 0.15798888888888887
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 13973,
+      "seconds": 0.15525555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 13973,
+      "seconds": 0.15925555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 13973,
+      "seconds": 0.16025555555555557
+    },
+    {
+      "stage": "presented",
+      "rtp": 13973,
+      "seconds": 0.17525555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 15527,
+      "seconds": 0.17252222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 15527,
+      "seconds": 0.17652222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 15527,
+      "seconds": 0.17752222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 15527,
+      "seconds": 0.1925222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 17082,
+      "seconds": 0.1898
+    },
+    {
+      "stage": "decoded",
+      "rtp": 17082,
+      "seconds": 0.1938
+    },
+    {
+      "stage": "delivered",
+      "rtp": 17082,
+      "seconds": 0.1948
+    },
+    {
+      "stage": "presented",
+      "rtp": 17082,
+      "seconds": 0.2098
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 18638,
+      "seconds": 0.20708888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 18638,
+      "seconds": 0.21108888888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 18638,
+      "seconds": 0.21208888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 18638,
+      "seconds": 0.22708888888888887
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 20195,
+      "seconds": 0.2243888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 20195,
+      "seconds": 0.2283888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 20195,
+      "seconds": 0.2293888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 20195,
+      "seconds": 0.24438888888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 21753,
+      "seconds": 0.2417
+    },
+    {
+      "stage": "decoded",
+      "rtp": 21753,
+      "seconds": 0.2457
+    },
+    {
+      "stage": "delivered",
+      "rtp": 21753,
+      "seconds": 0.2467
+    },
+    {
+      "stage": "presented",
+      "rtp": 21753,
+      "seconds": 0.2617
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 23311,
+      "seconds": 0.25901111111111114
+    },
+    {
+      "stage": "decoded",
+      "rtp": 23311,
+      "seconds": 0.26301111111111114
+    },
+    {
+      "stage": "delivered",
+      "rtp": 23311,
+      "seconds": 0.26401111111111114
+    },
+    {
+      "stage": "presented",
+      "rtp": 23311,
+      "seconds": 0.27901111111111115
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 24871,
+      "seconds": 0.27634444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 24871,
+      "seconds": 0.28034444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 24871,
+      "seconds": 0.28134444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 24871,
+      "seconds": 0.29634444444444447
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 26432,
+      "seconds": 0.2936888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 26432,
+      "seconds": 0.2976888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 26432,
+      "seconds": 0.2986888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 26432,
+      "seconds": 0.3136888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 27993,
+      "seconds": 0.31103333333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 27993,
+      "seconds": 0.31503333333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 27993,
+      "seconds": 0.31603333333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 27993,
+      "seconds": 0.33103333333333335
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 29556,
+      "seconds": 0.3284
+    },
+    {
+      "stage": "decoded",
+      "rtp": 29556,
+      "seconds": 0.33240000000000003
+    },
+    {
+      "stage": "delivered",
+      "rtp": 29556,
+      "seconds": 0.33340000000000003
+    },
+    {
+      "stage": "presented",
+      "rtp": 29556,
+      "seconds": 0.34840000000000004
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 31121,
+      "seconds": 0.34578888888888887
+    },
+    {
+      "stage": "decoded",
+      "rtp": 31121,
+      "seconds": 0.34978888888888887
+    },
+    {
+      "stage": "delivered",
+      "rtp": 31121,
+      "seconds": 0.3507888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 31121,
+      "seconds": 0.3657888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 32687,
+      "seconds": 0.3631888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 32687,
+      "seconds": 0.3671888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 32687,
+      "seconds": 0.3681888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 32687,
+      "seconds": 0.3831888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 34254,
+      "seconds": 0.3806
+    },
+    {
+      "stage": "decoded",
+      "rtp": 34254,
+      "seconds": 0.3846
+    },
+    {
+      "stage": "delivered",
+      "rtp": 34254,
+      "seconds": 0.3856
+    },
+    {
+      "stage": "presented",
+      "rtp": 34254,
+      "seconds": 0.4006
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 35822,
+      "seconds": 0.3980222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 35822,
+      "seconds": 0.4020222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 35822,
+      "seconds": 0.4030222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 35822,
+      "seconds": 0.41802222222222224
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 37393,
+      "seconds": 0.4154777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 37393,
+      "seconds": 0.4194777777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 37393,
+      "seconds": 0.4204777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 37393,
+      "seconds": 0.4354777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 38965,
+      "seconds": 0.43294444444444447
+    },
+    {
+      "stage": "decoded",
+      "rtp": 38965,
+      "seconds": 0.43694444444444447
+    },
+    {
+      "stage": "delivered",
+      "rtp": 38965,
+      "seconds": 0.43794444444444447
+    },
+    {
+      "stage": "presented",
+      "rtp": 38965,
+      "seconds": 0.4529444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 40538,
+      "seconds": 0.4504222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 40538,
+      "seconds": 0.4544222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 40538,
+      "seconds": 0.45542222222222223
+    },
+    {
+      "stage": "presented",
+      "rtp": 40538,
+      "seconds": 0.47042222222222224
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 42114,
+      "seconds": 0.4679333333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 42114,
+      "seconds": 0.4719333333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 42114,
+      "seconds": 0.4729333333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 42114,
+      "seconds": 0.48793333333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 43691,
+      "seconds": 0.48545555555555553
+    },
+    {
+      "stage": "decoded",
+      "rtp": 43691,
+      "seconds": 0.48945555555555553
+    },
+    {
+      "stage": "delivered",
+      "rtp": 43691,
+      "seconds": 0.49045555555555553
+    },
+    {
+      "stage": "presented",
+      "rtp": 43691,
+      "seconds": 0.5054555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 45270,
+      "seconds": 0.503
+    },
+    {
+      "stage": "decoded",
+      "rtp": 45270,
+      "seconds": 0.507
+    },
+    {
+      "stage": "delivered",
+      "rtp": 45270,
+      "seconds": 0.508
+    },
+    {
+      "stage": "presented",
+      "rtp": 45270,
+      "seconds": 0.523
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 46852,
+      "seconds": 0.5205777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 46852,
+      "seconds": 0.5245777777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 46852,
+      "seconds": 0.5255777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 46852,
+      "seconds": 0.5405777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 48435,
+      "seconds": 0.5381666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 48435,
+      "seconds": 0.5421666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 48435,
+      "seconds": 0.5431666666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 48435,
+      "seconds": 0.5581666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 50021,
+      "seconds": 0.5557888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 50021,
+      "seconds": 0.5597888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 50021,
+      "seconds": 0.5607888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 50021,
+      "seconds": 0.5757888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 51608,
+      "seconds": 0.5734222222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 51608,
+      "seconds": 0.5774222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 51608,
+      "seconds": 0.5784222222222223
+    },
+    {
+      "stage": "presented",
+      "rtp": 51608,
+      "seconds": 0.5934222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 53198,
+      "seconds": 0.5910888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 53198,
+      "seconds": 0.5950888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 53198,
+      "seconds": 0.5960888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 53198,
+      "seconds": 0.6110888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 54791,
+      "seconds": 0.6087888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 54791,
+      "seconds": 0.6127888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 54791,
+      "seconds": 0.6137888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 54791,
+      "seconds": 0.628788888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 56386,
+      "seconds": 0.6265111111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 56386,
+      "seconds": 0.6305111111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 56386,
+      "seconds": 0.6315111111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 56386,
+      "seconds": 0.6465111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 57983,
+      "seconds": 0.6442555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 57983,
+      "seconds": 0.6482555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 57983,
+      "seconds": 0.6492555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 57983,
+      "seconds": 0.6642555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 59583,
+      "seconds": 0.6620333333333334
+    },
+    {
+      "stage": "decoded",
+      "rtp": 59583,
+      "seconds": 0.6660333333333334
+    },
+    {
+      "stage": "delivered",
+      "rtp": 59583,
+      "seconds": 0.6670333333333334
+    },
+    {
+      "stage": "presented",
+      "rtp": 59583,
+      "seconds": 0.6820333333333334
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 61186,
+      "seconds": 0.6798444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 61186,
+      "seconds": 0.6838444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 61186,
+      "seconds": 0.6848444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 61186,
+      "seconds": 0.6998444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 62792,
+      "seconds": 0.6976888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 62792,
+      "seconds": 0.7016888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 62792,
+      "seconds": 0.7026888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 62792,
+      "seconds": 0.7176888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 64400,
+      "seconds": 0.7155555555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 64400,
+      "seconds": 0.7195555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 64400,
+      "seconds": 0.7205555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 64400,
+      "seconds": 0.7355555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 66011,
+      "seconds": 0.7334555555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 66011,
+      "seconds": 0.7374555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 66011,
+      "seconds": 0.7384555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 66011,
+      "seconds": 0.7534555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 67625,
+      "seconds": 0.7513888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 67625,
+      "seconds": 0.7553888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 67625,
+      "seconds": 0.7563888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 67625,
+      "seconds": 0.7713888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 69243,
+      "seconds": 0.7693666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 69243,
+      "seconds": 0.7733666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 69243,
+      "seconds": 0.7743666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 69243,
+      "seconds": 0.7893666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 70863,
+      "seconds": 0.7873666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 70863,
+      "seconds": 0.7913666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 70863,
+      "seconds": 0.7923666666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 70863,
+      "seconds": 0.8073666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 72487,
+      "seconds": 0.8054111111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 72487,
+      "seconds": 0.8094111111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 72487,
+      "seconds": 0.8104111111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 72487,
+      "seconds": 0.8254111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 74114,
+      "seconds": 0.8234888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 74114,
+      "seconds": 0.8274888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 74114,
+      "seconds": 0.8284888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 74114,
+      "seconds": 0.843488888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 75744,
+      "seconds": 0.8416
+    },
+    {
+      "stage": "decoded",
+      "rtp": 75744,
+      "seconds": 0.8456
+    },
+    {
+      "stage": "delivered",
+      "rtp": 75744,
+      "seconds": 0.8466
+    },
+    {
+      "stage": "presented",
+      "rtp": 75744,
+      "seconds": 0.8616
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 77378,
+      "seconds": 0.8597555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 77378,
+      "seconds": 0.8637555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 77378,
+      "seconds": 0.8647555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 77378,
+      "seconds": 0.8797555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 79015,
+      "seconds": 0.8779444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 79015,
+      "seconds": 0.8819444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 79015,
+      "seconds": 0.8829444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 79015,
+      "seconds": 0.8979444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 80656,
+      "seconds": 0.8961777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 80656,
+      "seconds": 0.9001777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 80656,
+      "seconds": 0.9011777777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 80656,
+      "seconds": 0.9161777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 82300,
+      "seconds": 0.9144444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 82300,
+      "seconds": 0.9184444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 82300,
+      "seconds": 0.9194444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 82300,
+      "seconds": 0.9344444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 83949,
+      "seconds": 0.9327666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 83949,
+      "seconds": 0.9367666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 83949,
+      "seconds": 0.9377666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 83949,
+      "seconds": 0.9527666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 85601,
+      "seconds": 0.9511222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 85601,
+      "seconds": 0.9551222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 85601,
+      "seconds": 0.9561222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 85601,
+      "seconds": 0.9711222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 87257,
+      "seconds": 0.9695222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 87257,
+      "seconds": 0.9735222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 87257,
+      "seconds": 0.9745222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 87257,
+      "seconds": 0.9895222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 88916,
+      "seconds": 0.9879555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 88916,
+      "seconds": 0.9919555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 88916,
+      "seconds": 0.9929555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 88916,
+      "seconds": 1.0079555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 90580,
+      "seconds": 1.0064444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 90580,
+      "seconds": 1.0104444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 90580,
+      "seconds": 1.0114444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 90580,
+      "seconds": 1.0264444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 92249,
+      "seconds": 1.024988888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 92249,
+      "seconds": 1.028988888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 92249,
+      "seconds": 1.0299888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 92249,
+      "seconds": 1.044988888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 93921,
+      "seconds": 1.0435666666666668
+    },
+    {
+      "stage": "decoded",
+      "rtp": 93921,
+      "seconds": 1.0475666666666668
+    },
+    {
+      "stage": "delivered",
+      "rtp": 93921,
+      "seconds": 1.0485666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 93921,
+      "seconds": 1.0635666666666668
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 95597,
+      "seconds": 1.0621888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 95597,
+      "seconds": 1.0661888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 95597,
+      "seconds": 1.0671888888888887
+    },
+    {
+      "stage": "presented",
+      "rtp": 95597,
+      "seconds": 1.0821888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 97278,
+      "seconds": 1.0808666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 97278,
+      "seconds": 1.0848666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 97278,
+      "seconds": 1.0858666666666665
+    },
+    {
+      "stage": "presented",
+      "rtp": 97278,
+      "seconds": 1.1008666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 98964,
+      "seconds": 1.0996
+    },
+    {
+      "stage": "decoded",
+      "rtp": 98964,
+      "seconds": 1.1036
+    },
+    {
+      "stage": "delivered",
+      "rtp": 98964,
+      "seconds": 1.1045999999999998
+    },
+    {
+      "stage": "presented",
+      "rtp": 98964,
+      "seconds": 1.1196
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 100654,
+      "seconds": 1.1183777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 100654,
+      "seconds": 1.1223777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 100654,
+      "seconds": 1.1233777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 100654,
+      "seconds": 1.1383777777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 102348,
+      "seconds": 1.1372
+    },
+    {
+      "stage": "decoded",
+      "rtp": 102348,
+      "seconds": 1.1412
+    },
+    {
+      "stage": "delivered",
+      "rtp": 102348,
+      "seconds": 1.1421999999999999
+    },
+    {
+      "stage": "presented",
+      "rtp": 102348,
+      "seconds": 1.1572
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 104047,
+      "seconds": 1.1560777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 104047,
+      "seconds": 1.1600777777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 104047,
+      "seconds": 1.1610777777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 104047,
+      "seconds": 1.1760777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 105751,
+      "seconds": 1.175011111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 105751,
+      "seconds": 1.179011111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 105751,
+      "seconds": 1.180011111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 105751,
+      "seconds": 1.195011111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 107460,
+      "seconds": 1.194
+    },
+    {
+      "stage": "decoded",
+      "rtp": 107460,
+      "seconds": 1.198
+    },
+    {
+      "stage": "delivered",
+      "rtp": 107460,
+      "seconds": 1.1989999999999998
+    },
+    {
+      "stage": "presented",
+      "rtp": 107460,
+      "seconds": 1.214
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 109174,
+      "seconds": 1.2130444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 109174,
+      "seconds": 1.2170444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 109174,
+      "seconds": 1.2180444444444443
+    },
+    {
+      "stage": "presented",
+      "rtp": 109174,
+      "seconds": 1.2330444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 110892,
+      "seconds": 1.2321333333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 110892,
+      "seconds": 1.2361333333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 110892,
+      "seconds": 1.2371333333333332
+    },
+    {
+      "stage": "presented",
+      "rtp": 110892,
+      "seconds": 1.2521333333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 112616,
+      "seconds": 1.251288888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 112616,
+      "seconds": 1.255288888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 112616,
+      "seconds": 1.2562888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 112616,
+      "seconds": 1.271288888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 114345,
+      "seconds": 1.2705
+    },
+    {
+      "stage": "decoded",
+      "rtp": 114345,
+      "seconds": 1.2745
+    },
+    {
+      "stage": "delivered",
+      "rtp": 114345,
+      "seconds": 1.2754999999999999
+    },
+    {
+      "stage": "presented",
+      "rtp": 114345,
+      "seconds": 1.2905
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 116079,
+      "seconds": 1.2897666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 116079,
+      "seconds": 1.2937666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 116079,
+      "seconds": 1.2947666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 116079,
+      "seconds": 1.3097666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 117818,
+      "seconds": 1.309088888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 117818,
+      "seconds": 1.313088888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 117818,
+      "seconds": 1.3140888888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 117818,
+      "seconds": 1.329088888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 119563,
+      "seconds": 1.3284777777777779
+    },
+    {
+      "stage": "decoded",
+      "rtp": 119563,
+      "seconds": 1.3324777777777779
+    },
+    {
+      "stage": "delivered",
+      "rtp": 119563,
+      "seconds": 1.3334777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 119563,
+      "seconds": 1.3484777777777779
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 121313,
+      "seconds": 1.3479222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 121313,
+      "seconds": 1.3519222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 121313,
+      "seconds": 1.3529222222222221
+    },
+    {
+      "stage": "presented",
+      "rtp": 121313,
+      "seconds": 1.3679222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 123068,
+      "seconds": 1.3674222222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 123068,
+      "seconds": 1.3714222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 123068,
+      "seconds": 1.3724222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 123068,
+      "seconds": 1.3874222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 124829,
+      "seconds": 1.3869888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 124829,
+      "seconds": 1.3909888888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 124829,
+      "seconds": 1.3919888888888887
+    },
+    {
+      "stage": "presented",
+      "rtp": 124829,
+      "seconds": 1.4069888888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 126596,
+      "seconds": 1.4066222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 126596,
+      "seconds": 1.4106222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 126596,
+      "seconds": 1.4116222222222221
+    },
+    {
+      "stage": "presented",
+      "rtp": 126596,
+      "seconds": 1.4266222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 128368,
+      "seconds": 1.426311111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 128368,
+      "seconds": 1.430311111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 128368,
+      "seconds": 1.431311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 128368,
+      "seconds": 1.446311111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 130146,
+      "seconds": 1.4460666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 130146,
+      "seconds": 1.4500666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 130146,
+      "seconds": 1.4510666666666665
+    },
+    {
+      "stage": "presented",
+      "rtp": 130146,
+      "seconds": 1.4660666666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 131930,
+      "seconds": 1.4658888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 131930,
+      "seconds": 1.4698888888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 131930,
+      "seconds": 1.4708888888888887
+    },
+    {
+      "stage": "presented",
+      "rtp": 131930,
+      "seconds": 1.4858888888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 133720,
+      "seconds": 1.4857777777777779
+    },
+    {
+      "stage": "decoded",
+      "rtp": 133720,
+      "seconds": 1.4897777777777779
+    },
+    {
+      "stage": "delivered",
+      "rtp": 133720,
+      "seconds": 1.4907777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 133720,
+      "seconds": 1.5057777777777779
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 135515,
+      "seconds": 1.5057222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 135515,
+      "seconds": 1.5097222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 135515,
+      "seconds": 1.510722222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 135515,
+      "seconds": 1.5257222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 137317,
+      "seconds": 1.5257444444444443
+    },
+    {
+      "stage": "decoded",
+      "rtp": 137317,
+      "seconds": 1.5297444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 137317,
+      "seconds": 1.5307444444444442
+    },
+    {
+      "stage": "presented",
+      "rtp": 137317,
+      "seconds": 1.5457444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 139125,
+      "seconds": 1.5458333333333334
+    },
+    {
+      "stage": "decoded",
+      "rtp": 139125,
+      "seconds": 1.5498333333333334
+    },
+    {
+      "stage": "delivered",
+      "rtp": 139125,
+      "seconds": 1.5508333333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 139125,
+      "seconds": 1.5658333333333334
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 140939,
+      "seconds": 1.5659888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 140939,
+      "seconds": 1.5699888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 140939,
+      "seconds": 1.5709888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 140939,
+      "seconds": 1.585988888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 142759,
+      "seconds": 1.586211111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 142759,
+      "seconds": 1.590211111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 142759,
+      "seconds": 1.591211111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 142759,
+      "seconds": 1.606211111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 144585,
+      "seconds": 1.6065
+    },
+    {
+      "stage": "decoded",
+      "rtp": 144585,
+      "seconds": 1.6105
+    },
+    {
+      "stage": "delivered",
+      "rtp": 144585,
+      "seconds": 1.6115
+    },
+    {
+      "stage": "presented",
+      "rtp": 144585,
+      "seconds": 1.6265
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 146418,
+      "seconds": 1.6268666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 146418,
+      "seconds": 1.6308666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 146418,
+      "seconds": 1.6318666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 146418,
+      "seconds": 1.6468666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 148257,
+      "seconds": 1.6473
+    },
+    {
+      "stage": "decoded",
+      "rtp": 148257,
+      "seconds": 1.6513
+    },
+    {
+      "stage": "delivered",
+      "rtp": 148257,
+      "seconds": 1.6522999999999999
+    },
+    {
+      "stage": "presented",
+      "rtp": 148257,
+      "seconds": 1.6673
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 150102,
+      "seconds": 1.6678
+    },
+    {
+      "stage": "decoded",
+      "rtp": 150102,
+      "seconds": 1.6718
+    },
+    {
+      "stage": "delivered",
+      "rtp": 150102,
+      "seconds": 1.6727999999999998
+    },
+    {
+      "stage": "presented",
+      "rtp": 150102,
+      "seconds": 1.6878
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 151954,
+      "seconds": 1.6883777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 151954,
+      "seconds": 1.6923777777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 151954,
+      "seconds": 1.6933777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 151954,
+      "seconds": 1.7083777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 153812,
+      "seconds": 1.7090222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 153812,
+      "seconds": 1.7130222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 153812,
+      "seconds": 1.7140222222222221
+    },
+    {
+      "stage": "presented",
+      "rtp": 153812,
+      "seconds": 1.7290222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 155677,
+      "seconds": 1.7297444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 155677,
+      "seconds": 1.7337444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 155677,
+      "seconds": 1.7347444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 155677,
+      "seconds": 1.7497444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 157548,
+      "seconds": 1.7505333333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 157548,
+      "seconds": 1.7545333333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 157548,
+      "seconds": 1.7555333333333332
+    },
+    {
+      "stage": "presented",
+      "rtp": 157548,
+      "seconds": 1.7705333333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 159426,
+      "seconds": 1.7714
+    },
+    {
+      "stage": "decoded",
+      "rtp": 159426,
+      "seconds": 1.7754
+    },
+    {
+      "stage": "delivered",
+      "rtp": 159426,
+      "seconds": 1.7764
+    },
+    {
+      "stage": "presented",
+      "rtp": 159426,
+      "seconds": 1.7914
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 161311,
+      "seconds": 1.7923444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 161311,
+      "seconds": 1.7963444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 161311,
+      "seconds": 1.7973444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 161311,
+      "seconds": 1.8123444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 163202,
+      "seconds": 1.8133555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 163202,
+      "seconds": 1.8173555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 163202,
+      "seconds": 1.8183555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 163202,
+      "seconds": 1.8333555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 165100,
+      "seconds": 1.8344444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 165100,
+      "seconds": 1.8384444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 165100,
+      "seconds": 1.8394444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 165100,
+      "seconds": 1.8544444444444446
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 167005,
+      "seconds": 1.855611111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 167005,
+      "seconds": 1.859611111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 167005,
+      "seconds": 1.860611111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 167005,
+      "seconds": 1.8756111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 168916,
+      "seconds": 1.8768444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 168916,
+      "seconds": 1.8808444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 168916,
+      "seconds": 1.8818444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 168916,
+      "seconds": 1.8968444444444446
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 170834,
+      "seconds": 1.8981555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 170834,
+      "seconds": 1.9021555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 170834,
+      "seconds": 1.9031555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 170834,
+      "seconds": 1.9181555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 172759,
+      "seconds": 1.9195444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 172759,
+      "seconds": 1.9235444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 172759,
+      "seconds": 1.9245444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 172759,
+      "seconds": 1.9395444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 174690,
+      "seconds": 1.941
+    },
+    {
+      "stage": "decoded",
+      "rtp": 174690,
+      "seconds": 1.945
+    },
+    {
+      "stage": "delivered",
+      "rtp": 174690,
+      "seconds": 1.946
+    },
+    {
+      "stage": "presented",
+      "rtp": 174690,
+      "seconds": 1.961
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 176628,
+      "seconds": 1.9625333333333332
+    },
+    {
+      "stage": "decoded",
+      "rtp": 176628,
+      "seconds": 1.9665333333333332
+    },
+    {
+      "stage": "delivered",
+      "rtp": 176628,
+      "seconds": 1.9675333333333331
+    },
+    {
+      "stage": "presented",
+      "rtp": 176628,
+      "seconds": 1.9825333333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 178573,
+      "seconds": 1.9841444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 178573,
+      "seconds": 1.9881444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 178573,
+      "seconds": 1.9891444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 178573,
+      "seconds": 2.0041444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 180525,
+      "seconds": 2.0058333333333334
+    },
+    {
+      "stage": "decoded",
+      "rtp": 180525,
+      "seconds": 2.0098333333333334
+    },
+    {
+      "stage": "delivered",
+      "rtp": 180525,
+      "seconds": 2.0108333333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 180525,
+      "seconds": 2.0258333333333334
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 182483,
+      "seconds": 2.027588888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 182483,
+      "seconds": 2.031588888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 182483,
+      "seconds": 2.032588888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 182483,
+      "seconds": 2.047588888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 184448,
+      "seconds": 2.0494222222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 184448,
+      "seconds": 2.0534222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 184448,
+      "seconds": 2.054422222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 184448,
+      "seconds": 2.0694222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 186420,
+      "seconds": 2.0713333333333335
+    },
+    {
+      "stage": "decoded",
+      "rtp": 186420,
+      "seconds": 2.0753333333333335
+    },
+    {
+      "stage": "delivered",
+      "rtp": 186420,
+      "seconds": 2.0763333333333334
+    },
+    {
+      "stage": "presented",
+      "rtp": 186420,
+      "seconds": 2.0913333333333335
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 188398,
+      "seconds": 2.093311111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 188398,
+      "seconds": 2.097311111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 188398,
+      "seconds": 2.098311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 188398,
+      "seconds": 2.113311111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 190383,
+      "seconds": 2.1153666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 190383,
+      "seconds": 2.1193666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 190383,
+      "seconds": 2.1203666666666665
+    },
+    {
+      "stage": "presented",
+      "rtp": 190383,
+      "seconds": 2.1353666666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 192374,
+      "seconds": 2.137488888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 192374,
+      "seconds": 2.141488888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 192374,
+      "seconds": 2.142488888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 192374,
+      "seconds": 2.157488888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 194372,
+      "seconds": 2.1596888888888888
+    },
+    {
+      "stage": "decoded",
+      "rtp": 194372,
+      "seconds": 2.1636888888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 194372,
+      "seconds": 2.1646888888888887
+    },
+    {
+      "stage": "presented",
+      "rtp": 194372,
+      "seconds": 2.179688888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 196376,
+      "seconds": 2.1819555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 196376,
+      "seconds": 2.1859555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 196376,
+      "seconds": 2.1869555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 196376,
+      "seconds": 2.2019555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 198387,
+      "seconds": 2.2043
+    },
+    {
+      "stage": "decoded",
+      "rtp": 198387,
+      "seconds": 2.2083
+    },
+    {
+      "stage": "delivered",
+      "rtp": 198387,
+      "seconds": 2.2093
+    },
+    {
+      "stage": "presented",
+      "rtp": 198387,
+      "seconds": 2.2243
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 200404,
+      "seconds": 2.2267111111111113
+    },
+    {
+      "stage": "decoded",
+      "rtp": 200404,
+      "seconds": 2.2307111111111113
+    },
+    {
+      "stage": "delivered",
+      "rtp": 200404,
+      "seconds": 2.231711111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 200404,
+      "seconds": 2.2467111111111113
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 202427,
+      "seconds": 2.249188888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 202427,
+      "seconds": 2.253188888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 202427,
+      "seconds": 2.254188888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 202427,
+      "seconds": 2.269188888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 204457,
+      "seconds": 2.2717444444444443
+    },
+    {
+      "stage": "decoded",
+      "rtp": 204457,
+      "seconds": 2.2757444444444443
+    },
+    {
+      "stage": "delivered",
+      "rtp": 204457,
+      "seconds": 2.2767444444444442
+    },
+    {
+      "stage": "presented",
+      "rtp": 204457,
+      "seconds": 2.2917444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 206492,
+      "seconds": 2.2943555555555557
+    },
+    {
+      "stage": "decoded",
+      "rtp": 206492,
+      "seconds": 2.2983555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 206492,
+      "seconds": 2.2993555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 206492,
+      "seconds": 2.3143555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 208534,
+      "seconds": 2.3170444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 208534,
+      "seconds": 2.3210444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 208534,
+      "seconds": 2.3220444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 208534,
+      "seconds": 2.3370444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 210581,
+      "seconds": 2.3397888888888887
+    },
+    {
+      "stage": "decoded",
+      "rtp": 210581,
+      "seconds": 2.3437888888888887
+    },
+    {
+      "stage": "delivered",
+      "rtp": 210581,
+      "seconds": 2.3447888888888886
+    },
+    {
+      "stage": "presented",
+      "rtp": 210581,
+      "seconds": 2.3597888888888887
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 212634,
+      "seconds": 2.3626
+    },
+    {
+      "stage": "decoded",
+      "rtp": 212634,
+      "seconds": 2.3666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 212634,
+      "seconds": 2.3676
+    },
+    {
+      "stage": "presented",
+      "rtp": 212634,
+      "seconds": 2.3826
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 214693,
+      "seconds": 2.3854777777777776
+    },
+    {
+      "stage": "decoded",
+      "rtp": 214693,
+      "seconds": 2.3894777777777776
+    },
+    {
+      "stage": "delivered",
+      "rtp": 214693,
+      "seconds": 2.3904777777777775
+    },
+    {
+      "stage": "presented",
+      "rtp": 214693,
+      "seconds": 2.4054777777777776
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 216757,
+      "seconds": 2.408411111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 216757,
+      "seconds": 2.412411111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 216757,
+      "seconds": 2.413411111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 216757,
+      "seconds": 2.428411111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 218827,
+      "seconds": 2.431411111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 218827,
+      "seconds": 2.435411111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 218827,
+      "seconds": 2.436411111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 218827,
+      "seconds": 2.451411111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 220901,
+      "seconds": 2.4544555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 220901,
+      "seconds": 2.4584555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 220901,
+      "seconds": 2.4594555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 220901,
+      "seconds": 2.4744555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 222981,
+      "seconds": 2.4775666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 222981,
+      "seconds": 2.4815666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 222981,
+      "seconds": 2.4825666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 222981,
+      "seconds": 2.4975666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 225066,
+      "seconds": 2.5007333333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 225066,
+      "seconds": 2.5047333333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 225066,
+      "seconds": 2.505733333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 225066,
+      "seconds": 2.5207333333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 227156,
+      "seconds": 2.5239555555555557
+    },
+    {
+      "stage": "decoded",
+      "rtp": 227156,
+      "seconds": 2.5279555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 227156,
+      "seconds": 2.5289555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 227156,
+      "seconds": 2.5439555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 229250,
+      "seconds": 2.547222222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 229250,
+      "seconds": 2.551222222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 229250,
+      "seconds": 2.552222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 229250,
+      "seconds": 2.567222222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 231349,
+      "seconds": 2.5705444444444443
+    },
+    {
+      "stage": "decoded",
+      "rtp": 231349,
+      "seconds": 2.5745444444444443
+    },
+    {
+      "stage": "delivered",
+      "rtp": 231349,
+      "seconds": 2.575544444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 231349,
+      "seconds": 2.5905444444444443
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 233452,
+      "seconds": 2.5939111111111113
+    },
+    {
+      "stage": "decoded",
+      "rtp": 233452,
+      "seconds": 2.5979111111111113
+    },
+    {
+      "stage": "delivered",
+      "rtp": 233452,
+      "seconds": 2.598911111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 233452,
+      "seconds": 2.6139111111111113
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 235559,
+      "seconds": 2.617322222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 235559,
+      "seconds": 2.621322222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 235559,
+      "seconds": 2.622322222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 235559,
+      "seconds": 2.637322222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 237670,
+      "seconds": 2.6407777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 237670,
+      "seconds": 2.6447777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 237670,
+      "seconds": 2.6457777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 237670,
+      "seconds": 2.6607777777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 239785,
+      "seconds": 2.664277777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 239785,
+      "seconds": 2.668277777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 239785,
+      "seconds": 2.669277777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 239785,
+      "seconds": 2.684277777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 241903,
+      "seconds": 2.687811111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 241903,
+      "seconds": 2.691811111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 241903,
+      "seconds": 2.692811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 241903,
+      "seconds": 2.707811111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 244024,
+      "seconds": 2.711377777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 244024,
+      "seconds": 2.715377777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 244024,
+      "seconds": 2.716377777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 244024,
+      "seconds": 2.731377777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 246149,
+      "seconds": 2.7349888888888887
+    },
+    {
+      "stage": "decoded",
+      "rtp": 246149,
+      "seconds": 2.7389888888888887
+    },
+    {
+      "stage": "delivered",
+      "rtp": 246149,
+      "seconds": 2.7399888888888886
+    },
+    {
+      "stage": "presented",
+      "rtp": 246149,
+      "seconds": 2.7549888888888887
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 248276,
+      "seconds": 2.7586222222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 248276,
+      "seconds": 2.7626222222222223
+    },
+    {
+      "stage": "delivered",
+      "rtp": 248276,
+      "seconds": 2.763622222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 248276,
+      "seconds": 2.7786222222222223
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 250406,
+      "seconds": 2.782288888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 250406,
+      "seconds": 2.786288888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 250406,
+      "seconds": 2.787288888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 250406,
+      "seconds": 2.802288888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 252539,
+      "seconds": 2.805988888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 252539,
+      "seconds": 2.809988888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 252539,
+      "seconds": 2.8109888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 252539,
+      "seconds": 2.825988888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 254673,
+      "seconds": 2.8297
+    },
+    {
+      "stage": "decoded",
+      "rtp": 254673,
+      "seconds": 2.8337
+    },
+    {
+      "stage": "delivered",
+      "rtp": 254673,
+      "seconds": 2.8346999999999998
+    },
+    {
+      "stage": "presented",
+      "rtp": 254673,
+      "seconds": 2.8497
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 256810,
+      "seconds": 2.8534444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 256810,
+      "seconds": 2.8574444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 256810,
+      "seconds": 2.8584444444444443
+    },
+    {
+      "stage": "presented",
+      "rtp": 256810,
+      "seconds": 2.8734444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 258948,
+      "seconds": 2.8772
+    },
+    {
+      "stage": "decoded",
+      "rtp": 258948,
+      "seconds": 2.8812
+    },
+    {
+      "stage": "delivered",
+      "rtp": 258948,
+      "seconds": 2.8822
+    },
+    {
+      "stage": "presented",
+      "rtp": 258948,
+      "seconds": 2.8972
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 261087,
+      "seconds": 2.9009666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 261087,
+      "seconds": 2.9049666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 261087,
+      "seconds": 2.9059666666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 261087,
+      "seconds": 2.9209666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 263228,
+      "seconds": 2.9247555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 263228,
+      "seconds": 2.9287555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 263228,
+      "seconds": 2.9297555555555554
+    },
+    {
+      "stage": "presented",
+      "rtp": 263228,
+      "seconds": 2.9447555555555556
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 265369,
+      "seconds": 2.9485444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 265369,
+      "seconds": 2.9525444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 265369,
+      "seconds": 2.9535444444444443
+    },
+    {
+      "stage": "presented",
+      "rtp": 265369,
+      "seconds": 2.9685444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 267512,
+      "seconds": 2.9723555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 267512,
+      "seconds": 2.9763555555555556
+    },
+    {
+      "stage": "delivered",
+      "rtp": 267512,
+      "seconds": 2.9773555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 267512,
+      "seconds": 2.9923555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 269654,
+      "seconds": 2.9961555555555557
+    },
+    {
+      "stage": "decoded",
+      "rtp": 269654,
+      "seconds": 3.0001555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 269654,
+      "seconds": 3.0011555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 269654,
+      "seconds": 3.0161555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 271797,
+      "seconds": 3.0199666666666665
+    },
+    {
+      "stage": "decoded",
+      "rtp": 271797,
+      "seconds": 3.0239666666666665
+    },
+    {
+      "stage": "delivered",
+      "rtp": 271797,
+      "seconds": 3.0249666666666664
+    },
+    {
+      "stage": "presented",
+      "rtp": 271797,
+      "seconds": 3.0399666666666665
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 273940,
+      "seconds": 3.0437777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 273940,
+      "seconds": 3.0477777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 273940,
+      "seconds": 3.0487777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 273940,
+      "seconds": 3.0637777777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 276082,
+      "seconds": 3.0675777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 276082,
+      "seconds": 3.0715777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 276082,
+      "seconds": 3.0725777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 276082,
+      "seconds": 3.0875777777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 278224,
+      "seconds": 3.091377777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 278224,
+      "seconds": 3.095377777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 278224,
+      "seconds": 3.0963777777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 278224,
+      "seconds": 3.111377777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 280365,
+      "seconds": 3.1151666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 280365,
+      "seconds": 3.1191666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 280365,
+      "seconds": 3.1201666666666665
+    },
+    {
+      "stage": "presented",
+      "rtp": 280365,
+      "seconds": 3.1351666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 282505,
+      "seconds": 3.1389444444444443
+    },
+    {
+      "stage": "decoded",
+      "rtp": 282505,
+      "seconds": 3.1429444444444443
+    },
+    {
+      "stage": "delivered",
+      "rtp": 282505,
+      "seconds": 3.143944444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 282505,
+      "seconds": 3.1589444444444443
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 284644,
+      "seconds": 3.1627111111111113
+    },
+    {
+      "stage": "decoded",
+      "rtp": 284644,
+      "seconds": 3.1667111111111113
+    },
+    {
+      "stage": "delivered",
+      "rtp": 284644,
+      "seconds": 3.167711111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 284644,
+      "seconds": 3.1827111111111113
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 286781,
+      "seconds": 3.1864555555555554
+    },
+    {
+      "stage": "decoded",
+      "rtp": 286781,
+      "seconds": 3.1904555555555554
+    },
+    {
+      "stage": "delivered",
+      "rtp": 286781,
+      "seconds": 3.1914555555555553
+    },
+    {
+      "stage": "presented",
+      "rtp": 286781,
+      "seconds": 3.2064555555555554
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 288916,
+      "seconds": 3.2101777777777776
+    },
+    {
+      "stage": "decoded",
+      "rtp": 288916,
+      "seconds": 3.2141777777777776
+    },
+    {
+      "stage": "delivered",
+      "rtp": 288916,
+      "seconds": 3.2151777777777775
+    },
+    {
+      "stage": "presented",
+      "rtp": 288916,
+      "seconds": 3.2301777777777776
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 291049,
+      "seconds": 3.233877777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 291049,
+      "seconds": 3.237877777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 291049,
+      "seconds": 3.2388777777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 291049,
+      "seconds": 3.253877777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 293180,
+      "seconds": 3.2575555555555558
+    },
+    {
+      "stage": "decoded",
+      "rtp": 293180,
+      "seconds": 3.2615555555555558
+    },
+    {
+      "stage": "delivered",
+      "rtp": 293180,
+      "seconds": 3.2625555555555557
+    },
+    {
+      "stage": "presented",
+      "rtp": 293180,
+      "seconds": 3.2775555555555558
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 295308,
+      "seconds": 3.2812
+    },
+    {
+      "stage": "decoded",
+      "rtp": 295308,
+      "seconds": 3.2852
+    },
+    {
+      "stage": "delivered",
+      "rtp": 295308,
+      "seconds": 3.2862
+    },
+    {
+      "stage": "presented",
+      "rtp": 295308,
+      "seconds": 3.3012
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 297433,
+      "seconds": 3.304811111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 297433,
+      "seconds": 3.308811111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 297433,
+      "seconds": 3.309811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 297433,
+      "seconds": 3.324811111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 299556,
+      "seconds": 3.3284
+    },
+    {
+      "stage": "decoded",
+      "rtp": 299556,
+      "seconds": 3.3324
+    },
+    {
+      "stage": "delivered",
+      "rtp": 299556,
+      "seconds": 3.3333999999999997
+    },
+    {
+      "stage": "presented",
+      "rtp": 299556,
+      "seconds": 3.3484
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 301675,
+      "seconds": 3.3519444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 301675,
+      "seconds": 3.3559444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 301675,
+      "seconds": 3.3569444444444443
+    },
+    {
+      "stage": "presented",
+      "rtp": 301675,
+      "seconds": 3.3719444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 303791,
+      "seconds": 3.3754555555555554
+    },
+    {
+      "stage": "decoded",
+      "rtp": 303791,
+      "seconds": 3.3794555555555554
+    },
+    {
+      "stage": "delivered",
+      "rtp": 303791,
+      "seconds": 3.3804555555555553
+    },
+    {
+      "stage": "presented",
+      "rtp": 303791,
+      "seconds": 3.3954555555555554
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 305903,
+      "seconds": 3.398922222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 305903,
+      "seconds": 3.402922222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 305903,
+      "seconds": 3.403922222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 305903,
+      "seconds": 3.418922222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 308011,
+      "seconds": 3.4223444444444446
+    },
+    {
+      "stage": "decoded",
+      "rtp": 308011,
+      "seconds": 3.4263444444444446
+    },
+    {
+      "stage": "delivered",
+      "rtp": 308011,
+      "seconds": 3.4273444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 308011,
+      "seconds": 3.4423444444444447
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 310115,
+      "seconds": 3.4457222222222224
+    },
+    {
+      "stage": "decoded",
+      "rtp": 310115,
+      "seconds": 3.4497222222222224
+    },
+    {
+      "stage": "delivered",
+      "rtp": 310115,
+      "seconds": 3.4507222222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 310115,
+      "seconds": 3.4657222222222224
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 312215,
+      "seconds": 3.4690555555555553
+    },
+    {
+      "stage": "decoded",
+      "rtp": 312215,
+      "seconds": 3.4730555555555553
+    },
+    {
+      "stage": "delivered",
+      "rtp": 312215,
+      "seconds": 3.4740555555555552
+    },
+    {
+      "stage": "presented",
+      "rtp": 312215,
+      "seconds": 3.4890555555555554
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 314311,
+      "seconds": 3.4923444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 314311,
+      "seconds": 3.4963444444444445
+    },
+    {
+      "stage": "delivered",
+      "rtp": 314311,
+      "seconds": 3.4973444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 314311,
+      "seconds": 3.5123444444444445
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 316402,
+      "seconds": 3.5155777777777777
+    },
+    {
+      "stage": "decoded",
+      "rtp": 316402,
+      "seconds": 3.5195777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 316402,
+      "seconds": 3.5205777777777776
+    },
+    {
+      "stage": "presented",
+      "rtp": 316402,
+      "seconds": 3.5355777777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 318489,
+      "seconds": 3.5387666666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 318489,
+      "seconds": 3.5427666666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 318489,
+      "seconds": 3.5437666666666665
+    },
+    {
+      "stage": "presented",
+      "rtp": 318489,
+      "seconds": 3.5587666666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 320570,
+      "seconds": 3.561888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 320570,
+      "seconds": 3.565888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 320570,
+      "seconds": 3.5668888888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 320570,
+      "seconds": 3.581888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 322646,
+      "seconds": 3.5849555555555557
+    },
+    {
+      "stage": "decoded",
+      "rtp": 322646,
+      "seconds": 3.5889555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 322646,
+      "seconds": 3.5899555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 322646,
+      "seconds": 3.6049555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 324717,
+      "seconds": 3.6079666666666665
+    },
+    {
+      "stage": "decoded",
+      "rtp": 324717,
+      "seconds": 3.6119666666666665
+    },
+    {
+      "stage": "delivered",
+      "rtp": 324717,
+      "seconds": 3.6129666666666664
+    },
+    {
+      "stage": "presented",
+      "rtp": 324717,
+      "seconds": 3.6279666666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 326783,
+      "seconds": 3.6309222222222224
+    },
+    {
+      "stage": "decoded",
+      "rtp": 326783,
+      "seconds": 3.6349222222222224
+    },
+    {
+      "stage": "delivered",
+      "rtp": 326783,
+      "seconds": 3.6359222222222223
+    },
+    {
+      "stage": "presented",
+      "rtp": 326783,
+      "seconds": 3.6509222222222224
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 328843,
+      "seconds": 3.653811111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 328843,
+      "seconds": 3.657811111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 328843,
+      "seconds": 3.658811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 328843,
+      "seconds": 3.673811111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 330898,
+      "seconds": 3.6766444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 330898,
+      "seconds": 3.6806444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 330898,
+      "seconds": 3.6816444444444443
+    },
+    {
+      "stage": "presented",
+      "rtp": 330898,
+      "seconds": 3.6966444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 332947,
+      "seconds": 3.699411111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 332947,
+      "seconds": 3.703411111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 332947,
+      "seconds": 3.704411111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 332947,
+      "seconds": 3.719411111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 334990,
+      "seconds": 3.722111111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 334990,
+      "seconds": 3.726111111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 334990,
+      "seconds": 3.727111111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 334990,
+      "seconds": 3.742111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 337027,
+      "seconds": 3.7447444444444447
+    },
+    {
+      "stage": "decoded",
+      "rtp": 337027,
+      "seconds": 3.7487444444444447
+    },
+    {
+      "stage": "delivered",
+      "rtp": 337027,
+      "seconds": 3.7497444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 337027,
+      "seconds": 3.7647444444444447
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 339058,
+      "seconds": 3.7673111111111113
+    },
+    {
+      "stage": "decoded",
+      "rtp": 339058,
+      "seconds": 3.7713111111111113
+    },
+    {
+      "stage": "delivered",
+      "rtp": 339058,
+      "seconds": 3.772311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 339058,
+      "seconds": 3.7873111111111113
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 341083,
+      "seconds": 3.7898111111111112
+    },
+    {
+      "stage": "decoded",
+      "rtp": 341083,
+      "seconds": 3.7938111111111112
+    },
+    {
+      "stage": "delivered",
+      "rtp": 341083,
+      "seconds": 3.794811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 341083,
+      "seconds": 3.8098111111111113
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 343102,
+      "seconds": 3.8122444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 343102,
+      "seconds": 3.8162444444444446
+    },
+    {
+      "stage": "delivered",
+      "rtp": 343102,
+      "seconds": 3.8172444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 343102,
+      "seconds": 3.8322444444444446
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 345114,
+      "seconds": 3.8346
+    },
+    {
+      "stage": "decoded",
+      "rtp": 345114,
+      "seconds": 3.8386
+    },
+    {
+      "stage": "delivered",
+      "rtp": 345114,
+      "seconds": 3.8396
+    },
+    {
+      "stage": "presented",
+      "rtp": 345114,
+      "seconds": 3.8546
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 347120,
+      "seconds": 3.856888888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 347120,
+      "seconds": 3.860888888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 347120,
+      "seconds": 3.8618888888888887
+    },
+    {
+      "stage": "presented",
+      "rtp": 347120,
+      "seconds": 3.876888888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 349120,
+      "seconds": 3.879111111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 349120,
+      "seconds": 3.883111111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 349120,
+      "seconds": 3.884111111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 349120,
+      "seconds": 3.899111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 351113,
+      "seconds": 3.9012555555555557
+    },
+    {
+      "stage": "decoded",
+      "rtp": 351113,
+      "seconds": 3.9052555555555557
+    },
+    {
+      "stage": "delivered",
+      "rtp": 351113,
+      "seconds": 3.9062555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 351113,
+      "seconds": 3.9212555555555557
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 353099,
+      "seconds": 3.923322222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 353099,
+      "seconds": 3.927322222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 353099,
+      "seconds": 3.928322222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 353099,
+      "seconds": 3.943322222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 355079,
+      "seconds": 3.9453222222222224
+    },
+    {
+      "stage": "decoded",
+      "rtp": 355079,
+      "seconds": 3.9493222222222224
+    },
+    {
+      "stage": "delivered",
+      "rtp": 355079,
+      "seconds": 3.9503222222222223
+    },
+    {
+      "stage": "presented",
+      "rtp": 355079,
+      "seconds": 3.9653222222222224
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 357052,
+      "seconds": 3.9672444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 357052,
+      "seconds": 3.9712444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 357052,
+      "seconds": 3.9722444444444442
+    },
+    {
+      "stage": "presented",
+      "rtp": 357052,
+      "seconds": 3.9872444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 359019,
+      "seconds": 3.9891
+    },
+    {
+      "stage": "decoded",
+      "rtp": 359019,
+      "seconds": 3.9931
+    },
+    {
+      "stage": "delivered",
+      "rtp": 359019,
+      "seconds": 3.9941
+    },
+    {
+      "stage": "presented",
+      "rtp": 359019,
+      "seconds": 4.0091
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 360979,
+      "seconds": 4.010877777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 360979,
+      "seconds": 4.0148777777777775
+    },
+    {
+      "stage": "delivered",
+      "rtp": 360979,
+      "seconds": 4.015877777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 360979,
+      "seconds": 4.030877777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 362932,
+      "seconds": 4.032577777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 362932,
+      "seconds": 4.036577777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 362932,
+      "seconds": 4.037577777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 362932,
+      "seconds": 4.052577777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 364878,
+      "seconds": 4.0542
+    },
+    {
+      "stage": "decoded",
+      "rtp": 364878,
+      "seconds": 4.058199999999999
+    },
+    {
+      "stage": "delivered",
+      "rtp": 364878,
+      "seconds": 4.0592
+    },
+    {
+      "stage": "presented",
+      "rtp": 364878,
+      "seconds": 4.074199999999999
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 366818,
+      "seconds": 4.075755555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 366818,
+      "seconds": 4.079755555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 366818,
+      "seconds": 4.080755555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 366818,
+      "seconds": 4.095755555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 368751,
+      "seconds": 4.0972333333333335
+    },
+    {
+      "stage": "decoded",
+      "rtp": 368751,
+      "seconds": 4.101233333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 368751,
+      "seconds": 4.102233333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 368751,
+      "seconds": 4.117233333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 370677,
+      "seconds": 4.118633333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 370677,
+      "seconds": 4.122633333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 370677,
+      "seconds": 4.123633333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 370677,
+      "seconds": 4.138633333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 372597,
+      "seconds": 4.139966666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 372597,
+      "seconds": 4.143966666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 372597,
+      "seconds": 4.144966666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 372597,
+      "seconds": 4.159966666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 374509,
+      "seconds": 4.161211111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 374509,
+      "seconds": 4.165211111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 374509,
+      "seconds": 4.166211111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 374509,
+      "seconds": 4.181211111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 376415,
+      "seconds": 4.182388888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 376415,
+      "seconds": 4.186388888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 376415,
+      "seconds": 4.187388888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 376415,
+      "seconds": 4.202388888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 378314,
+      "seconds": 4.203488888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 378314,
+      "seconds": 4.207488888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 378314,
+      "seconds": 4.208488888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 378314,
+      "seconds": 4.223488888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 380207,
+      "seconds": 4.224522222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 380207,
+      "seconds": 4.228522222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 380207,
+      "seconds": 4.229522222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 380207,
+      "seconds": 4.244522222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 382093,
+      "seconds": 4.2454777777777775
+    },
+    {
+      "stage": "decoded",
+      "rtp": 382093,
+      "seconds": 4.249477777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 382093,
+      "seconds": 4.250477777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 382093,
+      "seconds": 4.265477777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 383972,
+      "seconds": 4.266355555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 383972,
+      "seconds": 4.270355555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 383972,
+      "seconds": 4.271355555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 383972,
+      "seconds": 4.286355555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 385845,
+      "seconds": 4.287166666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 385845,
+      "seconds": 4.291166666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 385845,
+      "seconds": 4.292166666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 385845,
+      "seconds": 4.307166666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 387711,
+      "seconds": 4.3079
+    },
+    {
+      "stage": "decoded",
+      "rtp": 387711,
+      "seconds": 4.3119
+    },
+    {
+      "stage": "delivered",
+      "rtp": 387711,
+      "seconds": 4.3129
+    },
+    {
+      "stage": "presented",
+      "rtp": 387711,
+      "seconds": 4.3279
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 389570,
+      "seconds": 4.328555555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 389570,
+      "seconds": 4.3325555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 389570,
+      "seconds": 4.333555555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 389570,
+      "seconds": 4.3485555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 391423,
+      "seconds": 4.349144444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 391423,
+      "seconds": 4.353144444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 391423,
+      "seconds": 4.354144444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 391423,
+      "seconds": 4.369144444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 393269,
+      "seconds": 4.369655555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 393269,
+      "seconds": 4.373655555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 393269,
+      "seconds": 4.374655555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 393269,
+      "seconds": 4.389655555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 395109,
+      "seconds": 4.3901
+    },
+    {
+      "stage": "decoded",
+      "rtp": 395109,
+      "seconds": 4.3941
+    },
+    {
+      "stage": "delivered",
+      "rtp": 395109,
+      "seconds": 4.3951
+    },
+    {
+      "stage": "presented",
+      "rtp": 395109,
+      "seconds": 4.4101
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 396943,
+      "seconds": 4.4104777777777775
+    },
+    {
+      "stage": "decoded",
+      "rtp": 396943,
+      "seconds": 4.414477777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 396943,
+      "seconds": 4.415477777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 396943,
+      "seconds": 4.430477777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 398771,
+      "seconds": 4.430788888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 398771,
+      "seconds": 4.434788888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 398771,
+      "seconds": 4.435788888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 398771,
+      "seconds": 4.450788888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 400592,
+      "seconds": 4.451022222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 400592,
+      "seconds": 4.4550222222222216
+    },
+    {
+      "stage": "delivered",
+      "rtp": 400592,
+      "seconds": 4.456022222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 400592,
+      "seconds": 4.471022222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 402406,
+      "seconds": 4.471177777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 402406,
+      "seconds": 4.475177777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 402406,
+      "seconds": 4.476177777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 402406,
+      "seconds": 4.491177777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 404215,
+      "seconds": 4.4912777777777775
+    },
+    {
+      "stage": "decoded",
+      "rtp": 404215,
+      "seconds": 4.495277777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 404215,
+      "seconds": 4.496277777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 404215,
+      "seconds": 4.511277777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 406018,
+      "seconds": 4.5113111111111115
+    },
+    {
+      "stage": "decoded",
+      "rtp": 406018,
+      "seconds": 4.515311111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 406018,
+      "seconds": 4.516311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 406018,
+      "seconds": 4.531311111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 407814,
+      "seconds": 4.531266666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 407814,
+      "seconds": 4.535266666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 407814,
+      "seconds": 4.536266666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 407814,
+      "seconds": 4.551266666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 409605,
+      "seconds": 4.551166666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 409605,
+      "seconds": 4.555166666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 409605,
+      "seconds": 4.556166666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 409605,
+      "seconds": 4.571166666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 411390,
+      "seconds": 4.571
+    },
+    {
+      "stage": "decoded",
+      "rtp": 411390,
+      "seconds": 4.574999999999999
+    },
+    {
+      "stage": "delivered",
+      "rtp": 411390,
+      "seconds": 4.576
+    },
+    {
+      "stage": "presented",
+      "rtp": 411390,
+      "seconds": 4.590999999999999
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 413169,
+      "seconds": 4.590766666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 413169,
+      "seconds": 4.594766666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 413169,
+      "seconds": 4.595766666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 413169,
+      "seconds": 4.610766666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 414942,
+      "seconds": 4.6104666666666665
+    },
+    {
+      "stage": "decoded",
+      "rtp": 414942,
+      "seconds": 4.614466666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 414942,
+      "seconds": 4.615466666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 414942,
+      "seconds": 4.630466666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 416709,
+      "seconds": 4.6301
+    },
+    {
+      "stage": "decoded",
+      "rtp": 416709,
+      "seconds": 4.634099999999999
+    },
+    {
+      "stage": "delivered",
+      "rtp": 416709,
+      "seconds": 4.6350999999999996
+    },
+    {
+      "stage": "presented",
+      "rtp": 416709,
+      "seconds": 4.650099999999999
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 418471,
+      "seconds": 4.649677777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 418471,
+      "seconds": 4.653677777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 418471,
+      "seconds": 4.654677777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 418471,
+      "seconds": 4.669677777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 420227,
+      "seconds": 4.669188888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 420227,
+      "seconds": 4.673188888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 420227,
+      "seconds": 4.674188888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 420227,
+      "seconds": 4.689188888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 421978,
+      "seconds": 4.688644444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 421978,
+      "seconds": 4.692644444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 421978,
+      "seconds": 4.693644444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 421978,
+      "seconds": 4.708644444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 423723,
+      "seconds": 4.708033333333334
+    },
+    {
+      "stage": "decoded",
+      "rtp": 423723,
+      "seconds": 4.712033333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 423723,
+      "seconds": 4.713033333333334
+    },
+    {
+      "stage": "presented",
+      "rtp": 423723,
+      "seconds": 4.728033333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 425463,
+      "seconds": 4.727366666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 425463,
+      "seconds": 4.731366666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 425463,
+      "seconds": 4.732366666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 425463,
+      "seconds": 4.747366666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 427197,
+      "seconds": 4.7466333333333335
+    },
+    {
+      "stage": "decoded",
+      "rtp": 427197,
+      "seconds": 4.750633333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 427197,
+      "seconds": 4.751633333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 427197,
+      "seconds": 4.766633333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 428926,
+      "seconds": 4.765844444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 428926,
+      "seconds": 4.769844444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 428926,
+      "seconds": 4.770844444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 428926,
+      "seconds": 4.785844444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 430651,
+      "seconds": 4.785011111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 430651,
+      "seconds": 4.789011111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 430651,
+      "seconds": 4.790011111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 430651,
+      "seconds": 4.805011111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 432370,
+      "seconds": 4.804111111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 432370,
+      "seconds": 4.808111111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 432370,
+      "seconds": 4.809111111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 432370,
+      "seconds": 4.824111111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 434084,
+      "seconds": 4.823155555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 434084,
+      "seconds": 4.827155555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 434084,
+      "seconds": 4.828155555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 434084,
+      "seconds": 4.843155555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 435793,
+      "seconds": 4.842144444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 435793,
+      "seconds": 4.846144444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 435793,
+      "seconds": 4.847144444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 435793,
+      "seconds": 4.862144444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 437497,
+      "seconds": 4.861077777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 437497,
+      "seconds": 4.865077777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 437497,
+      "seconds": 4.866077777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 437497,
+      "seconds": 4.881077777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 439197,
+      "seconds": 4.879966666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 439197,
+      "seconds": 4.883966666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 439197,
+      "seconds": 4.884966666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 439197,
+      "seconds": 4.899966666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 440892,
+      "seconds": 4.8988
+    },
+    {
+      "stage": "decoded",
+      "rtp": 440892,
+      "seconds": 4.902799999999999
+    },
+    {
+      "stage": "delivered",
+      "rtp": 440892,
+      "seconds": 4.9037999999999995
+    },
+    {
+      "stage": "presented",
+      "rtp": 440892,
+      "seconds": 4.918799999999999
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 442582,
+      "seconds": 4.917577777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 442582,
+      "seconds": 4.921577777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 442582,
+      "seconds": 4.922577777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 442582,
+      "seconds": 4.937577777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 444268,
+      "seconds": 4.936311111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 444268,
+      "seconds": 4.940311111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 444268,
+      "seconds": 4.941311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 444268,
+      "seconds": 4.956311111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 445949,
+      "seconds": 4.954988888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 445949,
+      "seconds": 4.9589888888888884
+    },
+    {
+      "stage": "delivered",
+      "rtp": 445949,
+      "seconds": 4.959988888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 445949,
+      "seconds": 4.9749888888888885
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 447626,
+      "seconds": 4.973622222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 447626,
+      "seconds": 4.977622222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 447626,
+      "seconds": 4.9786222222222225
+    },
+    {
+      "stage": "presented",
+      "rtp": 447626,
+      "seconds": 4.993622222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 449299,
+      "seconds": 4.992211111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 449299,
+      "seconds": 4.99621111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 449299,
+      "seconds": 4.997211111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 449299,
+      "seconds": 5.01221111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 450967,
+      "seconds": 5.010744444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 450967,
+      "seconds": 5.014744444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 450967,
+      "seconds": 5.015744444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 450967,
+      "seconds": 5.030744444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 452632,
+      "seconds": 5.029244444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 452632,
+      "seconds": 5.033244444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 452632,
+      "seconds": 5.034244444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 452632,
+      "seconds": 5.049244444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 454292,
+      "seconds": 5.047688888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 454292,
+      "seconds": 5.051688888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 454292,
+      "seconds": 5.052688888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 454292,
+      "seconds": 5.067688888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 455948,
+      "seconds": 5.066088888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 455948,
+      "seconds": 5.070088888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 455948,
+      "seconds": 5.071088888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 455948,
+      "seconds": 5.086088888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 457600,
+      "seconds": 5.084444444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 457600,
+      "seconds": 5.088444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 457600,
+      "seconds": 5.089444444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 457600,
+      "seconds": 5.104444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 459249,
+      "seconds": 5.102766666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 459249,
+      "seconds": 5.106766666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 459249,
+      "seconds": 5.107766666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 459249,
+      "seconds": 5.122766666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 460894,
+      "seconds": 5.121044444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 460894,
+      "seconds": 5.125044444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 460894,
+      "seconds": 5.126044444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 460894,
+      "seconds": 5.141044444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 462535,
+      "seconds": 5.139277777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 462535,
+      "seconds": 5.143277777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 462535,
+      "seconds": 5.144277777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 462535,
+      "seconds": 5.159277777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 464172,
+      "seconds": 5.157466666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 464172,
+      "seconds": 5.161466666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 464172,
+      "seconds": 5.162466666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 464172,
+      "seconds": 5.177466666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 465806,
+      "seconds": 5.175622222222223
+    },
+    {
+      "stage": "decoded",
+      "rtp": 465806,
+      "seconds": 5.179622222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 465806,
+      "seconds": 5.1806222222222225
+    },
+    {
+      "stage": "presented",
+      "rtp": 465806,
+      "seconds": 5.195622222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 467436,
+      "seconds": 5.193733333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 467436,
+      "seconds": 5.197733333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 467436,
+      "seconds": 5.198733333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 467436,
+      "seconds": 5.213733333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 469063,
+      "seconds": 5.211811111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 469063,
+      "seconds": 5.215811111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 469063,
+      "seconds": 5.216811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 469063,
+      "seconds": 5.231811111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 470687,
+      "seconds": 5.229855555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 470687,
+      "seconds": 5.2338555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 470687,
+      "seconds": 5.234855555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 470687,
+      "seconds": 5.2498555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 472308,
+      "seconds": 5.247866666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 472308,
+      "seconds": 5.2518666666666665
+    },
+    {
+      "stage": "delivered",
+      "rtp": 472308,
+      "seconds": 5.252866666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 472308,
+      "seconds": 5.2678666666666665
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 473925,
+      "seconds": 5.265833333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 473925,
+      "seconds": 5.269833333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 473925,
+      "seconds": 5.270833333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 473925,
+      "seconds": 5.285833333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 475540,
+      "seconds": 5.283777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 475540,
+      "seconds": 5.2877777777777775
+    },
+    {
+      "stage": "delivered",
+      "rtp": 475540,
+      "seconds": 5.288777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 475540,
+      "seconds": 5.3037777777777775
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 477151,
+      "seconds": 5.301677777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 477151,
+      "seconds": 5.3056777777777775
+    },
+    {
+      "stage": "delivered",
+      "rtp": 477151,
+      "seconds": 5.306677777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 477151,
+      "seconds": 5.3216777777777775
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 478759,
+      "seconds": 5.319544444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 478759,
+      "seconds": 5.323544444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 478759,
+      "seconds": 5.324544444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 478759,
+      "seconds": 5.339544444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 480365,
+      "seconds": 5.3373888888888885
+    },
+    {
+      "stage": "decoded",
+      "rtp": 480365,
+      "seconds": 5.341388888888888
+    },
+    {
+      "stage": "delivered",
+      "rtp": 480365,
+      "seconds": 5.342388888888888
+    },
+    {
+      "stage": "presented",
+      "rtp": 480365,
+      "seconds": 5.357388888888888
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 481968,
+      "seconds": 5.3552
+    },
+    {
+      "stage": "decoded",
+      "rtp": 481968,
+      "seconds": 5.3591999999999995
+    },
+    {
+      "stage": "delivered",
+      "rtp": 481968,
+      "seconds": 5.3602
+    },
+    {
+      "stage": "presented",
+      "rtp": 481968,
+      "seconds": 5.3751999999999995
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 483568,
+      "seconds": 5.372977777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 483568,
+      "seconds": 5.376977777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 483568,
+      "seconds": 5.377977777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 483568,
+      "seconds": 5.392977777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 485166,
+      "seconds": 5.390733333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 485166,
+      "seconds": 5.394733333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 485166,
+      "seconds": 5.395733333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 485166,
+      "seconds": 5.410733333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 486761,
+      "seconds": 5.408455555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 486761,
+      "seconds": 5.412455555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 486761,
+      "seconds": 5.413455555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 486761,
+      "seconds": 5.428455555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 488353,
+      "seconds": 5.426144444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 488353,
+      "seconds": 5.430144444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 488353,
+      "seconds": 5.4311444444444446
+    },
+    {
+      "stage": "presented",
+      "rtp": 488353,
+      "seconds": 5.446144444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 489943,
+      "seconds": 5.443811111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 489943,
+      "seconds": 5.44781111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 489943,
+      "seconds": 5.448811111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 489943,
+      "seconds": 5.46381111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 491531,
+      "seconds": 5.461455555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 491531,
+      "seconds": 5.465455555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 491531,
+      "seconds": 5.466455555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 491531,
+      "seconds": 5.481455555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 493117,
+      "seconds": 5.4790777777777775
+    },
+    {
+      "stage": "decoded",
+      "rtp": 493117,
+      "seconds": 5.483077777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 493117,
+      "seconds": 5.484077777777777
+    },
+    {
+      "stage": "presented",
+      "rtp": 493117,
+      "seconds": 5.499077777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 494700,
+      "seconds": 5.496666666666667
+    },
+    {
+      "stage": "decoded",
+      "rtp": 494700,
+      "seconds": 5.500666666666667
+    },
+    {
+      "stage": "delivered",
+      "rtp": 494700,
+      "seconds": 5.501666666666667
+    },
+    {
+      "stage": "presented",
+      "rtp": 494700,
+      "seconds": 5.516666666666667
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 496281,
+      "seconds": 5.514233333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 496281,
+      "seconds": 5.518233333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 496281,
+      "seconds": 5.519233333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 496281,
+      "seconds": 5.534233333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 497861,
+      "seconds": 5.531788888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 497861,
+      "seconds": 5.535788888888889
+    },
+    {
+      "stage": "delivered",
+      "rtp": 497861,
+      "seconds": 5.536788888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 497861,
+      "seconds": 5.551788888888889
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 499438,
+      "seconds": 5.549311111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 499438,
+      "seconds": 5.55331111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 499438,
+      "seconds": 5.554311111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 499438,
+      "seconds": 5.56931111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 501014,
+      "seconds": 5.566822222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 501014,
+      "seconds": 5.570822222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 501014,
+      "seconds": 5.571822222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 501014,
+      "seconds": 5.586822222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 502587,
+      "seconds": 5.5843
+    },
+    {
+      "stage": "decoded",
+      "rtp": 502587,
+      "seconds": 5.588299999999999
+    },
+    {
+      "stage": "delivered",
+      "rtp": 502587,
+      "seconds": 5.5893
+    },
+    {
+      "stage": "presented",
+      "rtp": 502587,
+      "seconds": 5.604299999999999
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 504159,
+      "seconds": 5.601766666666666
+    },
+    {
+      "stage": "decoded",
+      "rtp": 504159,
+      "seconds": 5.605766666666666
+    },
+    {
+      "stage": "delivered",
+      "rtp": 504159,
+      "seconds": 5.606766666666666
+    },
+    {
+      "stage": "presented",
+      "rtp": 504159,
+      "seconds": 5.621766666666666
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 505729,
+      "seconds": 5.619211111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 505729,
+      "seconds": 5.623211111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 505729,
+      "seconds": 5.624211111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 505729,
+      "seconds": 5.639211111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 507298,
+      "seconds": 5.636644444444444
+    },
+    {
+      "stage": "decoded",
+      "rtp": 507298,
+      "seconds": 5.640644444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 507298,
+      "seconds": 5.641644444444444
+    },
+    {
+      "stage": "presented",
+      "rtp": 507298,
+      "seconds": 5.656644444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 508865,
+      "seconds": 5.654055555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 508865,
+      "seconds": 5.658055555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 508865,
+      "seconds": 5.659055555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 508865,
+      "seconds": 5.674055555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 510431,
+      "seconds": 5.671455555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 510431,
+      "seconds": 5.675455555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 510431,
+      "seconds": 5.676455555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 510431,
+      "seconds": 5.691455555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 511995,
+      "seconds": 5.688833333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 511995,
+      "seconds": 5.692833333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 511995,
+      "seconds": 5.693833333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 511995,
+      "seconds": 5.708833333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 513559,
+      "seconds": 5.706211111111111
+    },
+    {
+      "stage": "decoded",
+      "rtp": 513559,
+      "seconds": 5.710211111111111
+    },
+    {
+      "stage": "delivered",
+      "rtp": 513559,
+      "seconds": 5.711211111111111
+    },
+    {
+      "stage": "presented",
+      "rtp": 513559,
+      "seconds": 5.726211111111111
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 515120,
+      "seconds": 5.7235555555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 515120,
+      "seconds": 5.727555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 515120,
+      "seconds": 5.728555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 515120,
+      "seconds": 5.743555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 516681,
+      "seconds": 5.7409
+    },
+    {
+      "stage": "decoded",
+      "rtp": 516681,
+      "seconds": 5.7448999999999995
+    },
+    {
+      "stage": "delivered",
+      "rtp": 516681,
+      "seconds": 5.7459
+    },
+    {
+      "stage": "presented",
+      "rtp": 516681,
+      "seconds": 5.7608999999999995
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 518241,
+      "seconds": 5.758233333333333
+    },
+    {
+      "stage": "decoded",
+      "rtp": 518241,
+      "seconds": 5.762233333333333
+    },
+    {
+      "stage": "delivered",
+      "rtp": 518241,
+      "seconds": 5.763233333333333
+    },
+    {
+      "stage": "presented",
+      "rtp": 518241,
+      "seconds": 5.778233333333333
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 519799,
+      "seconds": 5.775544444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 519799,
+      "seconds": 5.779544444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 519799,
+      "seconds": 5.780544444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 519799,
+      "seconds": 5.795544444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 521357,
+      "seconds": 5.792855555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 521357,
+      "seconds": 5.796855555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 521357,
+      "seconds": 5.7978555555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 521357,
+      "seconds": 5.812855555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 522914,
+      "seconds": 5.810155555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 522914,
+      "seconds": 5.814155555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 522914,
+      "seconds": 5.815155555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 522914,
+      "seconds": 5.830155555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 524470,
+      "seconds": 5.827444444444445
+    },
+    {
+      "stage": "decoded",
+      "rtp": 524470,
+      "seconds": 5.831444444444444
+    },
+    {
+      "stage": "delivered",
+      "rtp": 524470,
+      "seconds": 5.8324444444444445
+    },
+    {
+      "stage": "presented",
+      "rtp": 524470,
+      "seconds": 5.847444444444444
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 526025,
+      "seconds": 5.844722222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 526025,
+      "seconds": 5.8487222222222215
+    },
+    {
+      "stage": "delivered",
+      "rtp": 526025,
+      "seconds": 5.849722222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 526025,
+      "seconds": 5.8647222222222215
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 527579,
+      "seconds": 5.861988888888889
+    },
+    {
+      "stage": "decoded",
+      "rtp": 527579,
+      "seconds": 5.8659888888888885
+    },
+    {
+      "stage": "delivered",
+      "rtp": 527579,
+      "seconds": 5.866988888888889
+    },
+    {
+      "stage": "presented",
+      "rtp": 527579,
+      "seconds": 5.8819888888888885
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 529133,
+      "seconds": 5.879255555555556
+    },
+    {
+      "stage": "decoded",
+      "rtp": 529133,
+      "seconds": 5.8832555555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 529133,
+      "seconds": 5.884255555555556
+    },
+    {
+      "stage": "presented",
+      "rtp": 529133,
+      "seconds": 5.8992555555555555
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 530687,
+      "seconds": 5.896522222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 530687,
+      "seconds": 5.900522222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 530687,
+      "seconds": 5.901522222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 530687,
+      "seconds": 5.916522222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 532240,
+      "seconds": 5.913777777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 532240,
+      "seconds": 5.917777777777777
+    },
+    {
+      "stage": "delivered",
+      "rtp": 532240,
+      "seconds": 5.918777777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 532240,
+      "seconds": 5.933777777777777
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 533792,
+      "seconds": 5.931022222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 533792,
+      "seconds": 5.935022222222222
+    },
+    {
+      "stage": "delivered",
+      "rtp": 533792,
+      "seconds": 5.936022222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 533792,
+      "seconds": 5.951022222222222
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 535345,
+      "seconds": 5.948277777777778
+    },
+    {
+      "stage": "decoded",
+      "rtp": 535345,
+      "seconds": 5.952277777777778
+    },
+    {
+      "stage": "delivered",
+      "rtp": 535345,
+      "seconds": 5.953277777777778
+    },
+    {
+      "stage": "presented",
+      "rtp": 535345,
+      "seconds": 5.968277777777778
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 536897,
+      "seconds": 5.965522222222222
+    },
+    {
+      "stage": "decoded",
+      "rtp": 536897,
+      "seconds": 5.9695222222222215
+    },
+    {
+      "stage": "delivered",
+      "rtp": 536897,
+      "seconds": 5.970522222222222
+    },
+    {
+      "stage": "presented",
+      "rtp": 536897,
+      "seconds": 5.9855222222222215
+    },
+    {
+      "stage": "decoderInput",
+      "rtp": 538448,
+      "seconds": 5.982755555555555
+    },
+    {
+      "stage": "decoded",
+      "rtp": 538448,
+      "seconds": 5.986755555555555
+    },
+    {
+      "stage": "delivered",
+      "rtp": 538448,
+      "seconds": 5.987755555555555
+    },
+    {
+      "stage": "presented",
+      "rtp": 538448,
+      "seconds": 6.002755555555555
+    }
+  ],
+  "provenance": "SYNTHETIC continuously variable approximately 58-42-58 fps; not Palworld gameplay"
+}

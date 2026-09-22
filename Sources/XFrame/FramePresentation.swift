@@ -6,13 +6,17 @@ final class FramePresentation: @unchecked Sendable {
     private let lock = NSLock()
     private let source: any VideoSource
     private let arrivedAt, submittedAt: Double
+    private let sourceRTP: UInt32?
+    private let frameID: Int?
     private var gpuEnd: Double?
     private var displayedAt: Double?
     private var gpuReported = false
     private var presentationReported = false
     private var displayWaitReported = false
 
-    init(source: any VideoSource, arrivedAt: Double, submittedAt: Double) {
+    init(source: any VideoSource, arrivedAt: Double, submittedAt: Double, sourceRTP: UInt32? = nil, frameID: Int? = nil) {
+        self.sourceRTP = sourceRTP
+        self.frameID = frameID
         self.source = source
         self.arrivedAt = arrivedAt
         self.submittedAt = submittedAt
@@ -42,6 +46,9 @@ final class FramePresentation: @unchecked Sendable {
             }
             displayedAt = time
             source.didPresent()
+            if let live = source as? LiveVideo, let sourceRTP {
+                live.frameTrace.note(.presented, rtp: sourceRTP, frameID: frameID, at: time)
+            }
             source.performance.record(.presentation, seconds: time - arrivedAt)
             recordDisplayWait()
         }

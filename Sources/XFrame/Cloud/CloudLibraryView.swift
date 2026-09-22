@@ -177,6 +177,7 @@ struct CloudLibraryView: View {
                 Text(library.keyboardEnabled && library.controllerEnabled ? "Keyboard + Controller · automatic switching" : library.keyboardEnabled ? "Keyboard enabled · View > Keyboard Controls" : library.controllerEnabled ? "Controller enabled · Microphone off" : "Input: enable in View menu · Microphone off").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
             }
             if let error = library.viewError ?? library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
+            Button("Export frame timing sample…") { library.exportFrameTimingSample() }
             if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {
                 DisclosureGroup("Last stream diagnostics") {
                     ScrollView {

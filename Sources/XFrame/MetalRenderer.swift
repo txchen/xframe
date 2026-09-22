@@ -212,7 +212,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let activeSource = source
         let sample: FramePresentation?
         if work.pendingFrame, let source, let frame = currentVideo?.frame {
-            sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime())
+            sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(), sourceRTP: frame.sourceRTP, frameID: frame.id)
         } else { sample = nil }
         command.addCompletedHandler { command in
             withExtendedLifetime(retainedVideo) {}

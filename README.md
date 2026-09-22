@@ -161,3 +161,5 @@ Frame pacing is selectable in Streaming Settings and saved for the next session.
 
 
 With **MetalFX Spatial** selected, Playback Settings shows **MetalFX Sharpening: Off / Low / Medium / High**. These are additional XFrame sharpening presets, applied immediately and remembered across launches. Off preserves the existing MetalFX result. Other scaling modes and MetalFX fallback do not apply sharpening. Higher levels can emphasize compression noise and edge halos; compare them on your game. See [validation](.scratch/4k-post-processing/sharpening-validation.md).
+
+Frame-rate investigation: **Cloud Games → Export frame timing sample…** saves the current bounded timing trace without ending playback. Schema 9 includes RTP timestamps and decoder-input/decode-completion/delivery/actual-presentation events (roughly the last minute). Replay with `python3 scripts/replay-frame-trace.py report.json --output evaluation.json`. This exports numeric timings, not gameplay video; decoder input is after WebRTC jitter buffering. See [capture procedure and limitations](.scratch/dynamic-frame-rate/spec.md).

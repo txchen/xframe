@@ -21,7 +21,8 @@ struct StreamDiagnosticReport: Encodable, Sendable {
         let packetsReceived: Int?
         let energy: Double?
     }
-    let schemaVersion = 8
+    let schemaVersion = 9
+    let frameTrace: [FrameTrace.Event]
     let framePacing: FramePacingMode
     let timings: PlaybackTimingSnapshot
     let outcome: Outcome
@@ -30,7 +31,8 @@ struct StreamDiagnosticReport: Encodable, Sendable {
     let audio: Audio
     let events: [StreamDiagnosticEvent]
 
-    init(stats: PlaybackStats, outcome: Outcome, duration: Double, events: [StreamDiagnosticEvent]) {
+    init(stats: PlaybackStats, outcome: Outcome, duration: Double, events: [StreamDiagnosticEvent], frameTrace: [FrameTrace.Event] = []) {
+        self.frameTrace = frameTrace
         self.outcome = outcome
         framePacing = stats.framePacing
         timings = stats.timings

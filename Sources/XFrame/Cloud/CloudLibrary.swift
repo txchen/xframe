@@ -130,6 +130,17 @@ final class CloudLibrary {
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var cancelRequested = false
+    func exportFrameTimingSample() {
+        guard let report = connection?.video.diagnosticReport() ?? lastStreamReport else {
+            viewError = "Start a stream before exporting a frame timing sample."
+            return
+        }
+        do {
+            diagnosticDocument = try StreamDiagnosticDocument(report: report)
+            exportingDiagnostics = true
+        } catch { viewError = "Could not prepare frame timing sample." }
+    }
+
     @ObservationIgnored private var connection: CloudVideoConnection?
     @ObservationIgnored var showPlaybackSettings: (() -> Void)?
     @ObservationIgnored var settingsGamepad: ((GamepadSnapshot) -> Void)?
