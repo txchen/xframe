@@ -17,6 +17,8 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     private var latest: VideoFrame?
     private var stats = PlaybackStats()
     private var stopped = false
+    private var failed = false
+    private var endedAt: Double?
     private var started: Double?
     private var lastFrameAt: Double?
     private var needsKeyframe = false
@@ -36,6 +38,15 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     }
     func diagnosticEvents() -> [StreamDiagnosticEvent] { lock.withLock { events } }
     func diagnosticsText() -> String { diagnosticEvents().map(\.line).joined(separator: "\n") }
+    func diagnosticReport() -> StreamDiagnosticReport {
+        lock.withLock {
+            var snapshot = stats
+            snapshot.queued = latest == nil ? 0 : 1
+            return StreamDiagnosticReport(stats: snapshot,
+                outcome: failed ? .failed : (stopped ? .stopped : .active),
+                duration: (endedAt ?? CACurrentMediaTime()) - createdAt, events: events)
+        }
+    }
 
     override init() {
         super.init()
@@ -60,7 +71,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             stats.peakQueue = 1
         }
     }
-    func hardwareVerified() { lock.withLock { stats.hardware = true } }
+    func hardwareVerified() { lock.withLock { if !stopped { stats.hardware = true } } }
     func audioPlayback(attached: Bool, muted: Bool, volume: Double) {
         lock.withLock {
             guard !stopped else { return }
@@ -122,19 +133,26 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func stop() {
         lock.withLock {
             if !stopped { record(.stopped) }
+            if endedAt == nil { endedAt = CACurrentMediaTime() }
             stopped = true; latest = nil; stats.state = "Stopped"
         }
     }
-    func fail(_ message: String) { lock.withLock { stopped = true; latest = nil; stats.state = "Failed: " + message } }
+    func fail(_ message: String) {
+        lock.withLock {
+            guard !stopped else { return }
+            failed = true; endedAt = CACurrentMediaTime()
+            stopped = true; latest = nil; stats.state = "Failed: " + message
+        }
+    }
     func nextFrame(at hostTime: Double) -> VideoFrame? {
         lock.withLock { let value = latest; latest = nil; return stopped ? nil : value }
     }
-    func didPresent() { lock.withLock { stats.presented += 1 } }
+    func didPresent() { lock.withLock { if !stopped { stats.presented += 1 } } }
     func snapshot() -> PlaybackStats {
         lock.withLock {
             var result = stats
             result.queued = latest == nil ? 0 : 1
-            result.elapsed = started.map { CACurrentMediaTime() - $0 } ?? 0
+            result.elapsed = started.map { (endedAt ?? CACurrentMediaTime()) - $0 } ?? 0
             return result
         }
     }

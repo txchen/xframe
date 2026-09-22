@@ -1,8 +1,8 @@
 import Foundation
 
 // Deliberately limited schema: no arbitrary messages, media, tokens or addresses.
-struct StreamDiagnosticEvent: Sendable {
-    enum Kind: String, Sendable {
+struct StreamDiagnosticEvent: Sendable, Codable {
+    enum Kind: String, Sendable, Codable {
         case configured, firstFrame, idrSubmitted, badData, keyframeRequestDequeued, networkChange, stopped
     }
     let milliseconds: Int

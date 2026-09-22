@@ -6,6 +6,8 @@ final class CloudLibrary {
     var search = ""
     var selection: String?
     var viewError: String?
+    var diagnosticDocument: StreamDiagnosticDocument?
+    var exportingDiagnostics = false
     private(set) var games: [CloudGame] = []
     private(set) var status = "Load games after signing in."
     private(set) var errorMessage: String?
@@ -15,6 +17,7 @@ final class CloudLibrary {
     private(set) var ready = false
     private(set) var activeGame: String?
     private(set) var lastVideoDiagnostics: String?
+    private(set) var lastStreamReport: StreamDiagnosticReport?
     private(set) var audioMuted = false
     private(set) var audioVolume = 1.0
     func setAudio(muted: Bool, volume: Double) {
@@ -42,6 +45,7 @@ final class CloudLibrary {
         errorMessage = nil
         viewError = nil
         lastVideoDiagnostics = nil
+        lastStreamReport = nil
         status = "Load games after signing in."
     }
 
@@ -67,6 +71,7 @@ final class CloudLibrary {
         errorMessage = nil
         activeGame = game.name
         lastVideoDiagnostics = nil
+        lastStreamReport = nil
         status = "Starting \(game.name)…"
         task = Task {
             do {
@@ -147,7 +152,10 @@ final class CloudLibrary {
         ending = true
         ready = false
         connection?.close()
-        if let connection { lastVideoDiagnostics = connection.video.diagnosticsText() }
+        if let connection {
+            lastVideoDiagnostics = connection.video.diagnosticsText()
+            lastStreamReport = connection.video.diagnosticReport()
+        }
         connection = nil
         displayVideo?(nil)
         // Independent task: cleanup must not inherit the canceled idle timer.

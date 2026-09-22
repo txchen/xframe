@@ -37,6 +37,14 @@ struct CloudLibraryView: View {
             }
             List(filtered, selection: Binding(get: { library.selection }, set: { library.selection = $0 })) { game in Text(game.name).tag(game.id) }
             Text(library.status).font(.headline)
+            if let report = library.lastStreamReport {
+                Button("Export Last Stream Diagnostics…") {
+                    do {
+                        library.diagnosticDocument = try StreamDiagnosticDocument(report: report)
+                        library.exportingDiagnostics = true
+                    } catch { library.viewError = "Could not prepare stream diagnostics." }
+                }
+            }
             if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {
                 DisclosureGroup("Last stream diagnostics (latest 128 events)") {
                     ScrollView {
@@ -56,5 +64,9 @@ struct CloudLibraryView: View {
                 }
             }
         }.padding(20).frame(minWidth: 640, minHeight: 520)
+            .fileExporter(isPresented: Binding(get: { library.exportingDiagnostics }, set: { library.exportingDiagnostics = $0 }), document: library.diagnosticDocument,
+                          contentType: .json, defaultFilename: "xframe-stream-diagnostics") { result in
+                if case .failure = result { library.viewError = "Could not save stream diagnostics." }
+            }
     }
 }
