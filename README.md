@@ -6,6 +6,8 @@ The current increment connects xCloud sessions to native H.264 video through Web
 
 ## Requirements
 
+Development priorities and remaining features: [Feature roadmap](.scratch/roadmap/spec.md).
+
 - An Apple Silicon Mac running macOS 27 or later.
 - Swift 6.4 and the macOS 27 SDK (Command Line Tools or Xcode).
 
