@@ -19,7 +19,7 @@ Opening and closing release the cloud input scheduler and clear pending game act
 - Native right-click opening and mouse scaling selection verified. Found and fixed title clipping by replacing manual stack sizing with Auto Layout document width and content insets. Regression failed before the fix and passed afterward; actual screenshot confirms the complete title and controls.
 - Keyboard Up/Return selected Integer Scaling, Escape closed the panel. Entering fullscreen produced 1920×1080 → 3840×2160 Integer Scaling. Right-click panel layout verified in 4K fullscreen; returning to a window showed Original with the fullscreen-required reason while retaining Integer Scaling selection.
 
-## Pending device acceptance
+## Original panel acceptance handoff (historical)
 
 Still pending: small-window scrolling; physical View + Menu and D-pad/A/B; game-input isolation and post-dismissal rearm during a real session. Unit tests do not establish physical-controller acceptance. These observations apply to the panel build tested above, not a claim about the current live session.
 
@@ -50,7 +50,7 @@ Implemented the approved grill-with-docs decisions:
 - Release app: `.build/XFrame.app`; build plus deep/strict signature verification passed, `.build/p1-controls-build.log`.
 - `git diff --check` passed.
 
-### Remaining acceptance / handoff
+### Pre-acceptance handoff (historical)
 
 The running application was observed streaming a real cloud session during this work. It was not deliberately ended or restarted to activate the new build. Automated AppKit checks are not native interactive or physical-controller acceptance.
 
@@ -61,4 +61,15 @@ On the next safe launch of the built app, verify:
 3. Audio preferences survive relaunch and switching games; local-video/test-pattern controls omit cloud-only actions.
 4. All termination entry points default to Cancel. Focus loss cancels only unconfirmed requests. Confirmed cleanup remains visible through focus changes and closes only after success; failure/retry remains operable using the controller.
 
-P1 remains unchecked until these required native/device/live checks pass. No real service failure was injected and no user gameplay was claimed as acceptance for this build.
+At this handoff, P1 remained unchecked. No real service failure was injected during implementation.
+
+
+## User acceptance — 2026-09-22
+
+Implementation commit: `627d54a` — Add playback audio, fullscreen, and confirmed session controls.
+
+After the requested commit and application restart, the user reported: “我测了一下都不错, 我觉得验收通过” (“I tested it and everything looks good; I consider acceptance passed.”).
+
+This is the user's practical acceptance of the agreed Playback controls and settings increment. The roadmap item is complete. The user did not provide a per-scenario test transcript, so this does not assert that every device, boundary case, or real service-failure scenario was individually exercised. Existing automated failure/retry evidence remains distinct from live fault injection.
+
+Numeric custom bitrate, extended streaming-reliability acceptance, frame-pacing comparisons, and other roadmap items remain separately tracked; this acceptance does not complete them.

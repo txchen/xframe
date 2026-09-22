@@ -1,8 +1,8 @@
 # In-picture playback settings
 
-Status: needs-info
+Completion: accepted by the user on 2026-09-22
 Implementation: original panel and agreed P1 controls extension implemented
-Acceptance: original panel mouse/keyboard verified; P1 extension automated checks/build passed; new native UI and physical/live acceptance pending
+Acceptance: user-reported practical testing passed on implementation commit 627d54a; automated/build evidence and evidence limits are recorded in validation.md
 
 ## Agreed scope
 
