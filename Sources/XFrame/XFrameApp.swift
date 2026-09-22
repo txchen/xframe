@@ -144,6 +144,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let controller = NSHostingController(rootView: CloudLibraryView(library: account.library, account: account))
             let window = NSWindow(contentViewController: controller)
             window.title = "XFrame — Cloud Games"
+            window.appearance = NSAppearance(named: .darkAqua)
+            window.titlebarAppearsTransparent = true
+            window.backgroundColor = NSColor(red: 0.055, green: 0.067, blue: 0.075, alpha: 1)
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             window.isReleasedWhenClosed = false
             window.center()
