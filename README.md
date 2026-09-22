@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment plays local H.264 videos through verified VideoToolbox hardware decoding and Metal rendering. It also includes a fixed 1920 × 1080 test pattern. Both paths use Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Xbox authentication, streaming, audio, and MetalFX are not implemented yet.
+The current increment adds Microsoft device-code sign-in and an xCloud credential check. Local H.264 playback uses verified VideoToolbox hardware decoding and Metal rendering, alongside a fixed 1920 × 1080 test pattern. Both rendering paths use Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Actual cloud streaming, console connections, audio, and MetalFX are not implemented yet.
 
 ## Requirements
 
@@ -20,7 +20,29 @@ The script builds a release executable, bundles its shader resource, and applies
 
 The script explicitly selects SwiftPM's native build engine because the default `swiftbuild` engine fails to initialize with the standalone Command Line Tools on the development machine. That engine is deprecated; revisit this workaround with future toolchain updates.
 
-Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing the window quits the app.
+Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
+
+## Xbox Account
+
+The account window opens at startup. Reopen it with **Account → Xbox Account…** or **Shift-Command-A**.
+
+1. Choose **Sign In with Microsoft** and open the Microsoft sign-in link.
+2. Enter the displayed code in your browser and complete sign-in using a personal Microsoft account with an Xbox profile. Never share the code with anyone else.
+3. XFrame exchanges the authorization for Xbox and xCloud credentials, then shows the gamertag, offering, available regions, and credential expiration. This does not yet start a game or prove that every catalog title is playable.
+
+Only the Microsoft refresh token is saved in macOS Keychain, without iCloud synchronization. Other tokens stay in memory. Startup restores the saved sign-in; **Check Access Again** refreshes it manually. **Sign Out** cancels pending requests and removes XFrame's saved sign-in, but does not sign out your browser or revoke Microsoft's server-side grants. **Cancel** preserves any previously saved sign-in.
+
+This development implementation follows [XStreaming's authentication flow](https://github.com/Geocld/XStreaming/blob/383e19d324f2d3029d1c304752f4d38a9360bb95/src/xal/msal.ts), including its public Microsoft client identifier. It is not an XFrame-owned app registration, and Microsoft's consent screen may identify the public client rather than XFrame. Service compatibility is not guaranteed. No region-spoofing headers are sent. A rejected catalog offering (HTTP 403) triggers a separate free-to-play check, clearly labeled in the UI.
+
+Real account login and Keychain restoration across a confirmed full process restart have been verified on the development Mac. Automated authentication tests use stubbed services. See [the authentication specification](.scratch/xcloud-auth/spec.md) and [validation record](.scratch/xcloud-auth/validation.md).
+
+## Cloud Games and Sessions
+
+Open **Account → Cloud Games…** (**Shift-Command-G**), choose **Load Games**, search, select a game, and choose **Start Session**. The account's title list is hydrated with English names from Microsoft's public catalog; it may not be exhaustive, and launch eligibility is ultimately checked by the service.
+
+The window distinguishes waiting for resources, provisioning, and a provisioned session with configuration available. It does not connect WebRTC or display game audio/video. Choose **End Session** to cancel startup or release the session. Ready test sessions automatically end after 60 seconds. Keep XFrame running until it reports **Session ended**; failed cleanup retains a retry button and blocks normal quitting and account changes. Closing a window is not the same as ending a session.
+
+This is a supervised session-lifecycle increment, not a playable client. Crash/force-quit recovery and renewal of credentials during a session are deferred. A failed creation request without a returned session address can have an uncertain server outcome, which is reported explicitly. See [the session specification](.scratch/cloud-sessions/spec.md).
 
 ## Local Video
 
@@ -64,6 +86,8 @@ The fixed source image is scaled using bilinear filtering. Enlarging it does not
 - `TestPattern.swift`: one-time test image generation and texture upload.
 - `Shaders.metal`: textured quad with bilinear sampling.
 - `LocalVideo.swift`: compressed file reading, hardware decoding, bounded frame queue, playback clock, and counters.
+- `Auth/`: device-code authentication, Xbox/xCloud exchanges, Keychain storage, and account UI.
+- `Cloud/`: authenticated title discovery, public title metadata, session ownership/cleanup, and searchable game UI.
 
 The static view redraws on invalidation. Video playback uses MTKView display callbacks and pauses its drawing loop after EOF or failure. CPU drawing is used only to create the static fixture once. Adaptive streaming frame pacing belongs to a later increment.
 

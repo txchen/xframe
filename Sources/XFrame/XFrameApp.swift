@@ -1,6 +1,7 @@
 import AppKit
 import MetalKit
 import UniformTypeIdentifiers
+import SwiftUI
 
 @main
 @MainActor
@@ -21,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var videoView: MetalView?
     private var playback: LocalVideo?
     private var lastURL: URL?
+    private lazy var account = XboxAccount()
+    private var accountWindow: NSWindow?
+    private var libraryWindow: NSWindow?
     private let diagnostics = NSTextField(labelWithString: "Test pattern · Command-O to open an H.264 video")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -77,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self.window = window
             view.updateBackingSize()
             NSApp.activate(ignoringOtherApps: true)
+            account.restore()
+            showXboxAccount()
         } catch {
             let alert = NSAlert()
             alert.messageText = "Unable to start XFrame"
@@ -88,7 +94,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
-    func applicationWillTerminate(_ notification: Notification) { playback?.stop() }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard account.library.ownsSession else { return .terminateNow }
+        showCloudLibrary()
+        let alert = NSAlert()
+        alert.messageText = "End the cloud session before quitting"
+        alert.informativeText = "Use End Session and wait for confirmation. This avoids leaving a cloud console occupied."
+        alert.runModal()
+        return .terminateCancel
+    }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showXboxAccount()
+        return true
+    }
+    func applicationWillTerminate(_ notification: Notification) { playback?.stop(); account.cancel() }
+
+    @objc private func showXboxAccount() {
+        if accountWindow == nil {
+            let controller = NSHostingController(rootView: XboxAccountView(account: account))
+            let window = NSWindow(contentViewController: controller)
+            window.title = "XFrame — Xbox Account"
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            accountWindow = window
+        }
+        accountWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func showCloudLibrary() {
+        if libraryWindow == nil {
+            let controller = NSHostingController(rootView: CloudLibraryView(library: account.library, account: account))
+            let window = NSWindow(contentViewController: controller)
+            window.title = "XFrame — Cloud Games"
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            libraryWindow = window
+        }
+        libraryWindow?.makeKeyAndOrderFront(nil)
+    }
 
     @objc private func openVideo() {
         guard let window else { return }
@@ -149,6 +194,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         fileMenu.addItem(withTitle: "Replay Video", action: #selector(replayVideo), keyEquivalent: "r").target = self
         fileMenu.addItem(withTitle: "Stop and Show Test Pattern", action: #selector(showTestPattern), keyEquivalent: "0").target = self
         fileItem.submenu = fileMenu
+        let accountItem = menu.addItem(withTitle: "Account", action: nil, keyEquivalent: "")
+        let accountMenu = NSMenu(title: "Account")
+        let signIn = accountMenu.addItem(withTitle: "Xbox Account…", action: #selector(showXboxAccount), keyEquivalent: "a")
+        signIn.keyEquivalentModifierMask = [.command, .shift]
+        signIn.target = self
+        accountItem.submenu = accountMenu
+        let games = accountMenu.addItem(withTitle: "Cloud Games…", action: #selector(showCloudLibrary), keyEquivalent: "g")
+        games.keyEquivalentModifierMask = [.command, .shift]
+        games.target = self
         let viewItem = menu.addItem(withTitle: "View", action: nil, keyEquivalent: "")
         let viewMenu = NSMenu(title: "View")
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
