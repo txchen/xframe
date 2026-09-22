@@ -146,7 +146,7 @@ struct CloudLibraryView: View {
                 Spacer()
                 if library.ending { ProgressView().controlSize(.small) }
                 if library.ownsSession {
-                    Button("End Session") { library.end() }.disabled(library.ending)
+                    Button("End Session") { library.requestEndSession?() }.disabled(library.ending)
                 } else {
                     if let game = library.retryGame {
                         Button("Retry \(game.name)") { library.retry() }.disabled(account.isBusy)

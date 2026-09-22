@@ -3,6 +3,13 @@ import Observation
 
 @Observable @MainActor
 final class CloudLibrary {
+    enum Termination: Equatable { case idle, ending, failed(String), ended, unconfirmed }
+    private(set) var termination: Termination = .idle {
+        didSet { if oldValue != termination { terminationChanged?(termination) } }
+    }
+    @ObservationIgnored var terminationChanged: ((Termination) -> Void)?
+    @ObservationIgnored var requestEndSession: (() -> Void)?
+    @ObservationIgnored var audioChanged: (() -> Void)?
     var query = GameLibraryQuery() { didSet { if oldValue != query { rebuildPage() } } }
     var search: String {
         get { query.search }
@@ -96,7 +103,10 @@ final class CloudLibrary {
     func setAudio(muted: Bool, volume: Double) {
         audioMuted = muted
         audioVolume = volume.isFinite ? min(1, max(0, volume)) : 0
+        inputDefaults.set(audioMuted, forKey: "XFrame.AudioMuted")
+        inputDefaults.set(audioVolume, forKey: "XFrame.AudioVolume")
         connection?.configureAudio(muted: audioMuted, volume: audioVolume)
+        audioChanged?()
     }
     var controllerEnabled = false {
         didSet {
@@ -135,6 +145,9 @@ final class CloudLibrary {
         self.preferencesStore = preferencesStore
         self.inputDefaults = inputDefaults
         controllerEnabled = inputDefaults.bool(forKey: "XFrame.ControllerEnabled")
+        audioMuted = inputDefaults.bool(forKey: "XFrame.AudioMuted")
+        let storedVolume = inputDefaults.object(forKey: "XFrame.AudioVolume") as? Double ?? 1
+        audioVolume = storedVolume.isFinite ? min(1, max(0, storedVolume)) : 1
         streamPreferences = preferencesStore.load()
         self.favoritesStore = favoritesStore
         favorites = favoritesStore.load()
@@ -192,6 +205,7 @@ final class CloudLibrary {
         let launchPreferences = streamPreferences
         activeStreamPreferences = launchPreferences
         ownsSession = true
+        termination = .idle
         cancelRequested = false
         ready = false
         errorMessage = nil
@@ -275,7 +289,9 @@ final class CloudLibrary {
                     activeGameID = nil
                     retryGameID = nil // Unknown allocation: do not offer an automatic retry shortcut.
                     status = "Start failed; no session address was received. Server allocation could not be confirmed."
+                    ending = false
                     task = nil
+                    termination = .unconfirmed
                 }
             }
         }
@@ -284,9 +300,11 @@ final class CloudLibrary {
     func end() {
         guard ownsSession && !ending else { return }
         cancelRequested = true
+        ending = true
         status = "Ending session…"
         // Release local media/input now, even if signaling is awaiting an HTTP callback.
         connection?.close()
+        termination = .ending
         // Creation and polling complete naturally so returned handles can be deleted.
         if ready { task?.cancel() }
         else if task == nil { task = Task { await cleanup() } }
@@ -302,6 +320,7 @@ final class CloudLibrary {
             lastStreamReport = connection.video.diagnosticReport()
         }
         connection = nil
+        termination = .ending
         displayVideo?(nil)
         // Independent task: cleanup must not inherit the canceled idle timer.
         let result = await Task { () -> Bool in
@@ -317,7 +336,11 @@ final class CloudLibrary {
             activeGameID = nil
             activeStreamPreferences = nil
             status = retryGameID == nil ? "Session ended" : "Session ended — ready to retry"
-        } else { status = "Session cleanup failed — retry End Session before quitting." }
+            termination = .ended
+        } else {
+            status = "Session cleanup failed — retry End Session before quitting."
+            termination = .failed(errorMessage ?? "The cloud service could not confirm session cleanup.")
+        }
     }
 
     private func fail(_ error: Error) {

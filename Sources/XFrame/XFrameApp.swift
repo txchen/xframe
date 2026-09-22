@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private lazy var account = XboxAccount()
     private var libraryWindow: NSWindow?
     private let playbackSettings = PlaybackSettingsView()
+    private let panelInput = PlaybackPanelInput()
     private let diagnostics = PerformanceHUDView()
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
     private var scalingMode = VideoScalingMode(rawValue: UserDefaults.standard.string(forKey: VideoScalingMode.preferenceKey) ?? "") ?? .original
@@ -61,6 +62,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             playbackSettings.selectScaling = { [weak self] mode in self?.setScaling(mode) }
             playbackSettings.selectHUD = { [weak self] preset in self?.setPerformanceHUD(preset) }
             playbackSettings.dismiss = { [weak self] in self?.hidePlaybackSettings() }
+            playbackSettings.selectAudio = { [weak self] muted, volume in
+                self?.account.library.setAudio(muted: muted, volume: volume)
+            }
+            playbackSettings.toggleFullscreen = { [weak self] in
+                guard let self, self.playbackPresentation?.transitioning == false else { return }
+                self.playbackPresentation?.willTransitionFullScreen()
+                self.refreshPlaybackControls()
+                self.window?.toggleFullScreen(nil)
+            }
+            playbackSettings.requestEnd = { [weak self] in self?.requestEndSession() }
+            playbackSettings.confirmEnd = { [weak self] in self?.account.library.end() }
             self.renderer = renderer
             self.videoView = view
             view.delegate = renderer
@@ -108,21 +120,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             NSApp.activate(ignoringOtherApps: true)
             account.library.displayVideo = { [weak self] source in
                 guard let self, let view = self.videoView, let renderer = self.renderer else { return }
-                self.hidePlaybackSettings()
+                self.hidePlaybackSettings(force: true)
                 self.playback?.stop()
                 self.playback = nil
                 renderer.play(source, in: view)
                 view.sourceName = source == nil ? "1920×1080" : "xCloud H.264"
                 view.updateBackingSize()
-                self.diagnostics.showMessage(source == nil ? "Cloud session ended" : "Connecting cloud video…")
+                self.diagnostics.showMessage(source == nil ? "Cloud playback stopped" : "Connecting cloud video…")
                 if source != nil {
                     self.playbackPresentation?.showWindowed()
+                } else if self.account.library.ownsSession {
+                    self.presentTermination(self.account.library.termination)
                 } else {
                     self.hidePlaybackWindow()
                 }
             }
             account.library.showPlaybackSettings = { [weak self] in self?.showPlaybackSettings() }
-            account.library.settingsGamepad = { [weak self] state in self?.playbackSettings.gamepad(state) }
+            account.library.requestEndSession = { [weak self] in self?.requestEndSession() }
+            account.library.terminationChanged = { [weak self] state in self?.presentTermination(state) }
+            account.library.audioChanged = { [weak self] in self?.refreshPlaybackControls() }
             account.restore()
             showCloudLibrary()
         } catch {
@@ -152,6 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+        panelInput.stop()
         playback?.stop(); account.cancel()
     }
     @objc private func systemWillSleep(_ notification: Notification) { account.library.systemWillSleep() }
@@ -212,7 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func replayVideo() { if let lastURL { play(lastURL) } }
 
     @objc private func showTestPattern() {
-        guard !account.library.ownsSession else { account.library.end(); return }
+        guard !account.library.ownsSession else { requestEndSession(); return }
         guard let renderer, let videoView else { return }
         playback?.stop()
         playback = nil
@@ -224,15 +241,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func hidePlaybackWindow() {
-        hidePlaybackSettings()
+        hidePlaybackSettings(force: true)
         playbackPresentation?.hide()
         showCloudLibrary()
     }
 
     func windowDidBecomeKey(_ notification: Notification) { updateControllerFocus() }
-    func windowDidResignKey(_ notification: Notification) { account.library.playbackFocused = false; hidePlaybackSettings() }
-    func applicationDidBecomeActive(_ notification: Notification) { updateControllerFocus() }
-    func applicationDidResignActive(_ notification: Notification) { account.library.playbackFocused = false; hidePlaybackSettings() }
+    func windowDidResignKey(_ notification: Notification) {
+        account.library.playbackFocused = false
+        playbackSettings.resetNavigation()
+        if playbackPresentation?.transitioning != true { hidePlaybackSettings() }
+    }
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if playbackSettings.retainsTermination { window?.showPlayback() }
+        updateControllerFocus()
+    }
+    func applicationDidResignActive(_ notification: Notification) {
+        account.library.playbackFocused = false
+        playbackSettings.resetNavigation()
+        hidePlaybackSettings()
+    }
     private func updateControllerFocus() {
         account.library.playbackFocused = NSApp.isActive && window?.isKeyWindow == true
     }
@@ -259,7 +287,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             // Keep app/system shortcuts available. Consume all ordinary game keys,
             // including key-up, while settings owns local input.
             if !event.modifierFlags.intersection([.command, .control, .option]).isEmpty { return event }
-            if event.type == .keyDown && (!event.isARepeat || [125, 126].contains(event.keyCode)) {
+            if event.type == .keyDown && (!event.isARepeat || [123, 124, 125, 126].contains(event.keyCode)) {
                 _ = playbackSettings.key(event.keyCode)
             }
             return nil
@@ -284,7 +312,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        if account.library.ownsSession { account.library.end(); showCloudLibrary(); return false }
+        if account.library.ownsSession { requestEndSession(); return false }
         playback?.stop()
         playback = nil
         if let renderer, let videoView { renderer.play(nil, in: videoView) }
@@ -293,23 +321,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     func windowWillEnterFullScreen(_ notification: Notification) {
         playbackPresentation?.willTransitionFullScreen()
+        refreshPlaybackControls()
     }
     func windowWillExitFullScreen(_ notification: Notification) {
         playbackPresentation?.willTransitionFullScreen()
+        refreshPlaybackControls()
     }
     func windowDidEnterFullScreen(_ notification: Notification) {
         playbackPresentation?.didTransitionFullScreen()
+        refreshPlaybackControls()
+        updateControllerFocus()
         refreshVideoView()
     }
     func windowDidExitFullScreen(_ notification: Notification) {
         playbackPresentation?.didTransitionFullScreen()
+        refreshPlaybackControls()
+        updateControllerFocus()
         refreshVideoView()
     }
     func windowDidFailToEnterFullScreen(_ window: NSWindow) {
         playbackPresentation?.failedTransitionFullScreen()
+        refreshPlaybackControls()
     }
     func windowDidFailToExitFullScreen(_ window: NSWindow) {
         playbackPresentation?.failedTransitionFullScreen()
+        refreshPlaybackControls()
         diagnostics.showMessage("Unable to exit full screen. Use Control-Command-F, then retry.")
     }
     func windowDidChangeScreen(_ notification: Notification) { refreshVideoView() }
@@ -356,13 +392,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     private func showPlaybackSettings() {
         guard window?.isVisible == true, window?.isKeyWindow == true else { return }
+        guard !playbackSettings.retainsTermination else { return }
+        refreshPlaybackControls()
         account.library.playbackSettingsVisible = true
         playbackSettings.show(scaling: scalingMode, hud: hudPreset)
+        startPanelInput()
     }
-    private func hidePlaybackSettings() {
+    private func hidePlaybackSettings(force: Bool = false) {
+        guard force || !playbackSettings.retainsTermination else { return }
         guard !playbackSettings.isHidden else { return }
-        playbackSettings.isHidden = true
+        playbackSettings.hide()
+        panelInput.stop()
         account.library.playbackSettingsVisible = false
+    }
+    private func refreshPlaybackControls() {
+        playbackSettings.configure(cloud: account.library.ownsSession,
+            muted: account.library.audioMuted, volume: account.library.audioVolume,
+            fullscreen: window?.styleMask.contains(.fullScreen) == true,
+            transitioning: playbackPresentation?.transitioning == true)
+    }
+    private func startPanelInput() {
+        panelInput.start(panel: playbackSettings) { [weak self] in
+            guard let self else { return false }
+            return self.account.library.controllerEnabled && NSApp.isActive
+                && self.window?.isKeyWindow == true && !self.playbackSettings.isHidden
+        }
+    }
+    private func requestEndSession() {
+        guard account.library.ownsSession else { return }
+        // A library entry point reveals the existing surface without exiting fullscreen.
+        window?.showPlayback()
+        switch account.library.termination {
+        case .ending, .failed:
+            presentTermination(account.library.termination)
+        default:
+            guard playbackSettings.mode != .confirmation || playbackSettings.isHidden else { return }
+            account.library.playbackSettingsVisible = true
+            playbackSettings.showTermination(.confirmation)
+            startPanelInput()
+        }
+    }
+    private func presentTermination(_ state: CloudLibrary.Termination) {
+        switch state {
+        case .idle: return
+        case .ended, .unconfirmed:
+            hidePlaybackWindow()
+        case .ending, .failed:
+            account.library.playbackSettingsVisible = true
+            if case .failed(let message) = state {
+                playbackSettings.showTermination(.failed(message))
+            } else {
+                playbackSettings.showTermination(.ending)
+            }
+            // Do not steal focus when cleanup finishes in another application.
+            if window?.isVisible != true && NSApp.isActive { window?.showPlayback() }
+            startPanelInput()
+        }
     }
 
     private func installMenu() {
@@ -373,6 +458,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         appItem.submenu = appMenu
         let fileItem = menu.addItem(withTitle: "File", action: nil, keyEquivalent: "")
         let fileMenu = NSMenu(title: "File")
+        fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileMenu.addItem(withTitle: "Open Video…", action: #selector(openVideo), keyEquivalent: "o").target = self
         fileMenu.addItem(withTitle: "Replay Video", action: #selector(replayVideo), keyEquivalent: "r").target = self
         fileMenu.addItem(withTitle: "Stop and Show Test Pattern", action: #selector(showTestPattern), keyEquivalent: "0").target = self

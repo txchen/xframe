@@ -23,3 +23,7 @@ _Avoid_: Window size, canvas size
 **Integer Scaling**:
 An enlargement in which each source-image pixel becomes an equally sized square block of output pixels, with an integer multiplier and no blending between adjacent source-image pixels during enlargement.
 _Avoid_: Super resolution, arbitrary nearest-neighbor scaling
+
+**End Session**:
+An explicit request to terminate the cloud gaming session and release its cloud resources. It is complete only when the service confirms cleanup; stopping local playback alone does not complete it.
+_Avoid_: Pause, hide playback, disconnect locally

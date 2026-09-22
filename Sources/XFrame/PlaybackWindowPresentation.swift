@@ -29,7 +29,7 @@ final class PlaybackWindowPresentation {
     private let surface: any PlaybackWindowSurface
     init(surface: any PlaybackWindowSurface) { self.surface = surface }
 
-    private var transitioning = false
+    private(set) var transitioning = false
     private var pendingVisibility: Bool?
 
     func showWindowed() {

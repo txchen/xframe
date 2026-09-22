@@ -28,3 +28,37 @@ Still pending: small-window scrolling; physical View + Menu and D-pad/A/B; game-
 User requested persistent controller enablement and explicitly rejected an input toggle inside the controller-operated panel. Added preference restoration and initial View-menu checkmark synchronization; existing focus-loss release and neutral rearm remain. A regression verifies enable and disable across library recreation and verifies focus is never restored. The existing keyboard/controller coexistence test now uses isolated preferences.
 
 Full suite: 133 tests passed (`.build/controller-persistence-tests.log`). Signed app build and strict/deep verification passed (`.build/controller-persistence-build.log`). The currently playing game was not interrupted to install this follow-up in the running process; it takes effect on the next app launch.
+
+
+## P1 controls extension — 2026-09-22
+
+Implemented the approved grill-with-docs decisions:
+
+- Cloud-only volume and mute controls, independent application-wide persistence, 5-percentage-point horizontal steps, bounded controller hold repeat (400 ms initial delay, 100 ms repeat), and a mouse slider. Adjusting volume does not unmute.
+- Enter/Exit Fullscreen remains inside the panel, preserves the selected row, and disables repeated activation during native transitions. Existing windowed session-start behavior is retained.
+- Panel End Session, playback close/Command-W, library End Session, and the existing Command-0 cloud-stop shortcut route through a default-Cancel confirmation.
+- Confirmed termination releases media/input immediately and keeps progress in the playback surface until cleanup succeeds. Failure keeps controller-accessible Retry End Session. Duplicate requests are suppressed at the library boundary.
+- Confirmation is dismissed on focus loss; confirmed termination and failure state survive. An unknown allocation after a failed creation remains reported as unconfirmed in the library, never as successful cleanup.
+- Panel controller navigation polls locally without replacing streaming controller handlers, so it remains available after transport/media teardown. Focus and controller opt-in still gate local navigation.
+- Local video/test pattern hide cloud audio and termination controls. Input-toggle placement and streaming preferences retain their agreed scope.
+
+### Automated/build evidence
+
+- Full suite: **141 tests passed**, `.build/p1-controls-tests.log`.
+- After the final small-window label-width adjustment, **12 focused tests passed**, `.build/p1-controls-focused.log`.
+- Coverage includes repeat timing and confirmation edges, volume bounds/mute independence, preference restoration, fullscreen selection/transition gating, local-source control visibility, small-panel scroll-to-selection geometry, delayed service cleanup, duplicate termination suppression, and failed-cleanup retry.
+- Release app: `.build/XFrame.app`; build plus deep/strict signature verification passed, `.build/p1-controls-build.log`.
+- `git diff --check` passed.
+
+### Remaining acceptance / handoff
+
+The running application was observed streaming a real cloud session during this work. It was not deliberately ended or restarted to activate the new build. Automated AppKit checks are not native interactive or physical-controller acceptance.
+
+On the next safe launch of the built app, verify:
+
+1. Controller View+Menu opens settings; D-pad/A/B, volume hold repeat, mute, and neutral-before-rearm work in a real game without leaking navigation to gameplay.
+2. Mouse/keyboard/physical-controller controls remain usable in a small window and 4K fullscreen; fullscreen transition retains the panel and selection.
+3. Audio preferences survive relaunch and switching games; local-video/test-pattern controls omit cloud-only actions.
+4. All termination entry points default to Cancel. Focus loss cancels only unconfirmed requests. Confirmed cleanup remains visible through focus changes and closes only after success; failure/retry remains operable using the controller.
+
+P1 remains unchecked until these required native/device/live checks pass. No real service failure was injected and no user gameplay was claimed as acceptance for this build.

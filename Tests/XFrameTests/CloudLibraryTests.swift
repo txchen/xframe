@@ -30,9 +30,11 @@ private actor FakeCloud: CloudServing {
     var connects = 0
     var failDelete = false
     let states: [String]
+    let deleteDelay: Duration
     let catalog: [CloudGame]
     var index = 0
-    init(states: [String] = ["Provisioned"], failDelete: Bool = false, catalog: [CloudGame] = [cloudGame]) {
+    init(states: [String] = ["Provisioned"], failDelete: Bool = false, catalog: [CloudGame] = [cloudGame], deleteDelay: Duration = .zero) {
+        self.deleteDelay = deleteDelay
         self.states = states; self.failDelete = failDelete; self.catalog = catalog
     }
     func games() async throws -> [CloudGame] { catalog }
@@ -51,6 +53,7 @@ private actor FakeCloud: CloudServing {
     func connect(at: URL) async throws { connects += 1 }
     func end(at: URL) async throws {
         deletes += 1
+        try await Task.sleep(for: deleteDelay)
         if failDelete { failDelete = false; throw CloudError.network }
     }
 }
@@ -59,7 +62,7 @@ private actor FakeCloud: CloudServing {
     let suite = "XFrameTests.\(UUID().uuidString)"
     let defaults = try #require(UserDefaults(suiteName: suite))
     defer { defaults.removePersistentDomain(forName: suite) }
-    let library = CloudLibrary(favoritesStore: GameFavoritesStore(defaults: defaults))
+    let library = CloudLibrary(favoritesStore: GameFavoritesStore(defaults: defaults), inputDefaults: defaults)
     library.load(using: FakeCloud())
     try await eventually { !library.loading }
     #expect(library.catalogLoaded)
@@ -290,4 +293,62 @@ private actor FakeCloud: CloudServing {
     #expect(library.retryGame == cloudGame)
     library.reset()
     #expect(library.retryGame == nil)
+}
+
+@Test @MainActor func audioPreferencesRestoreMuteAndVolumeIndependently() throws {
+    let suite = "XFrameTests.Audio.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let library = CloudLibrary(inputDefaults: defaults)
+    #expect(library.audioVolume == 1 && !library.audioMuted)
+    library.setAudio(muted: true, volume: 0.4)
+    let restored = CloudLibrary(inputDefaults: defaults)
+    #expect(restored.audioVolume == 0.4 && restored.audioMuted)
+    restored.setAudio(muted: true, volume: 0.6)
+    let adjusted = CloudLibrary(inputDefaults: defaults)
+    #expect(adjusted.audioVolume == 0.6 && adjusted.audioMuted)
+    adjusted.setAudio(muted: false, volume: adjusted.audioVolume)
+    #expect(CloudLibrary(inputDefaults: defaults).audioVolume == 0.6)
+    #expect(!CloudLibrary(inputDefaults: defaults).audioMuted)
+    adjusted.setAudio(muted: false, volume: 10)
+    #expect(CloudLibrary(inputDefaults: defaults).audioVolume == 1)
+    adjusted.setAudio(muted: true, volume: .nan)
+    #expect(CloudLibrary(inputDefaults: defaults).audioVolume == 0)
+}
+
+@Test @MainActor func terminationRemainsPendingUntilServiceConfirmsAndSuppressesDuplicateRequests() async throws {
+    let fake = FakeCloud(deleteDelay: .milliseconds(150))
+    let library = try await loaded(fake)
+    var transitions: [CloudLibrary.Termination] = []
+    library.terminationChanged = { transitions.append($0) }
+    library.start(cloudGame)
+    try await eventually { library.ready }
+    library.end()
+    #expect(library.ending && library.termination == .ending && library.ownsSession)
+    for _ in 0..<10 { library.end() }
+    try await Task.sleep(for: .milliseconds(30))
+    #expect(library.ownsSession && library.termination == .ending)
+    library.playbackFocused = false
+    try await eventually { !library.ownsSession }
+    #expect(transitions == [.ending, .ended])
+    #expect(await fake.deletes == 1)
+}
+
+@Test @MainActor func cleanupFailureKeepsPanelRetryStateUntilRetrySucceeds() async throws {
+    let fake = FakeCloud(failDelete: true, deleteDelay: .milliseconds(50))
+    let library = try await loaded(fake)
+    var transitions: [CloudLibrary.Termination] = []
+    library.terminationChanged = { transitions.append($0) }
+    library.start(cloudGame)
+    try await eventually { library.ready }
+    library.end()
+    try await eventually { !library.ending }
+    guard case .failed = library.termination else { Issue.record("Missing retry state"); return }
+    #expect(library.ownsSession && !library.ready)
+    library.end()
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(transitions.count == 4)
+    #expect(transitions.last == .ended)
+    #expect(await fake.deletes == 2)
 }
