@@ -7,6 +7,13 @@ struct GameBrowserView: View {
         VStack(spacing: 18) {
             filters
             catalog
+                .onMoveCommand { direction in
+                    switch direction {
+                    case .left, .up: library.moveSelection(by: -1)
+                    case .right, .down: library.moveSelection(by: 1)
+                    @unknown default: break
+                    }
+                }
             pagination
         }
     }
@@ -53,7 +60,12 @@ struct GameBrowserView: View {
                     ForEach(library.page.games) { game in
                         GameLibraryCard(game: game, selected: library.selection == game.id,
                             favorite: library.favorites.contains(game.id), select: { library.selection = game.id },
-                            toggleFavorite: { library.toggleFavorite(game) })
+                            toggleFavorite: { library.toggleFavorite(game) },
+                            artworkRevision: library.artworkRevisions[game.id, default: 0])
+                            .contextMenu {
+                                Button("Reload Artwork") { library.reloadArtwork(for: game) }
+                                    .disabled(game.posterURL == nil)
+                            }
                     }
                 }.padding(4)
             }.id(library.query).scrollContentBackground(.hidden)
@@ -106,6 +118,7 @@ private struct GameLibraryCard: View {
     let game: CloudGame
     let selected, favorite: Bool
     let select, toggleFavorite: () -> Void
+    let artworkRevision: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -120,7 +133,7 @@ private struct GameLibraryCard: View {
                                 Image(systemName: "gamecontroller").font(.system(size: 32)).foregroundStyle(.secondary)
                             }
                         }
-                    }.frame(width: geometry.size.width, height: geometry.size.height).clipped().accessibilityHidden(true)
+                    }.id(artworkRevision).frame(width: geometry.size.width, height: geometry.size.height).clipped().accessibilityHidden(true)
                     }.aspectRatio(2.0 / 3.0, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     Text(game.name).font(.system(size: 13, weight: .semibold)).lineLimit(2).frame(height: 34, alignment: .topLeading)

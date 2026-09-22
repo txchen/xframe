@@ -3,16 +3,26 @@ import Observation
 
 @Observable @MainActor
 final class CloudLibrary {
-    var query = GameLibraryQuery()
+    var query = GameLibraryQuery() { didSet { if oldValue != query { rebuildPage() } } }
     var search: String {
         get { query.search }
         set { updateQuery { $0.search = newValue } }
     }
-    private(set) var favorites: Set<String>
+    private(set) var favorites: Set<String> { didSet { rebuildPage() } }
     private(set) var catalogLoaded = false
+    private(set) var artworkRevisions: [String: Int] = [:]
+    func reloadArtwork(for game: CloudGame) {
+        guard games.contains(game) else { return }
+        artworkRevisions[game.id, default: 0] &+= 1
+    }
     @ObservationIgnored private let favoritesStore: GameFavoritesStore
-    var page: GameLibraryQuery.Page { query.page(in: games, favorites: favorites) }
-    var categories: [String] { Array(Set(games.flatMap(\.categories))).sorted() }
+    private(set) var page = GameLibraryQuery().page(in: [], favorites: [])
+    private(set) var categories: [String] = []
+    @ObservationIgnored private(set) var pageComputations = 0
+    private func rebuildPage() {
+        page = query.page(in: games, favorites: favorites)
+        pageComputations += 1
+    }
     var selectedGame: CloudGame? { page.games.first { $0.id == selection } }
 
     func updateQuery(_ change: (inout GameLibraryQuery) -> Void) {
@@ -23,6 +33,13 @@ final class CloudLibrary {
     func goToPage(_ index: Int) {
         query.pageIndex = min(max(0, index), page.count - 1)
         selection = nil
+    }
+    func moveSelection(by offset: Int) {
+        guard !page.games.isEmpty else { selection = nil; return }
+        let current = page.games.firstIndex { $0.id == selection }
+        let index = current.map { min(max(0, $0 + offset), page.games.count - 1) }
+            ?? (offset < 0 ? page.games.count - 1 : 0)
+        selection = page.games[index].id
     }
     func toggleFavorite(_ game: CloudGame) {
         guard games.contains(game) else { return }
@@ -35,7 +52,9 @@ final class CloudLibrary {
     var viewError: String?
     var diagnosticDocument: StreamDiagnosticDocument?
     var exportingDiagnostics = false
-    private(set) var games: [CloudGame] = []
+    private(set) var games: [CloudGame] = [] {
+        didSet { categories = Array(Set(games.flatMap(\.categories))).sorted(); rebuildPage() }
+    }
     private(set) var status = "Load games after signing in."
     private(set) var errorMessage: String?
     private(set) var loading = false
@@ -70,6 +89,7 @@ final class CloudLibrary {
     func reset() {
         guard !ownsSession && !loading else { return }
         games = []
+        artworkRevisions = [:]
         catalogLoaded = false
         query = GameLibraryQuery()
         selection = nil
@@ -86,6 +106,7 @@ final class CloudLibrary {
         self.service = service
         loading = true
         games = []
+        artworkRevisions = [:]
         selection = nil
         query.pageIndex = 0
         catalogLoaded = false

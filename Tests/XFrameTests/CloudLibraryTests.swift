@@ -11,11 +11,12 @@ private actor FakeCloud: CloudServing {
     var connects = 0
     var failDelete = false
     let states: [String]
+    let catalog: [CloudGame]
     var index = 0
-    init(states: [String] = ["Provisioned"], failDelete: Bool = false) {
-        self.states = states; self.failDelete = failDelete
+    init(states: [String] = ["Provisioned"], failDelete: Bool = false, catalog: [CloudGame] = [cloudGame]) {
+        self.states = states; self.failDelete = failDelete; self.catalog = catalog
     }
-    func games() async throws -> [CloudGame] { [cloudGame] }
+    func games() async throws -> [CloudGame] { catalog }
     func create(title: String) async throws -> URL {
         creates += 1
         try await Task.sleep(for: .milliseconds(30))
@@ -42,6 +43,17 @@ private actor FakeCloud: CloudServing {
     library.load(using: FakeCloud())
     try await eventually { !library.loading }
     #expect(library.catalogLoaded)
+    let computations = library.pageComputations
+    for _ in 0..<100 { _ = library.page; _ = library.categories; _ = library.selectedGame }
+    library.setAudio(muted: true, volume: 0.5)
+    #expect(library.pageComputations == computations)
+    library.reloadArtwork(for: cloudGame)
+    #expect(library.artworkRevisions[cloudGame.id] == 1)
+    #expect(library.pageComputations == computations)
+    library.moveSelection(by: 1)
+    #expect(library.selectedGame == cloudGame)
+    library.moveSelection(by: -1)
+    #expect(library.selectedGame == cloudGame)
     library.selection = cloudGame.id
     #expect(library.selectedGame == cloudGame)
     library.toggleFavorite(cloudGame)
@@ -50,6 +62,7 @@ private actor FakeCloud: CloudServing {
     #expect(library.page.total == 0)
     library.reset()
     #expect(!library.catalogLoaded && library.query.search.isEmpty)
+    #expect(library.artworkRevisions.isEmpty)
     #expect(library.favorites.contains(cloudGame.id))
     library.load(using: FakeCloud())
     try await eventually { !library.loading }
@@ -63,6 +76,30 @@ private actor FakeCloud: CloudServing {
     let deadline = ContinuousClock.now.advanced(by: .seconds(3))
     while !predicate() && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(5)) }
     #expect(predicate())
+}
+
+@Test @MainActor func cachedLibraryInvalidatesAndKeyboardSelectionStaysOnPage() async throws {
+    let games = (0..<30).map { CloudGame(id: "\($0)", name: "Game \($0)", productID: nil) }
+    let library = try await loaded(FakeCloud(catalog: games))
+    let before = library.pageComputations
+    library.moveSelection(by: 1)
+    #expect(library.selectedGame?.id == "0")
+    library.moveSelection(by: 1)
+    #expect(library.selectedGame?.id == "1")
+    #expect(library.pageComputations == before)
+    library.goToPage(1)
+    #expect(library.selection == nil && library.page.games.count == 6)
+    library.moveSelection(by: -1)
+    #expect(library.selectedGame?.id == "29")
+    library.moveSelection(by: 1)
+    #expect(library.selectedGame?.id == "29")
+    library.search = "Game 27"
+    #expect(library.page.index == 0 && library.page.total == 1 && library.selection == nil)
+    library.moveSelection(by: 1)
+    #expect(library.selectedGame?.id == "27")
+    library.search = "absent"
+    library.moveSelection(by: -1)
+    #expect(library.selectedGame == nil)
 }
 
 @MainActor private func loaded(_ fake: FakeCloud) async throws -> CloudLibrary {
