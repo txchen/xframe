@@ -5,6 +5,33 @@ import Testing
 @preconcurrency import WebRTC
 @testable import XFrame
 
+@Test func h264SamplePreservesSupplementalNALUnits() {
+    let sps = Data([0x67, 1]), pps = Data([0x68, 2])
+    let sei = Data([0x06, 3]), aud = Data([0x09, 4]), slice = Data([0x65, 5])
+    #expect(H264AccessUnit.samplePayload([sps, pps, sei, aud, slice]) ==
+            H264AccessUnit.lengthPrefixed([sei, aud, slice]))
+    #expect(H264AccessUnit.samplePayload([sps, pps, sei]).isEmpty)
+}
+
+@Test func liveDiagnosticsClassifyFailuresAndIgnoreLateNetworkSamples() {
+    let source = LiveVideo()
+    let decoder = HardwareH264Decoder(output: source)
+    decoder.handleDecodeFailure(kVTVideoDecoderBadDataErr, synchronous: true, keyframe: true)
+    decoder.handleDecodeFailure(kVTVideoDecoderBadDataErr, synchronous: false, keyframe: false)
+    source.networkSample(received: 100, lost: 2, nacks: 3)
+    let stats = source.snapshot()
+    #expect(stats.decodeErrors == 2)
+    #expect(stats.synchronousDecodeErrors == 1)
+    #expect(stats.asynchronousDecodeErrors == 1)
+    #expect(stats.keyframeDecodeErrors == 1)
+    #expect(stats.videoPacketsReceived == 100)
+    #expect(stats.videoPacketsLost == 2)
+    #expect(stats.videoNacks == 3)
+    source.stop()
+    source.networkSample(received: 200, lost: 4, nacks: 5)
+    #expect(source.snapshot().videoPacketsReceived == 100)
+}
+
 @Test func cloudRegionSelectionUsesOnlyAuthorizedEndpoints() throws {
     let regions = [
         CloudToken.Settings.Region(name: "WESTUS", baseUri: URL(string: "https://west.gssv.xboxlive.com")!, isDefault: false),

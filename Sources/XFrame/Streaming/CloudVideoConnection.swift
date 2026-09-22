@@ -31,6 +31,7 @@ final class CloudVideoConnection {
     private var inputStarted = false
     private var closed = false
     private var messageCounter = 0
+    private var samplingStats = false
     private let correlationID = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 
     func run(service: any CloudSignaling, session: URL, report: (String) -> Void) async throws {
@@ -90,10 +91,15 @@ final class CloudVideoConnection {
         let deadline = ContinuousClock.now.advanced(by: .seconds(45))
         var nextKeepAlive = ContinuousClock.now
         var nextKeyframeRequest = ContinuousClock.now
+        var nextStatsSample = ContinuousClock.now
         while true {
             try Task.checkCancellation()
             guard !connectionFailed else { throw StreamError.connection }
             let stats = video.snapshot()
+            if ContinuousClock.now >= nextStatsSample {
+                sampleNetworkStats(peer)
+                nextStatsSample = ContinuousClock.now.advanced(by: .seconds(2))
+            }
             if stats.state.hasPrefix("Failed:") { throw StreamError.decoder(stats.state) }
             if stats.decoded > 0 { report("Streaming H.264 video — audio and input disabled") }
             else if ContinuousClock.now > deadline { throw StreamError.firstFrame }
@@ -108,6 +114,24 @@ final class CloudVideoConnection {
                 nextKeepAlive = ContinuousClock.now.advanced(by: .seconds(keepAliveInterval))
             }
             try await Task.sleep(for: .milliseconds(250))
+        }
+    }
+
+    private func sampleNetworkStats(_ peer: RTCPeerConnection) {
+        guard !samplingStats, !closed else { return }
+        samplingStats = true
+        let video = self.video
+        // Completion-style sampling does not block keepalive or stall checks.
+        // Whitelist numeric fields; whole reports can contain network addresses.
+        peer.statistics { [weak self] report in
+            if let inbound = report.statistics.values.first(where: {
+                $0.type == "inbound-rtp" && ($0.values["kind"] as? String) == "video"
+            }) {
+                video.networkSample(received: (inbound.values["packetsReceived"] as? NSNumber)?.intValue,
+                    lost: (inbound.values["packetsLost"] as? NSNumber)?.intValue,
+                    nacks: (inbound.values["nackCount"] as? NSNumber)?.intValue)
+            }
+            Task { @MainActor [weak self] in self?.samplingStats = false }
         }
     }
 

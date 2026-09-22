@@ -14,6 +14,18 @@ The ad-hoc designated requirement was code-hash-bound. The certificate-backed re
 
 ## Live Video
 
+### Expanded Diagnostics and NAL Preservation
+
+Added bounded counters for VT configurations, synchronous/asynchronous bad-data errors, and IDR-associated failures. Every two seconds, at most one in-flight WebRTC statistics request reads only numeric inbound-video packetsReceived, packetsLost, and nackCount. Unsupported or not-yet-available fields display n/a, not zero. Complete reports, addresses, identifiers, credentials, and video payloads are never recorded. Late callbacks cannot update stopped video state.
+
+Three consecutive WESTUS2 preview sessions before changing NAL handling did not reproduce the old -12909 failures. The first two used one VT configuration with zero decode errors; the third also showed one configuration, zero errors, 8592 received video packets, zero reported lost packets and zero NACKs at the sampled observation. These are short preview runs, not proof that the original intermittent failure is fixed.
+
+Comparison against WebRTC's native sample conversion found a separate data-loss issue: XFrame retained only VCL NAL units and discarded accompanying SEI/AUD. The production samplePayload seam was extracted without changing behavior; `bash scripts/test.sh` then failed h264SamplePreservesSupplementalNALUnits (31 tests, one issue). The fix keeps accompanying NAL units while passing SPS/PPS through the format description and ignores access units containing no VCL. All 31 tests then passed in 2.996 seconds, including 720-frame hardware decoding, and the release build succeeded. No claim links this fix causally to the earlier intermittent failures.
+
+References: [WebRTC sample conversion](https://webrtc.googlesource.com/src/+/refs/heads/main/sdk/objc/components/video_codec/nalu_rewriter.cc), [WebRTC statistics definitions](https://www.w3.org/TR/webrtc-stats/).
+
+The fixed build's WESTUS2 run remained at zero decode errors, zero reported packet loss and zero NACKs through the final observation of 44368 received video packets. It used two VT configurations, ten IDR submissions, hardware decoding and a 1/1 queue, with average decode/presentation 58.4/57.3 FPS. The overlay was visually checked. All four test sessions were explicitly ended and confirmed Session ended. No game/account-link input was sent. Repeated changed-build launches restored the file-backed login without user intervention.
+
 ### Startup Error Counters Follow-up
 
 A changed build adds bounded numeric diagnostics: recoverable errors before the first rendered decoded frame, submitted H.264 IDR access units, and WebRTC decoder missingFrames hints. No video payloads, credentials, SDP, or candidate addresses are logged. These are diagnostic counters, not a fix or complete packet-loss telemetry.

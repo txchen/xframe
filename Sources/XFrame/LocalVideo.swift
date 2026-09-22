@@ -15,6 +15,13 @@ struct PlaybackStats: Sendable {
     var errorsBeforeFirstFrame = 0
     var keyframeSubmissions = 0
     var missingFrameSignals = 0
+    var decoderConfigurations = 0
+    var synchronousDecodeErrors = 0
+    var asynchronousDecodeErrors = 0
+    var keyframeDecodeErrors = 0
+    var videoPacketsReceived: Int?
+    var videoPacketsLost: Int?
+    var videoNacks: Int?
     var state = "Loading"
     var hardware = false
     var decoded = 0

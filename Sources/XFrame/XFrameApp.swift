@@ -57,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             diagnostics.textColor = .white
             diagnostics.backgroundColor = NSColor.black.withAlphaComponent(0.8)
             diagnostics.drawsBackground = true
-            diagnostics.maximumNumberOfLines = 3
+            diagnostics.maximumNumberOfLines = 5
             diagnostics.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(diagnostics)
             NSLayoutConstraint.activate([
@@ -75,6 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     stats.dropped, stats.queued, stats.capacity, stats.decodeErrors)
                 if stats.capacity == 1 {
                     self?.diagnostics.stringValue += "\nErrors before first frame \(stats.errorsBeforeFirstFrame) · IDR submissions \(stats.keyframeSubmissions) · Missing-frame signals \(stats.missingFrameSignals)"
+                    self?.diagnostics.stringValue += "\nVT configurations \(stats.decoderConfigurations) · Errors sync/async \(stats.synchronousDecodeErrors)/\(stats.asynchronousDecodeErrors) · IDR errors \(stats.keyframeDecodeErrors)"
+                    self?.diagnostics.stringValue += "\nVideo RTP received/lost \(stats.videoPacketsReceived.map(String.init) ?? "n/a")/\(stats.videoPacketsLost.map(String.init) ?? "n/a") · NACKs \(stats.videoNacks.map(String.init) ?? "n/a")"
                 }
             }
             window.contentView = content

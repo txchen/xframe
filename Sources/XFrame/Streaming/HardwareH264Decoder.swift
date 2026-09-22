@@ -32,6 +32,18 @@ enum H264AccessUnit {
         }
         return result
     }
+    static func samplePayload(_ units: [Data]) -> Data {
+        guard units.contains(where: { unit in
+            guard let first = unit.first else { return false }
+            return (1...5).contains(Int(first & 31))
+        }) else { return Data() }
+        // SPS/PPS are provided through the format description. Preserve SEI,
+        // AUD and other accompanying NALs instead of silently discarding them.
+        return lengthPrefixed(units.filter { unit in
+            guard let first = unit.first else { return false }
+            return first & 31 != 7 && first & 31 != 8
+        })
+    }
 }
 
 final class HardwareH264Factory: NSObject, RTCVideoDecoderFactory {
@@ -59,9 +71,11 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     func implementationName() -> String { "XFrame VideoToolbox Hardware H264" }
     // Shared by synchronous and asynchronous decode failures; tested without
     // relying on nondeterministic network packet loss.
-    func handleDecodeFailure(_ status: OSStatus) {
+    func handleDecodeFailure(_ status: OSStatus, synchronous: Bool = false, keyframe: Bool = false) {
         if status == noErr { return } // VideoToolbox may intentionally drop a frame.
-        if status == kVTVideoDecoderBadDataErr { output.recoverableDecodeError(); return }
+        if status == kVTVideoDecoderBadDataErr {
+            output.recoverableDecodeError(synchronous: synchronous, keyframe: keyframe); return
+        }
         output.fail("Hardware H.264 decoding failed (\(status)).")
     }
     func release() -> Int {
@@ -86,7 +100,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 sps = nextSPS; pps = nextPPS
             }
             guard let session, let format else { return -1 }
-            let payload = H264AccessUnit.lengthPrefixed(units.filter { (1...5).contains(Int($0.first! & 31)) })
+            let payload = H264AccessUnit.samplePayload(units)
             guard !payload.isEmpty else { return 0 }
             var block: CMBlockBuffer?
             guard CMBlockBufferCreateWithMemoryBlock(allocator: nil, memoryBlock: nil, blockLength: payload.count,
@@ -105,17 +119,20 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
                 sampleSizeEntryCount: 1, sampleSizeArray: &size, sampleBufferOut: &sample) == noErr, let sample else { return -1 }
             let stamp = encodedImage.timeStamp
             let rotation = encodedImage.rotation
-            output.submittedAccessUnit(keyframe: units.contains { ($0.first! & 31) == 5 }, missingFrames: missingFrames)
+            let keyframe = units.contains { ($0.first! & 31) == 5 }
+            output.submittedAccessUnit(keyframe: keyframe, missingFrames: missingFrames)
             let result = VTDecompressionSessionDecodeFrame(session, sampleBuffer: sample,
                 flags: [._EnableAsynchronousDecompression], infoFlagsOut: nil) { [self] status, _, buffer, _, _ in
-                guard status == noErr, let buffer else { handleDecodeFailure(status); return }
+                guard status == noErr, let buffer else {
+                    handleDecodeFailure(status, keyframe: keyframe); return
+                }
                 let frame = RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: buffer), rotation: rotation,
                                           timeStampNs: renderTimeMs * 1_000_000)
                 frame.timeStamp = Int32(bitPattern: stamp)
                 let callback = callbackLock.withLock { self.callback }
                 callback?(frame)
             }
-            if result != noErr { handleDecodeFailure(result) }
+            if result != noErr { handleDecodeFailure(result, synchronous: true, keyframe: keyframe) }
             return result == noErr ? 0 : -1
         } catch {
             output.fail("Hardware H.264 decoder initialization failed.")
@@ -143,5 +160,6 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
             allocator: nil, valueOut: &hardware) == noErr,
             (hardware?.takeRetainedValue() as? Bool) == true else { throw CloudError.response }
         output.hardwareVerified()
+        output.decoderConfigured()
     }
 }

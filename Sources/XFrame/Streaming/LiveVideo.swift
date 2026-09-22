@@ -45,6 +45,15 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         }
     }
     func hardwareVerified() { lock.withLock { stats.hardware = true } }
+    func decoderConfigured() { lock.withLock { stats.decoderConfigurations += 1 } }
+    func networkSample(received: Int?, lost: Int?, nacks: Int?) {
+        lock.withLock {
+            guard !stopped else { return }
+            stats.videoPacketsReceived = received
+            stats.videoPacketsLost = lost
+            stats.videoNacks = nacks
+        }
+    }
     func submittedAccessUnit(keyframe: Bool, missingFrames: Bool) {
         lock.withLock {
             guard !stopped else { return }
@@ -52,10 +61,13 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             if missingFrames { stats.missingFrameSignals += 1 }
         }
     }
-    func recoverableDecodeError() {
+    func recoverableDecodeError(synchronous: Bool = false, keyframe: Bool = false) {
         lock.withLock {
             if !stopped {
                 stats.decodeErrors += 1
+                if synchronous { stats.synchronousDecodeErrors += 1 }
+                else { stats.asynchronousDecodeErrors += 1 }
+                if keyframe { stats.keyframeDecodeErrors += 1 }
                 if stats.decoded == 0 { stats.errorsBeforeFirstFrame += 1 }
                 needsKeyframe = true
             }
