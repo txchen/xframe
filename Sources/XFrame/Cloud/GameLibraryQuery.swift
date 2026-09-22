@@ -3,6 +3,10 @@ import Foundation
 struct GameLibraryQuery: Hashable {
     enum Sort: String, CaseIterable { case ascending = "A–Z", descending = "Z–A" }
     enum Layout: String, CaseIterable { case grid = "Grid", list = "List" }
+    enum Access: String, CaseIterable {
+        case playable = "Playable games", gamePass = "Game Pass", free = "Free games", all = "All cloud games", unknown = "Access unverified"
+    }
+    var access: Access = .playable
     var search = ""
     var category = ""
     var favoritesOnly = false
@@ -19,6 +23,7 @@ struct GameLibraryQuery: Hashable {
     func page(in games: [CloudGame], favorites: Set<String>) -> Page {
         let terms = search.split(whereSeparator: \.isWhitespace).map(String.init)
         let matches = games.filter { game in
+            matchesAccess(game.access) &&
             (!favoritesOnly || favorites.contains(game.id)) &&
             (category.isEmpty || game.categories.contains(category)) &&
             terms.allSatisfy { term in
@@ -35,6 +40,16 @@ struct GameLibraryQuery: Hashable {
         let start = index * size, end = min(start + size, matches.count)
         return Page(games: Array(matches[start..<end]), total: matches.count, index: index,
                     count: count, first: matches.isEmpty ? 0 : start + 1, last: end)
+    }
+
+    private func matchesAccess(_ value: CloudGameAccess) -> Bool {
+        switch access {
+        case .playable: value.playable
+        case .gamePass: value.playable && value.gamePass
+        case .free: value.playable && value.free
+        case .all: true
+        case .unknown: value.entitled == nil
+        }
     }
 }
 

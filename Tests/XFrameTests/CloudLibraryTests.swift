@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import XFrame
 
-private let cloudGame = CloudGame(id: "TEST", name: "Test Game", productID: "PRODUCT")
+private let cloudGame = CloudGame(id: "TEST", name: "Test Game", productID: "PRODUCT", access: .init(entitled: true))
 private let sessionURL = URL(string: "https://test.gssv-play-prod.xboxlive.com/v5/sessions/cloud/test-session")!
 
 private actor FakeCloud: CloudServing {
@@ -79,7 +79,7 @@ private actor FakeCloud: CloudServing {
 }
 
 @Test @MainActor func cachedLibraryInvalidatesAndKeyboardSelectionStaysOnPage() async throws {
-    let games = (0..<30).map { CloudGame(id: "\($0)", name: "Game \($0)", productID: nil) }
+    let games = (0..<30).map { CloudGame(id: "\($0)", name: "Game \($0)", productID: nil, access: .init(entitled: true)) }
     let library = try await loaded(FakeCloud(catalog: games))
     let before = library.pageComputations
     library.moveSelection(by: 1)
@@ -107,6 +107,21 @@ private actor FakeCloud: CloudServing {
     library.load(using: fake)
     try await eventually { !library.loading }
     return library
+}
+
+@Test @MainActor func deniedAndUnknownGamesNeverCreateCloudSessions() async throws {
+    for access in [CloudGameAccess(), CloudGameAccess(entitled: false)] {
+        let game = CloudGame(id: "DENIED", name: "Denied", productID: nil, access: access)
+        let fake = FakeCloud(catalog: [game])
+        let library = try await loaded(fake)
+        #expect(library.page.total == 0)
+        library.updateQuery { $0.access = .all }
+        #expect(library.page.total == 1)
+        library.start(game)
+        #expect(!library.ownsSession)
+        #expect(library.errorMessage != nil)
+        #expect(await fake.creates == 0)
+    }
 }
 
 @Test @MainActor func cancelDuringCreationDeletesReturnedSession() async throws {

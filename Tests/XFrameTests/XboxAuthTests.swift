@@ -133,6 +133,18 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
     #expect(games == [CloudGame(id: "TEST", name: "Test Game", productID: "PRODUCT")])
 }
 
+@Test func catalogPreservesAccountEntitlementEvidence() async throws {
+    let harness = AuthHarness([
+        Reply(#"{"results":[{"titleId":"PASS","details":{"hasEntitlement":true,"programs":["GPULTIMATE"],"isFreeInStore":false}},{"titleId":"007","details":{"hasEntitlement":false}},{"titleId":"UNKNOWN"}]}"#)
+    ])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let games = try await service.games()
+    #expect(games.first { $0.id == "PASS" }?.access == CloudGameAccess(entitled: true, programs: ["GPULTIMATE"]))
+    #expect(games.first { $0.id == "007" }?.access.entitled == false)
+    #expect(games.first { $0.id == "UNKNOWN" }?.access.entitled == nil)
+}
+
 @Test func cloudHTTPFlowSupportsAcceptedCreationConnectAndEmptyDeletion() async throws {
     let harness = AuthHarness([
         Reply(202, #"{"sessionPath":"/v5/sessions/cloud/test-session"}"#),
@@ -222,11 +234,14 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(403, "{}"), Reply(cloudJSON)])
     let store = MemoryCredentials("previous-refresh")
     let account = XboxAccount(service: harness.service, store: store)
+    #expect(!account.hasCloudAccess)
     account.restore()
+    #expect(!account.hasCloudAccess)
     try await waitForIdle(account)
     #expect(store.token == "rotated-refresh")
     #expect(account.gamertag == "Test Player")
     #expect(account.offering == .freeToPlay)
+    #expect(account.hasCloudAccess)
     #expect(account.regionNames == ["Test Region"])
     #expect(account.accessExpires != nil)
     #expect(account.errorMessage == nil)
@@ -235,6 +250,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(store.token == nil)
     #expect(account.accessExpires == nil)
     #expect(account.gamertag == nil)
+    #expect(!account.hasCloudAccess)
 }
 
 @Test @MainActor func downstreamFailurePreservesRotatedRefreshToken() async throws {
@@ -245,6 +261,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     try await waitForIdle(account)
     #expect(store.token == "rotated-refresh")
     #expect(account.hasSavedSignIn)
+    #expect(!account.hasCloudAccess)
     #expect(account.errorMessage != nil)
     #expect(account.accessExpires == nil)
 }

@@ -5,8 +5,9 @@ struct XboxAccountView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Xbox Cloud Gaming").font(.title.bold())
-            Text("Sign in to check your xCloud access, then open Account → Cloud Games for a game audio/video preview.")
+            Image(systemName: "person.crop.circle.fill").font(.system(size: 42)).foregroundStyle(LibraryStyle.accent)
+            Text(account.hasCloudAccess ? "Your Xbox account" : "Your next game starts here.").font(.title.bold())
+            Text(account.hasCloudAccess ? "Manage your Microsoft sign-in and cloud access." : "Sign in with Microsoft to explore your cloud library.")
                 .foregroundStyle(.secondary)
             if let gamertag = account.gamertag { Text(gamertag).font(.title2) }
             HStack {
@@ -32,25 +33,26 @@ struct XboxAccountView: View {
                         Label(context.date < expires ? offering.label : "Credentials expired — check access again",
                               systemImage: context.date < expires ? "checkmark.circle.fill" : "clock")
                         Text("Valid until \(expires.formatted(date: .omitted, time: .standard))")
-                        Text("Available regions: \(account.regionNames.joined(separator: ", "))")
                     }.font(.callout)
                 }
             }
             if let error = account.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
-            Spacer(minLength: 0)
             HStack {
                 if account.isBusy { Button("Cancel") { account.cancel() } }
                 else {
-                    Button("Sign In with Microsoft") { account.signIn() }
+                    if !account.hasSavedSignIn { Button("Sign In with Microsoft") { account.signIn() } }
                     if account.hasSavedSignIn { Button("Check Access Again") { account.restore() } }
+                    if account.hasSavedSignIn && !account.hasCloudAccess { Button("Sign In Again") { account.signIn() } }
                 }
                 Spacer()
                 if account.hasSavedSignIn { Button("Sign Out") { account.signOut() } }
             }.disabled(account.library.ownsSession || account.library.loading)
-            Text("Development mode: sign-in is saved in an owner-only, unencrypted local file, not Keychain. Sign Out removes that file; legacy Keychain entries and browser sign-in are unchanged.")
-                .font(.caption).foregroundStyle(.secondary)
+            DisclosureGroup("Development details") {
+                Text("Sign-in is saved in an owner-only, unencrypted local file, not Keychain. Sign Out removes that file; legacy Keychain entries and browser sign-in are unchanged.")
+                if !account.regionNames.isEmpty { Text("Available regions: \(account.regionNames.joined(separator: ", "))") }
+            }.font(.caption).foregroundStyle(.secondary)
         }
         .padding(24)
-        .frame(width: 560, height: 460)
+        .frame(width: 520)
     }
 }

@@ -5,6 +5,11 @@ struct GameBrowserView: View {
 
     var body: some View {
         VStack(spacing: 18) {
+            Picker("Access", selection: Binding(get: { library.query.access }, set: { value in
+                library.updateQuery { $0.access = value }
+            })) {
+                ForEach(GameLibraryQuery.Access.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
             filters
             catalog
                 .onMoveCommand { direction in
@@ -50,8 +55,9 @@ struct GameBrowserView: View {
         } else if library.page.total == 0 {
             VStack {
                 emptyState(library.query.favoritesOnly ? "No matching favorites" : "No games found",
-                    subtitle: "Try another search or category. Star a game to save a favorite.", icon: "magnifyingglass")
-                Button("Reset Filters") { library.updateQuery { $0.search = ""; $0.category = ""; $0.favoritesOnly = false } }
+                    subtitle: "Try another filter. All cloud games includes unavailable and unverified titles.", icon: "magnifyingglass")
+                Button("Reset Filters") { library.updateQuery { $0.search = ""; $0.category = ""; $0.favoritesOnly = false; $0.access = .playable } }
+                Button("Browse All Cloud Games") { library.updateQuery { $0.access = .all } }
                     .padding(.bottom, 20)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if library.query.layout == .grid {
@@ -75,6 +81,7 @@ struct GameBrowserView: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(game.name).font(.headline)
+                            Text(game.access.label).font(.caption).foregroundStyle(game.access.playable ? LibraryStyle.accent : .orange)
                             Text(game.categories.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -141,6 +148,9 @@ private struct GameLibraryCard: View {
                 }.contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel("Select \(game.name)")
                 .accessibilityAddTraits(selected ? .isSelected : [])
+            Text(game.access.label).font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(game.access.playable ? LibraryStyle.accent : .orange)
+                .padding(.horizontal, 10).padding(.top, 8)
             HStack {
                 Text(game.categories.first ?? "Cloud game").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary).lineLimit(1)
                 Spacer(minLength: 4)

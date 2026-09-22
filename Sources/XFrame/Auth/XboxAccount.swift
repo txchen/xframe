@@ -4,6 +4,8 @@ import Observation
 @Observable
 @MainActor
 final class XboxAccount {
+    var showingAccount = false
+    var hasCloudAccess: Bool { offering != nil }
     private(set) var status = "Not signed in"
     private(set) var errorMessage: String?
     private(set) var gamertag: String?

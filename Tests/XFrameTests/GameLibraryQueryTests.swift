@@ -4,7 +4,7 @@ import Testing
 
 private func titles(_ count: Int) -> [CloudGame] {
     (0..<count).map { CloudGame(id: "id-\($0)", name: "Game \($0)", productID: nil,
-        categories: [$0.isMultiple(of: 2) ? "Action" : "Puzzle"]) }
+        categories: [$0.isMultiple(of: 2) ? "Action" : "Puzzle"], access: .init(entitled: true)) }
 }
 
 @Test func libraryPaginationCoversEachTitleExactlyOnce() {
@@ -32,6 +32,7 @@ private func titles(_ count: Int) -> [CloudGame] {
     ]
     var query = GameLibraryQuery()
     query.search = "  CAFE\n racing "
+    query.access = .all
     #expect(query.page(in: games, favorites: []).games.map(\.id) == ["a", "b"])
     query.category = "Racing"
     query.favoritesOnly = true
@@ -61,6 +62,7 @@ private func titles(_ count: Int) -> [CloudGame] {
     let sameNames = [CloudGame(id: "b", name: "Same Game", productID: nil),
                      CloudGame(id: "a", name: "Same Game", productID: nil)]
     var query = GameLibraryQuery()
+    query.access = .all
     #expect(query.page(in: sameNames, favorites: []).games.map(\.id) == ["a", "b"])
     query.sort = .descending
     #expect(query.page(in: sameNames, favorites: []).games.map(\.id) == ["a", "b"])

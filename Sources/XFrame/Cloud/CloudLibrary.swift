@@ -126,6 +126,12 @@ final class CloudLibrary {
 
     func start(_ game: CloudGame) {
         guard !ownsSession && !loading, games.contains(game), let service else { return }
+        guard game.access.playable else {
+            errorMessage = game.access.entitled == false
+                ? "This account has no entitlement for this game. Check ownership or subscription, then refresh the library."
+                : "Access has not been verified. Refresh the library before starting this game."
+            return
+        }
         ownsSession = true
         cancelRequested = false
         ready = false
@@ -187,6 +193,11 @@ final class CloudLibrary {
                 }
                 throw CloudError.timeout
             } catch {
+                if case CloudError.rejected(_, "NoEntitlement") = error,
+                   let index = games.firstIndex(where: { $0.id == game.id }) {
+                    games[index].access.entitled = false
+                    selection = nil
+                }
                 if !cancelRequested { fail(error) }
                 if handle != nil { await cleanup() }
                 else {

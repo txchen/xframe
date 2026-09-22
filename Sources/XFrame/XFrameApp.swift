@@ -23,7 +23,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var playback: LocalVideo?
     private var lastURL: URL?
     private lazy var account = XboxAccount()
-    private var accountWindow: NSWindow?
     private var libraryWindow: NSWindow?
     private let diagnostics = NSTextField(labelWithString: "Test pattern · Command-O to open an H.264 video")
 
@@ -87,8 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
             window.contentView = content
             window.isReleasedWhenClosed = false
-            window.center()
-            window.makeKeyAndOrderFront(nil)
+            WindowPlacement.restore(window, name: "XFrame.Playback.v1",
+                                    preferredContentSize: NSSize(width: 960, height: 540))
             self.window = window
             view.updateBackingSize()
             NSApp.activate(ignoringOtherApps: true)
@@ -100,10 +99,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 view.sourceName = source == nil ? "1920×1080" : "xCloud H.264"
                 view.updateBackingSize()
                 self.diagnostics.stringValue = source == nil ? "Cloud session ended" : "Connecting cloud video…"
-                if source != nil { self.window?.makeKeyAndOrderFront(nil) }
+                if source != nil {
+                    self.window?.makeKeyAndOrderFront(nil)
+                } else {
+                    self.hidePlaybackWindow()
+                }
             }
             account.restore()
-            showXboxAccount()
+            showCloudLibrary()
         } catch {
             let alert = NSAlert()
             alert.messageText = "Unable to start XFrame"
@@ -125,22 +128,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return .terminateCancel
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        showXboxAccount()
+        showCloudLibrary()
         return true
     }
     func applicationWillTerminate(_ notification: Notification) { playback?.stop(); account.cancel() }
 
     @objc private func showXboxAccount() {
-        if accountWindow == nil {
-            let controller = NSHostingController(rootView: XboxAccountView(account: account))
-            let window = NSWindow(contentViewController: controller)
-            window.title = "XFrame — Xbox Account"
-            window.styleMask = [.titled, .closable, .miniaturizable]
-            window.isReleasedWhenClosed = false
-            window.center()
-            accountWindow = window
-        }
-        accountWindow?.makeKeyAndOrderFront(nil)
+        showCloudLibrary()
+        account.showingAccount = account.hasCloudAccess
     }
 
     @objc private func showCloudLibrary() {
@@ -153,7 +148,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.backgroundColor = NSColor(red: 0.055, green: 0.067, blue: 0.075, alpha: 1)
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             window.isReleasedWhenClosed = false
-            window.center()
+            WindowPlacement.restore(window, name: "XFrame.Library.v1",
+                                    preferredContentSize: NSSize(width: 1240, height: 820))
             libraryWindow = window
         }
         libraryWindow?.makeKeyAndOrderFront(nil)
@@ -161,12 +157,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func openVideo() {
         guard !account.library.ownsSession else { showCloudLibrary(); return }
-        guard let window else { return }
+        // A canceled picker must not reveal an otherwise unused rendering window.
+        showCloudLibrary()
+        guard let libraryWindow else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.mpeg4Movie, .quickTimeMovie]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.beginSheetModal(for: window) { [weak self] response in
+        panel.beginSheetModal(for: libraryWindow) { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
             self?.play(url)
         }
@@ -183,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         videoView.sourceName = url.lastPathComponent
         videoView.updateBackingSize()
         renderer.play(source, in: videoView)
+        window?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func replayVideo() { if let lastURL { play(lastURL) } }
@@ -196,12 +195,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         videoView.sourceName = "1920×1080"
         videoView.updateBackingSize()
         diagnostics.stringValue = "Test pattern · Command-O to open an H.264 video"
+        window?.makeKeyAndOrderFront(nil)
+    }
+
+    private func hidePlaybackWindow() {
+        window?.orderOut(nil)
+        showCloudLibrary()
     }
 
     func windowDidResize(_ notification: Notification) { refreshVideoView() }
+    func applicationDidChangeScreenParameters(_ notification: Notification) {
+        for window in [window, libraryWindow].compactMap({ $0 }) {
+            WindowPlacement.keepVisible(window)
+        }
+    }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if account.library.ownsSession { account.library.end(); showCloudLibrary(); return false }
-        return true
+        playback?.stop()
+        playback = nil
+        if let renderer, let videoView { renderer.play(nil, in: videoView) }
+        hidePlaybackWindow()
+        return false
     }
     func windowDidEnterFullScreen(_ notification: Notification) { refreshVideoView() }
     func windowDidExitFullScreen(_ notification: Notification) { refreshVideoView() }

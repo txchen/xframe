@@ -34,7 +34,11 @@ Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native fu
 
 ## Xbox Account
 
-The account window opens at startup. Reopen it with **Account → Xbox Account…** or **Shift-Command-A**.
+The main library window opens at startup and restores saved sign-in. When cloud access is unavailable, it shows the Microsoft sign-in flow in place. Open account management from the sidebar profile button or **Account → Xbox Account…** (**Shift-Command-A**); it is a sheet in the same window, not a separate account window. Development credential-storage details are collapsed under **Development details**. Video playback retains its dedicated native rendering window.
+
+The rendering window stays hidden until cloud video connects, a local video is opened/replayed, or the test pattern is explicitly requested. Stopping cloud video hides it and returns to the library, where session cleanup status remains visible. Closing local playback stops its decoder and returns to the library. Canceling the local-file picker does not reveal the rendering window.
+
+Library and playback windows independently remember their size and position through AppKit frame autosave. On first launch the library prefers 1240×820 content points; playback prefers 960×540. Frames are constrained to a current screen's visible area on restore and display changes, excluding fullscreen windows. This saves normal window geometry, not an instruction to launch in fullscreen.
 
 1. Choose **Sign In with Microsoft** and open the Microsoft sign-in link.
 2. Enter the displayed code in your browser and complete sign-in using a personal Microsoft account with an Xbox profile. Never share the code with anyone else.
@@ -49,6 +53,10 @@ This development implementation follows [XStreaming's authentication flow](https
 Earlier builds verified real account login and Keychain restoration. File-store tests verify private permissions, refresh-token replacement, fresh-instance restoration, deletion, and rejection of unsafe paths. Real Microsoft login, on-disk owner-only permissions, and automatic file-backed account restoration across both a same-build restart and a changed-binary rebuild have been verified. Automated authentication tests use stubbed services. See [the authentication specification](.scratch/xcloud-auth/spec.md) and [validation record](.scratch/xcloud-auth/validation.md).
 
 ## Cloud Games and Sessions
+
+The library defaults to **Playable games**, using the account-specific `hasEntitlement` value from the authenticated cloud title response. **All cloud games** also shows titles marked **No entitlement** or **Access unverified**; their Play button is disabled, including a model-level launch guard. Game Pass and free filters intersect catalog classification with confirmed account access. A missing entitlement field stays unknown, not denied. A `NoEntitlement` launch rejection revokes the cached access flag until the next refresh. Refresh after changing purchases or subscriptions.
+
+**Playable** does not mean **Purchased**: the current response does not establish the source of every grant, so XFrame does not invent an Owned badge or ownership filter. Purchased cloud-supported games with confirmed entitlement are included in Playable games. The Game Pass badge describes catalog membership, not a verified subscription tier. Service-side launch checks remain authoritative.
 
 Open **Account → Cloud Games…** (**Shift-Command-G**), choose **Load Games**, select a game card or list row, and choose **Start Selected Game**. The account's title list is hydrated with English names, optional poster artwork, categories and publisher from Microsoft's public catalog; it may not be exhaustive, and launch eligibility is ultimately checked by the service.
 

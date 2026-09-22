@@ -7,6 +7,7 @@ struct CloudLibraryView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
+            if account.hasCloudAccess {
             VStack(alignment: .leading, spacing: 20) {
             header
             HStack(spacing: 12) {
@@ -27,9 +28,21 @@ struct CloudLibraryView: View {
             Divider()
             sessionControls
             }.padding(24)
+            } else {
+                XboxAccountView(account: account)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }.frame(minWidth: 900, minHeight: 720)
             .background(LibraryStyle.canvas).foregroundStyle(.white).tint(LibraryStyle.accent)
             .preferredColorScheme(.dark)
+            .sheet(isPresented: Binding(get: { account.showingAccount }, set: { account.showingAccount = $0 })) {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Button("Done") { account.showingAccount = false }
+                        .keyboardShortcut(.cancelAction).padding([.top, .trailing], 20)
+                    XboxAccountView(account: account)
+                }.background(LibraryStyle.canvas).preferredColorScheme(.dark)
+            }
+            .onChange(of: account.hasCloudAccess) { _, _ in account.showingAccount = false }
             .fileExporter(isPresented: Binding(get: { library.exportingDiagnostics }, set: { library.exportingDiagnostics = $0 }),
                           document: library.diagnosticDocument, contentType: .json, defaultFilename: "xframe-stream-diagnostics") { result in
                 if case .failure = result { library.viewError = "Could not save stream diagnostics." }
@@ -46,10 +59,23 @@ struct CloudLibraryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("YOUR LIBRARY").font(.system(size: 10, weight: .semibold)).tracking(1.5)
                     .foregroundStyle(LibraryStyle.secondary).padding(.bottom, 6)
-                collectionButton("All games", icon: "square.grid.2x2", favorites: false)
+                collectionButton("Games", icon: "square.grid.2x2", favorites: false)
                 collectionButton("Favorites", icon: "star", favorites: true)
-            }
+            }.disabled(!account.hasCloudAccess)
             Spacer()
+            Button {
+                account.showingAccount = account.hasCloudAccess
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "person.crop.circle.fill").font(.system(size: 24))
+                        .foregroundStyle(LibraryStyle.accent)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(account.gamertag ?? "Xbox account").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                        Text(account.isBusy ? "Connecting…" : account.hasCloudAccess ? "Manage account" : "Sign in")
+                            .font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }.buttonStyle(.plain).accessibilityLabel("Xbox Account")
             VStack(alignment: .leading, spacing: 10) {
                 Label("Xbox Cloud Gaming", systemImage: "cloud").font(.system(size: 12, weight: .medium))
                 Text("Native video.\nYour games, closer.").font(.system(size: 12)).lineSpacing(4)
@@ -104,7 +130,7 @@ struct CloudLibraryView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(library.activeGame ?? library.selectedGame?.name ?? "Select a game to begin").font(.headline).lineLimit(1)
-                    Text(library.status).font(.caption).foregroundStyle(LibraryStyle.secondary)
+                    Text(library.selectedGame.map { $0.access.label + " · " + library.status } ?? library.status).font(.caption).foregroundStyle(LibraryStyle.secondary)
                 }
                 Spacer()
                 if library.ending { ProgressView().controlSize(.small) }
@@ -118,8 +144,8 @@ struct CloudLibraryView: View {
                             .foregroundStyle(LibraryStyle.canvas).padding(.horizontal, 22).padding(.vertical, 12)
                             .background(LibraryStyle.accent, in: RoundedRectangle(cornerRadius: 8))
                     }.buttonStyle(.plain).accessibilityLabel("Start Selected Game")
-                        .opacity(library.selectedGame == nil || library.loading || account.isBusy ? 0.35 : 1)
-                        .disabled(library.selectedGame == nil || library.loading || account.isBusy)
+                        .opacity(library.selectedGame?.access.playable != true || library.loading || account.isBusy ? 0.35 : 1)
+                        .disabled(library.selectedGame?.access.playable != true || library.loading || account.isBusy)
                 }
             }
             HStack {

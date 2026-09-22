@@ -7,11 +7,13 @@ struct CloudGame: Identifiable, Equatable, Sendable {
     let posterURL: URL?
     let categories: [String]
     let publisher: String?
+    var access: CloudGameAccess
 
     init(id: String, name: String, productID: String?, posterURL: URL? = nil,
-         categories: [String] = [], publisher: String? = nil) {
+         categories: [String] = [], publisher: String? = nil, access: CloudGameAccess = .init()) {
         self.id = id; self.name = name; self.productID = productID
         self.posterURL = posterURL; self.categories = categories; self.publisher = publisher
+        self.access = access
     }
 }
 
@@ -42,10 +44,12 @@ struct CloudSessionState: Decodable, Sendable {
 
 enum CloudError: Error, LocalizedError {
     case response, http(Int), network, expired, failed, unsupportedState, timeout
+    case rejected(Int, String)
     var errorDescription: String? {
         switch self {
         case .response: "The cloud service returned an unsupported response."
         case .http(let code): "Cloud request failed (HTTP \(code)). Check account access or try again."
+        case .rejected(let status, let code): "Cloud request failed (HTTP \(status), service code: \(code))."
         case .network: "Cannot reach the cloud service. Check your connection."
         case .expired: "Cloud credentials expired. End any session, then check account access again."
         case .failed: "The cloud session failed to start."
@@ -110,7 +114,12 @@ struct CloudService: CloudServing {
     func games() async throws -> [CloudGame] {
         struct Titles: Decodable { let results: [Title] }
         struct Title: Decodable {
-            struct Details: Decodable { let productId: String?; let name: String? }
+            struct Details: Decodable {
+                let productId: String?; let name: String?
+                let hasEntitlement: Bool?
+                let programs: [String]?
+                let isFreeInStore: Bool?
+            }
             let titleId: String
             let details: Details?
         }
@@ -140,7 +149,9 @@ struct CloudService: CloudServing {
             return CloudGame(id: $0.titleId, name: metadata?.ProductTitle ?? $0.details?.name ?? $0.titleId,
                       productID: $0.details?.productId, posterURL: metadata?.posterURL,
                       categories: Array(Set((metadata?.Categories ?? []).filter { !$0.isEmpty })).sorted(),
-                      publisher: metadata?.PublisherName)
+                      publisher: metadata?.PublisherName,
+                      access: CloudGameAccess(entitled: $0.details?.hasEntitlement,
+                          programs: $0.details?.programs ?? [], free: $0.details?.isFreeInStore == true))
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
@@ -222,7 +233,25 @@ struct CloudService: CloudServing {
         do { result = try await session.data(for: request) }
         catch { if Task.isCancelled { throw CancellationError() }; throw CloudError.network }
         guard let response = result.1 as? HTTPURLResponse else { throw CloudError.response }
-        guard (200..<300).contains(response.statusCode) else { throw CloudError.http(response.statusCode) }
+        guard (200..<300).contains(response.statusCode) else {
+            if method == "POST", url.path.hasSuffix("/sessions/cloud/play"),
+               let code = Self.failureCode(result.0) {
+                throw CloudError.rejected(response.statusCode, code)
+            }
+            throw CloudError.http(response.statusCode)
+        }
         return result.0
+    }
+
+    // Never surface arbitrary messages, IDs, headers, or raw authenticated responses.
+    static func failureCode(_ data: Data) -> String? {
+        guard data.count <= 65_536,
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        let nested = object["error"] as? [String: Any]
+        guard let code = (object["code"] ?? nested?["code"]) as? String,
+              !code.isEmpty, code.count <= 64,
+              code.unicodeScalars.allSatisfy({ CharacterSet.letters.union(CharacterSet(charactersIn: "_-")).contains($0) }),
+              code.unicodeScalars.allSatisfy({ $0.isASCII }) else { return nil }
+        return code
     }
 }
