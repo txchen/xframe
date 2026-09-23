@@ -307,13 +307,19 @@ private func waitForIdle(_ account: XboxAccount) async throws {
 }
 
 @Test @MainActor func restoreRotatesTokenAndDistinguishesFreeToPlay() async throws {
-    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(cloudJSON), Reply(403, "{}"), Reply(cloudJSON)])
+    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(cloudJSON), Reply(403, "{}"), Reply(cloudJSON), Reply(#"{"results":[]}"#)])
     let store = MemoryCredentials("previous-refresh")
-    let account = XboxAccount(service: harness.service, store: store)
+    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session)
     #expect(!account.hasCloudAccess)
     account.restore()
     #expect(!account.hasCloudAccess)
     try await waitForIdle(account)
+    let catalogDeadline = ContinuousClock.now.advanced(by: .seconds(1))
+    while account.library.loading && ContinuousClock.now < catalogDeadline {
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    #expect(account.library.catalogLoaded)
+    #expect(harness.script.requests.contains { $0.contains("/v2/titles") })
     #expect(store.token == "rotated-refresh")
     #expect(account.gamertag == "Test Player")
     #expect(account.offering == .freeToPlay)
@@ -322,7 +328,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(account.regionNames == ["Test Region"])
     #expect(account.accessExpires != nil)
     #expect(account.errorMessage == nil)
-    #expect(harness.script.requests.last?.contains("xgpuwebf2p") == true)
+    #expect(harness.script.requests.contains { $0.contains("xgpuwebf2p") })
     account.signOut()
     #expect(store.token == nil)
     #expect(account.accessExpires == nil)

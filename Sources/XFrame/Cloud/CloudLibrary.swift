@@ -3,6 +3,17 @@ import Observation
 
 @Observable @MainActor
 final class CloudLibrary {
+    enum GameLoadAction {
+        case load, loading, refresh, retry
+        var title: String {
+            switch self {
+            case .load: "Load Games"
+            case .loading: "Loading games…"
+            case .refresh: "Refresh Games"
+            case .retry: "Retry Loading Games"
+            }
+        }
+    }
     enum Termination: Equatable { case idle, ending, failed(String), ended, unconfirmed }
     private(set) var termination: Termination = .idle {
         didSet { if oldValue != termination { terminationChanged?(termination) } }
@@ -17,6 +28,11 @@ final class CloudLibrary {
     }
     private(set) var favorites: Set<String> { didSet { rebuildPage() } }
     private(set) var catalogLoaded = false
+    var gameLoadAction: GameLoadAction {
+        if loading { return .loading }
+        if catalogLoaded { return .refresh }
+        return errorMessage == nil ? .load : .retry
+    }
     private(set) var artworkRevisions: [String: Int] = [:]
     func reloadArtwork(for game: CloudGame) {
         guard games.contains(game) else { return }

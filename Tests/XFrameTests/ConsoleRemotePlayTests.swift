@@ -37,6 +37,19 @@ import Testing
     #expect(RumbleCommand.parse(loud)?.repeatCount == 3)
 }
 
+@Test func rumblePlaybackBoundsOnePulseAndDoesNotExpandRepeats() throws {
+    let packet = Data([0x80, 0, 0, 0, 100, 80, 100, 100, 0xd0, 0x07, 0xd0, 0x07, 3])
+    let command = try #require(RumbleCommand.parse(packet))
+    let pulse = try #require(command.pulse)
+    #expect(pulse.duration <= 0.5)
+    #expect(pulse.leftHandle <= 0.6)
+    #expect(pulse.rightHandle <= 0.6)
+    #expect(pulse.defaultHandle <= 0.6)
+    #expect(pulse.defaultHandle == max(pulse.leftHandle, pulse.rightHandle))
+    #expect(RumbleCommand(strong: 0, weak: 0, leftTrigger: 0, rightTrigger: 0,
+                          duration: 2, delay: 1, repeatCount: 3).pulse == nil)
+}
+
 @Test func homeConsoleParserSeparatesPowerFromPresence() throws {
     let data = Data(#"{"results":[{"serverId":"live-id","deviceName":"Living Room","consoleType":"XboxSeriesX","powerState":"On"}]}"#.utf8)
     let console = try #require(HomeService.parse(data, key: "results", streamable: true).first)

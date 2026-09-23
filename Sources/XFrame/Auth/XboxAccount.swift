@@ -29,6 +29,7 @@ final class XboxAccount {
               name.isEmpty || regionNames.contains(name), name != selectedRegion else { return }
         selectedRegion = name
         library.reset()
+        loadCloudGames()
     }
     private(set) var hasSavedSignIn = false
     private(set) var isBusy = false
@@ -37,7 +38,8 @@ final class XboxAccount {
     func cloudService() throws -> CloudService {
         guard let cloudCredential, let accessExpires, accessExpires > Date(), !isBusy else { throw CloudError.expired }
         return try CloudService(credential: cloudCredential, expires: accessExpires,
-                                regionName: selectedRegion.isEmpty ? nil : selectedRegion, transferToken: { [weak self] in
+                                regionName: selectedRegion.isEmpty ? nil : selectedRegion,
+                                session: catalogSession, transferToken: { [weak self] in
             guard let self else { throw CloudError.expired }
             return try await self.consoleTransferToken()
         })
@@ -65,13 +67,24 @@ final class XboxAccount {
     @ObservationIgnored private var webToken: String?
     @ObservationIgnored private var webUserHash: String?
     @ObservationIgnored private let service: XboxAuthService
+    @ObservationIgnored private let catalogSession: URLSession?
     @ObservationIgnored private let store: any CredentialStore
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
 
-    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore()) {
+    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore(),
+         catalogSession: URLSession? = nil) {
         self.service = service
         self.store = store
+        self.catalogSession = catalogSession
+    }
+
+    func loadCloudGames() {
+        guard hasCloudAccess && !isBusy && !library.ownsSession else { return }
+        do {
+            library.load(using: try cloudService())
+            library.viewError = nil
+        } catch { library.viewError = error.localizedDescription }
     }
 
     func signIn() {
@@ -228,6 +241,7 @@ final class XboxAccount {
         guard run == generation else { return }
         isBusy = false
         task = nil
+        loadCloudGames()
     }
 
     private func failed(_ error: Error, run: Int) {

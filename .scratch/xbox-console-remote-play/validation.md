@@ -21,3 +21,11 @@ The standalone Command Line Tools' default `swiftbuild` engine fails to initiali
 - Disconnect and verify XFrame's session ends while the Xbox stays powered on and its game remains running. Test a short LAN interruption for same-session recovery and a longer interruption for cleanup followed by manual Connect.
 
 No real Xbox, network path, audio output, or physical controller result has been claimed from the automated checks above.
+
+## Cloud rumble issue reported during physical testing
+
+The user reported that one Palworld vibration caused strong rumble lasting 5–6 seconds in the cloud stream. The prior Core Haptics player scheduled `repeat + 1` full-duration events with intervening delays, and discarded old player references without stopping playback. Both could extend or overlap vibration. XStreaming's ordinary controller path reads these fields but passes only the duration and motor levels to its native vibration call.
+
+The revised player explicitly stops its prior haptic players, plays one replacement pulse per command, bounds each pulse to 0.5 seconds and 60% intensity, and stops engines after the pulse with a short watchdog margin. On a controller exposing only default haptics, trigger-motor percentages are not folded into handle intensity. Packet decoding and the pulse policy have automated regression coverage. Physical strength, timing, and cancellation on Xbox One and DualShock 4 controllers need retesting with the rebuilt app; the user's report describes the prior build.
+
+After this change, the full suite passed 156 tests, the release binary compiled, and a separately staged `.build/XFrame-next.app` passed strict deep signature verification. The running `.build/XFrame.app` was left untouched during the user's cloud stream.

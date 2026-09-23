@@ -20,10 +20,14 @@ struct CloudLibraryView: View {
                 if !library.search.isEmpty {
                     Button("Clear Search", systemImage: "xmark.circle.fill") { library.search = "" }.labelStyle(.iconOnly)
                 }
-                Button(library.catalogLoaded ? "Refresh Games" : "Load Games", systemImage: "arrow.clockwise") {
-                    do { library.load(using: try account.cloudService()); library.viewError = nil }
-                    catch { library.viewError = error.localizedDescription }
+                Button { account.loadCloudGames() } label: {
+                    HStack(spacing: 6) {
+                        if library.loading { ProgressView().controlSize(.small) }
+                        else { Image(systemName: "arrow.clockwise") }
+                        Text(library.gameLoadAction.title)
+                    }
                 }.buttonStyle(.borderless).tint(.white)
+                    .accessibilityLabel(library.gameLoadAction.title)
                     .disabled(account.isBusy || library.loading || library.ownsSession)
             }.padding(.horizontal, 16).padding(.vertical, 13)
                 .background(LibraryStyle.surface, in: RoundedRectangle(cornerRadius: 10))

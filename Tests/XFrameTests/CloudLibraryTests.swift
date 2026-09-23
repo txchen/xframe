@@ -32,12 +32,17 @@ private actor FakeCloud: CloudServing {
     let states: [String]
     let deleteDelay: Duration
     let catalog: [CloudGame]
+    let catalogError: Bool
     var index = 0
-    init(states: [String] = ["Provisioned"], failDelete: Bool = false, catalog: [CloudGame] = [cloudGame], deleteDelay: Duration = .zero) {
+    init(states: [String] = ["Provisioned"], failDelete: Bool = false, catalog: [CloudGame] = [cloudGame],
+         catalogError: Bool = false, deleteDelay: Duration = .zero) {
         self.deleteDelay = deleteDelay
-        self.states = states; self.failDelete = failDelete; self.catalog = catalog
+        self.states = states; self.failDelete = failDelete; self.catalog = catalog; self.catalogError = catalogError
     }
-    func games() async throws -> [CloudGame] { catalog }
+    func games() async throws -> [CloudGame] {
+        if catalogError { throw CloudError.network }
+        return catalog
+    }
     func create(title: String, preferences: CloudStreamPreferences) async throws -> URL {
         creates += 1
         launches.append(preferences)
@@ -56,6 +61,18 @@ private actor FakeCloud: CloudServing {
         try await Task.sleep(for: deleteDelay)
         if failDelete { failDelete = false; throw CloudError.network }
     }
+}
+
+@Test @MainActor func catalogButtonShowsLoadingAndRetryState() async throws {
+    let library = CloudLibrary()
+    #expect(library.gameLoadAction.title == "Load Games")
+    library.load(using: FakeCloud())
+    #expect(library.gameLoadAction.title == "Loading games…")
+    try await eventually { !library.loading }
+    #expect(library.gameLoadAction.title == "Refresh Games")
+    library.load(using: FakeCloud(catalogError: true))
+    try await eventually { !library.loading }
+    #expect(library.gameLoadAction.title == "Retry Loading Games")
 }
 
 @Test @MainActor func librarySearchClearsHiddenSelectionAndKeepsFavorites() async throws {

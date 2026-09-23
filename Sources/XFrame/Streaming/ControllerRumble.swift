@@ -11,6 +11,16 @@ struct RumbleCommand: Equatable, Sendable {
     let delay: TimeInterval
     let repeatCount: Int
 
+    // A stream can send another vibration command at any time. Treat each command
+    // as a replacement pulse; queued repeats and delays can otherwise outlive it.
+    var pulse: RumblePulse? {
+        guard max(strong, weak, leftTrigger, rightTrigger) > 0 else { return nil }
+        func bounded(_ value: Double) -> Double { min(0.6, max(0, value * 0.6)) }
+        return RumblePulse(leftHandle: bounded(strong), rightHandle: bounded(weak),
+                           leftTrigger: bounded(leftTrigger), rightTrigger: bounded(rightTrigger),
+                           duration: min(0.5, max(0.03, duration)))
+    }
+
     static func parse(_ data: Data) -> RumbleCommand? {
         let bytes = [UInt8](data)
         guard bytes.count >= 2 else { return nil }
@@ -30,11 +40,21 @@ struct RumbleCommand: Equatable, Sendable {
     }
 }
 
+struct RumblePulse: Equatable, Sendable {
+    let leftHandle: Double
+    let rightHandle: Double
+    let leftTrigger: Double
+    let rightTrigger: Double
+    let duration: TimeInterval
+    var defaultHandle: Double { max(leftHandle, rightHandle) }
+}
+
 @MainActor
 final class ControllerRumble {
     private weak var controller: GCController?
     private var engines: [GCHapticsLocality: CHHapticEngine] = [:]
     private var players: [any CHHapticPatternPlayer] = []
+    private var stopTask: Task<Void, Never>?
     private(set) var status = "No controller"
 
     func select(_ device: GCController?) {
@@ -57,42 +77,48 @@ final class ControllerRumble {
     }
 
     func play(_ command: RumbleCommand) {
-        guard !engines.isEmpty else { return }
-        players.removeAll()
-        let handles = max(command.strong, command.weak)
-        if max(handles, max(command.leftTrigger, command.rightTrigger)) == 0 || command.duration == 0 {
-            stop()
-            return
-        }
+        stopPlayers()
+        guard !engines.isEmpty, let pulse = command.pulse else { stop(); return }
         for (locality, engine) in engines {
             let intensity: Double
             switch locality {
-            case .leftHandle: intensity = command.strong
-            case .rightHandle: intensity = command.weak
-            case .leftTrigger: intensity = command.leftTrigger
-            case .rightTrigger: intensity = command.rightTrigger
-            default: intensity = max(handles, max(command.leftTrigger, command.rightTrigger))
+            case .leftHandle: intensity = pulse.leftHandle
+            case .rightHandle: intensity = pulse.rightHandle
+            case .leftTrigger: intensity = pulse.leftTrigger
+            case .rightTrigger: intensity = pulse.rightTrigger
+            default: intensity = pulse.defaultHandle
             }
-            guard intensity > 0, command.duration > 0 else { continue }
+            guard intensity > 0 else { continue }
             do {
                 try engine.start()
                 let parameters = [CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity)),
                                   CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)]
-                let events = (0...command.repeatCount).map { index in
-                    CHHapticEvent(eventType: .hapticContinuous, parameters: parameters,
-                                  relativeTime: command.delay + Double(index) * (command.delay + command.duration),
-                                  duration: command.duration)
-                }
-                let pattern = try CHHapticPattern(events: events, parameters: [])
+                let event = CHHapticEvent(eventType: .hapticContinuous, parameters: parameters,
+                                          relativeTime: 0, duration: pulse.duration)
+                let pattern = try CHHapticPattern(events: [event], parameters: [])
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
                 players.append(player)
             } catch { status = "Controller haptics could not play" }
         }
+        if !players.isEmpty {
+            stopTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(pulse.duration + 0.1))
+                guard !Task.isCancelled else { return }
+                self?.stop()
+            }
+        }
     }
 
     func stop() {
-        players.removeAll()
+        stopPlayers()
         for engine in engines.values { engine.stop(completionHandler: nil) }
+    }
+
+    private func stopPlayers() {
+        stopTask?.cancel()
+        stopTask = nil
+        for player in players { try? player.stop(atTime: 0) }
+        players.removeAll()
     }
 }
