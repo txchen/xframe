@@ -6,8 +6,8 @@ struct XboxAccountView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Image(systemName: "person.crop.circle.fill").font(.system(size: 42)).foregroundStyle(LibraryStyle.accent)
-            Text(account.hasCloudAccess ? "Your Xbox account" : "Your next game starts here.").font(.title.bold())
-            Text(account.hasCloudAccess ? "Manage your Microsoft sign-in and cloud access." : "Sign in with Microsoft to explore your cloud library.")
+            Text(account.hasXboxSignIn ? "Your Xbox account" : "Your next game starts here.").font(.title.bold())
+            Text(account.hasXboxSignIn ? "Console and cloud streaming access are checked separately." : "Sign in with Microsoft to stream from your Xbox or cloud library.")
                 .foregroundStyle(.secondary)
             if let gamertag = account.gamertag { Text(gamertag).font(.title2) }
             HStack {
@@ -36,13 +36,19 @@ struct XboxAccountView: View {
                     }.font(.callout)
                 }
             }
+            if let expires = account.homeExpires {
+                Label(Date() < expires ? "Xbox console access verified" : "Console access expired — check again",
+                      systemImage: Date() < expires ? "checkmark.circle.fill" : "clock")
+            }
+            if let error = account.homeError { Text("Console: " + error).foregroundStyle(.orange).textSelection(.enabled) }
+            if let error = account.cloudError { Text("Cloud: " + error).foregroundStyle(.orange).textSelection(.enabled) }
             if let error = account.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
             HStack {
                 if account.isBusy { Button("Cancel") { account.cancel() } }
                 else {
                     if !account.hasSavedSignIn { Button("Sign In with Microsoft") { account.signIn() } }
                     if account.hasSavedSignIn { Button("Check Access Again") { account.restore() } }
-                    if account.hasSavedSignIn && !account.hasCloudAccess { Button("Sign In Again") { account.signIn() } }
+                    if account.hasSavedSignIn && !account.hasXboxSignIn { Button("Sign In Again") { account.signIn() } }
                 }
                 Spacer()
                 if account.hasSavedSignIn { Button("Sign Out") { account.signOut() } }

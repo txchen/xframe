@@ -60,7 +60,7 @@ Implementation reference: [Veyra-NRVideo source study](../4k-post-processing/vey
 
 ### P2 — Expand capability and polish
 
-- [ ] **Xbox Console Remote Play.** Console discovery/list, wake and session establishment; reuse the audio/video/input pipeline. Requires a real console for acceptance. xCloud remains the first implementation and testing priority.
+- [ ] **Xbox Console Remote Play.** LAN-only implementation candidate covers account-separated xHome access, associated-console listing and discovery, explicit wake then connect, shared media/input and session cleanup, LAN ICE enforcement, and controller rumble. Automated checks pass; real Series X acceptance remains. See [spec](../xbox-console-remote-play/spec.md) and [validation](../xbox-console-remote-play/validation.md).
 - [ ] **Library completeness.** Recently played, metadata/artwork caching, automatic refresh, game details and actionable entitlement errors. Add an Owned collection only with reliable purchase evidence; do not infer ownership from a subscription grant. [Entitlement boundaries](../game-library/entitlements.md).
 
 ### Before distribution

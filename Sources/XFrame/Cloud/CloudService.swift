@@ -59,8 +59,7 @@ enum CloudError: Error, LocalizedError {
     }
 }
 
-protocol CloudServing: Sendable {
-    func games() async throws -> [CloudGame]
+protocol SessionServing: Sendable {
     func create(title: String, preferences: CloudStreamPreferences) async throws -> URL
     func state(at: URL) async throws -> CloudSessionState
     func configuration(at: URL) async throws
@@ -68,16 +67,24 @@ protocol CloudServing: Sendable {
     func end(at: URL) async throws
 }
 
+protocol CloudServing: SessionServing {
+    func games() async throws -> [CloudGame]
+}
+
 struct CloudService: CloudServing {
+    enum Source: String, Sendable { case cloud, home }
     let regionName: String
+    let source: Source
     private let token: String
     private let host: URL
+    var baseURL: URL { host }
     private let expires: Date
     private let market: String
     private let session: URLSession
     private let transferToken: @Sendable () async throws -> String
 
-    init(credential: CloudToken, expires: Date, regionName: String? = nil, session: URLSession? = nil,
+    init(credential: CloudToken, expires: Date, regionName: String? = nil, source: Source = .cloud,
+         session: URLSession? = nil,
          transferToken: @escaping @Sendable () async throws -> String = { throw CloudError.expired }) throws {
         let regions = credential.offeringSettings.regions
         let selected = regionName.map { name in regions.first(where: { $0.name == name }) }
@@ -85,6 +92,7 @@ struct CloudService: CloudServing {
         guard let region = selected,
               Self.trusted(region.baseUri) else { throw CloudError.response }
         self.regionName = region.name
+        self.source = source
         host = region.baseUri
         token = credential.gsToken
         market = credential.market ?? "US"
@@ -103,9 +111,9 @@ struct CloudService: CloudServing {
         url.query == nil && url.fragment == nil && (url.host ?? "").hasSuffix(".xboxlive.com")
     }
 
-    static func sessionURL(_ path: String, relativeTo host: URL) throws -> URL {
+    static func sessionURL(_ path: String, relativeTo host: URL, source: Source = .cloud) throws -> URL {
         guard let url = URL(string: path, relativeTo: host)?.absoluteURL, trusted(url),
-              url.path.hasPrefix("/v5/sessions/cloud/"),
+              url.path.hasPrefix("/v5/sessions/\(source.rawValue)/"),
               url.path.split(separator: "/").count == 4,
               !["play", "active", ".", ".."].contains(url.lastPathComponent) else { throw CloudError.response }
         return url
@@ -171,26 +179,30 @@ struct CloudService: CloudServing {
     }
 
     func create(title: String, preferences: CloudStreamPreferences = .init()) async throws -> URL {
-        let body: [String: Any] = ["clientSessionId": UUID().uuidString, "titleId": title,
-            "systemUpdateGroup": "", "serverId": "", "fallbackRegionNames": [String](),
+        let home = source == .home
+        let body: [String: Any] = ["clientSessionId": UUID().uuidString, "titleId": home ? "" : title,
+            "systemUpdateGroup": "", "serverId": home ? title : "", "fallbackRegionNames": [String](),
             "settings": ["nanoVersion": "V3;WebrtcTransport.dll", "enableTextToSpeech": false,
-                "highContrast": 0, "locale": preferences.language.rawValue, "useIceConnection": false,
-                "timezoneOffsetMinutes": -TimeZone.current.secondsFromGMT() / 60, "sdkType": "web", "osName": preferences.quality.osName]]
-        let hq = preferences.quality == .hq
+                "highContrast": 0, "locale": home ? "en-US" : preferences.language.rawValue, "useIceConnection": false,
+                "timezoneOffsetMinutes": -TimeZone.current.secondsFromGMT() / 60, "sdkType": "web",
+                "osName": home ? "windows" : preferences.quality.osName]]
+        let hq = !home && preferences.quality == .hq
         var hardware: [String: Any] = [
-            "hw": ["make": hq ? "Microsoft" : "Apple", "model": hq ? "unknown" : "Mac", "platformType": "desktop", "sdktype": "web"],
-            "os": ["name": preferences.quality.osName, "ver": hq ? "22631.2715" : "27", "platform": "desktop"],
-            "displayInfo": ["dimensions": ["widthInPixels": preferences.quality.width, "heightInPixels": preferences.quality.height],
+            "hw": ["make": hq || home ? "Microsoft" : "Apple", "model": hq || home ? "unknown" : "Mac", "platformType": "desktop", "sdktype": "web"],
+            "os": ["name": home ? "windows" : preferences.quality.osName,
+                    "ver": home || hq ? "22631.2715" : "27", "platform": "desktop"],
+            "displayInfo": ["dimensions": ["widthInPixels": home ? 1920 : preferences.quality.width,
+                                           "heightInPixels": home ? 1080 : preferences.quality.height],
                             "pixelDensity": ["dpiX": 1, "dpiY": 1]]]
-        if hq { hardware["browser"] = ["browserName": "edge", "browserVersion": "140.0.3485.66"] }
+        if hq || home { hardware["browser"] = ["browserName": "edge", "browserVersion": "140.0.3485.66"] }
         let device: [String: Any] = ["appInfo": ["env": ["clientAppId": "www.xbox.com", "clientAppType": "browser",
             "clientAppVersion": "29.9.35", "clientSdkVersion": "10.6.8", "httpEnvironment": "prod", "sdkInstallId": ""]],
             "dev": hardware]
         let deviceHeader = String(decoding: try JSONSerialization.data(withJSONObject: device), as: UTF8.self)
-        let data = try await request(host.appendingPathComponent("v5/sessions/cloud/play"), method: "POST",
+        let data = try await request(host.appendingPathComponent("v5/sessions/\(source.rawValue)/play"), method: "POST",
             body: JSONSerialization.data(withJSONObject: body), headers: ["X-MS-Device-Info": deviceHeader])
         struct Created: Decodable { let sessionPath: String }
-        return try Self.sessionURL(decode(Created.self, data).sessionPath, relativeTo: host)
+        return try Self.sessionURL(decode(Created.self, data).sessionPath, relativeTo: host, source: source)
     }
 
     func state(at url: URL) async throws -> CloudSessionState {
@@ -221,7 +233,10 @@ struct CloudService: CloudServing {
     func request(_ url: URL, method: String = "GET", body: Data? = nil,
                          authenticated: Bool = true, headers: [String: String] = [:]) async throws -> Data {
         if authenticated {
-            guard Self.trusted(url) else { throw CloudError.response }
+            var trustedURL = url
+            let consoleList = source == .home && url.path == "/v6/servers/home" && url.query == "mr=50"
+            if consoleList { trustedURL = URL(string: String(url.absoluteString.split(separator: "?")[0]))! }
+            guard Self.trusted(trustedURL), url.query == nil || consoleList else { throw CloudError.response }
             // Always attempt cleanup, even near credential expiry.
             guard method == "DELETE" || Date() < expires else { throw CloudError.expired }
         }

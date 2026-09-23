@@ -20,7 +20,7 @@ private final class AuthScript: @unchecked Sendable {
     func reply(for request: URLRequest) -> Reply {
         lock.withLock {
             paths.append(request.url!.absoluteString)
-            if request.url?.path == "/v5/sessions/cloud/play" {
+            if request.url?.path == "/v5/sessions/cloud/play" || request.url?.path == "/v5/sessions/home/play" {
                 var body = request.httpBody ?? Data()
                 if body.isEmpty, let stream = request.httpBodyStream {
                     stream.open()
@@ -180,6 +180,66 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
             ["play", "state", "connect", "state", "configuration", "test-session"])
 }
 
+@Test func homeServiceListsWakesCreatesAndDeletesWithoutPowerOff() async throws {
+    let harness = AuthHarness([
+        Reply(#"{"result":[{"id":"live-id","name":"Series X","model":"XboxSeriesX"},{"id":"elsewhere","name":"Other Xbox"}]}"#),
+        Reply(#"{"results":[{"serverId":"live-id","deviceName":"Series X","powerState":"On"}]}"#),
+        Reply(#"{"result":{}}"#),
+        Reply(202, #"{"sessionPath":"/v5/sessions/home/test-session"}"#),
+        Reply(204, "")
+    ])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let home = try HomeService(credential: credential, expires: Date().addingTimeInterval(3600),
+                               webToken: "web-token", userHash: "hash", session: harness.session)
+    let consoles: [HomeConsole]
+    do { consoles = try await home.consoles() }
+    catch { Issue.record("Console list: \(error); requests: \(harness.script.requests)"); return }
+    #expect(consoles.count == 2)
+    #expect(consoles.first { $0.id == "live-id" }?.inHomeService == true)
+    #expect(consoles.first { $0.id == "elsewhere" }?.inHomeService == false)
+    do { try await home.wake("live-id") }
+    catch { Issue.record("Wake: \(error); requests: \(harness.script.requests)"); return }
+    #expect(!harness.script.requests.contains { $0.contains("/sessions/home/play") })
+    let handle: URL
+    do { handle = try await home.create(title: "live-id", preferences: .init()) }
+    catch { Issue.record("Create: \(error); requests: \(harness.script.requests)"); return }
+    #expect(handle.path == "/v5/sessions/home/test-session")
+    try await home.end(at: handle)
+    let body = try #require(harness.script.launchRequests.first?.0)
+    let launch = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+    #expect(launch["serverId"] as? String == "live-id")
+    #expect(launch["titleId"] as? String == "")
+    #expect(harness.script.requests.contains { $0.contains("/commands") })
+    #expect(!harness.script.requests.contains { $0.contains("TurnOff") })
+    #expect(harness.script.requests.last?.contains("/v5/sessions/home/test-session") == true)
+}
+
+@Test func associatedConsolesRemainVisibleWhenHomeListFails() async throws {
+    let harness = AuthHarness([
+        Reply(#"{"result":[{"id":"living-room","name":"Living Room","powerState":"On"}]}"#),
+        Reply(503, "{}")
+    ])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let home = try HomeService(credential: credential, expires: Date().addingTimeInterval(3600),
+                               webToken: "web-token", userHash: "hash", session: harness.session)
+    let console = try #require(await home.consoles().first)
+    #expect(console.id == "living-room")
+    #expect(!console.homeServiceChecked)
+    #expect(!console.inHomeService)
+    #expect(!console.local)
+}
+
+@Test func associatedConsolesCanBeListedWithoutHomeAuthorization() async throws {
+    let harness = AuthHarness([Reply(#"{"result":[{"id":"living-room","name":"Living Room"}]}"#)])
+    let home = try HomeService(credential: nil, expires: .distantPast,
+                               webToken: "web-token", userHash: "hash", session: harness.session)
+    let consoles = try await home.consoles()
+    #expect(consoles.count == 1)
+    #expect(consoles[0].id == "living-room")
+    #expect(!consoles[0].homeServiceChecked)
+    #expect(harness.script.requests.count == 1)
+}
+
 @Test func catalogHydratesOptionalArtworkCategoriesAndPublisher() async throws {
     let harness = AuthHarness([
         Reply(#"{"results":[{"titleId":"TEST","details":{"productId":"PRODUCT"}},{"titleId":"TEST","details":{"name":"Duplicate"}},{"titleId":"FALLBACK","details":{"name":"Fallback Game"}}]}"#),
@@ -247,7 +307,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
 }
 
 @Test @MainActor func restoreRotatesTokenAndDistinguishesFreeToPlay() async throws {
-    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(403, "{}"), Reply(cloudJSON)])
+    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(cloudJSON), Reply(403, "{}"), Reply(cloudJSON)])
     let store = MemoryCredentials("previous-refresh")
     let account = XboxAccount(service: harness.service, store: store)
     #expect(!account.hasCloudAccess)
@@ -258,6 +318,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(account.gamertag == "Test Player")
     #expect(account.offering == .freeToPlay)
     #expect(account.hasCloudAccess)
+    #expect(account.hasConsoleAccess)
     #expect(account.regionNames == ["Test Region"])
     #expect(account.accessExpires != nil)
     #expect(account.errorMessage == nil)
@@ -280,6 +341,20 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(!account.hasCloudAccess)
     #expect(account.errorMessage != nil)
     #expect(account.accessExpires == nil)
+}
+
+@Test @MainActor func consoleAccessSurvivesCloudDenial() async throws {
+    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON),
+                               Reply(cloudJSON), Reply(403, "{}"), Reply(403, "{}")])
+    let account = XboxAccount(service: harness.service, store: MemoryCredentials("saved"))
+    account.restore()
+    try await waitForIdle(account)
+    #expect(account.hasXboxSignIn)
+    #expect(account.hasConsoleAccess)
+    #expect(!account.hasCloudAccess)
+    #expect(account.homeError == nil)
+    #expect(account.cloudError != nil)
+    #expect(try account.homeService().stream?.source == .home)
 }
 
 @Test @MainActor func signOutCancelsPendingAuthorization() async throws {

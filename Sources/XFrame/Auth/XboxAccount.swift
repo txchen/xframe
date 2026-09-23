@@ -5,7 +5,9 @@ import Observation
 @MainActor
 final class XboxAccount {
     var showingAccount = false
+    var hasXboxSignIn: Bool { gamertag != nil }
     var hasCloudAccess: Bool { offering != nil }
+    var hasConsoleAccess: Bool { homeCredential != nil && (homeExpires ?? .distantPast) > Date() }
     private(set) var status = "Not signed in"
     private(set) var errorMessage: String?
     private(set) var gamertag: String?
@@ -14,13 +16,16 @@ final class XboxAccount {
     private(set) var codeExpires: Date?
     private(set) var accessExpires: Date?
     private(set) var offering: CloudOffering?
+    private(set) var homeExpires: Date?
+    private(set) var homeError: String?
+    private(set) var cloudError: String?
     private(set) var regionNames: [String] = []
     private(set) var selectedRegion = ""
     private(set) var defaultRegion: String?
     var requestedRegion: String? { selectedRegion.isEmpty ? defaultRegion : selectedRegion }
 
     func selectRegion(_ name: String) {
-        guard !isBusy && !library.loading && !library.ownsSession,
+        guard !isBusy && !library.loading && !library.loadingConsoles && !library.ownsSession,
               name.isEmpty || regionNames.contains(name), name != selectedRegion else { return }
         selectedRegion = name
         library.reset()
@@ -38,6 +43,16 @@ final class XboxAccount {
         })
     }
 
+    func homeService() throws -> HomeService {
+        guard let webToken, let webUserHash, !isBusy else { throw CloudError.expired }
+        let validHome = (homeExpires ?? .distantPast) > Date() ? homeCredential : nil
+        return try HomeService(credential: validHome, expires: homeExpires ?? .distantPast,
+            webToken: webToken, userHash: webUserHash, transferToken: { [weak self] in
+                guard let self else { throw CloudError.expired }
+                return try await self.consoleTransferToken()
+            })
+    }
+
     private func consoleTransferToken() async throws -> String {
         guard let saved = try store.load() else { throw CloudError.expired }
         let token = try await service.consoleTransferToken(refreshToken: saved)
@@ -46,6 +61,9 @@ final class XboxAccount {
     }
     // Tokens never enter observable view state or diagnostics.
     @ObservationIgnored private var cloudCredential: CloudToken?
+    @ObservationIgnored private var homeCredential: CloudToken?
+    @ObservationIgnored private var webToken: String?
+    @ObservationIgnored private var webUserHash: String?
     @ObservationIgnored private let service: XboxAuthService
     @ObservationIgnored private let store: any CredentialStore
     @ObservationIgnored private var task: Task<Void, Never>?
@@ -57,7 +75,7 @@ final class XboxAccount {
     }
 
     func signIn() {
-        guard !isBusy && !library.ownsSession && !library.loading else { return }
+        guard !isBusy && !library.ownsSession && !library.loading && !library.loadingConsoles else { return }
         begin(status: "Requesting a Microsoft sign-in code…")
         let run = generation
         task = Task {
@@ -79,7 +97,7 @@ final class XboxAccount {
     }
 
     func restore() {
-        guard !isBusy && !library.ownsSession && !library.loading else { return }
+        guard !isBusy && !library.ownsSession && !library.loading && !library.loadingConsoles else { return }
         do {
             guard let saved = try store.load() else { hasSavedSignIn = false; return }
             hasSavedSignIn = true
@@ -106,12 +124,14 @@ final class XboxAccount {
         task?.cancel()
         task = nil
         isBusy = false
+        clearAccess()
+        gamertag = nil
         clearDeviceCode()
         status = hasSavedSignIn ? "Sign-in saved; access check canceled" : "Sign-in canceled"
     }
 
     func signOut() {
-        guard !library.ownsSession && !library.loading else { return }
+        guard !library.ownsSession && !library.loading && !library.loadingConsoles else { return }
         cancel()
         clearAccess()
         gamertag = nil
@@ -158,29 +178,50 @@ final class XboxAccount {
         let profile = try await service.xsts(userToken: user.Token, relyingParty: "http://xboxlive.com")
         try check(run)
         gamertag = profile.gamertag ?? "Xbox account"
-        status = "Requesting xCloud authorization…"
+        guard let hash = profile.userHash, !hash.isEmpty else { throw AuthError.invalidResponse("Xbox profile") }
+        webToken = profile.Token
+        webUserHash = hash
+        status = "Requesting streaming authorization…"
         let streaming = try await service.xsts(userToken: user.Token, relyingParty: "http://gssv.xboxlive.com/")
         try check(run)
-        guard !streaming.Token.isEmpty else { throw AuthError.invalidResponse("xCloud authorization") }
+        guard !streaming.Token.isEmpty else { throw AuthError.invalidResponse("Xbox streaming authorization") }
+        do {
+            let home = try await service.cloud(token: streaming.Token, offering: .home)
+            try check(run)
+            homeCredential = home
+            homeExpires = Date().addingTimeInterval(Double(home.durationInSeconds))
+            homeError = nil
+        } catch {
+            try check(run)
+            homeError = (error as? AuthError)?.localizedDescription ?? "Xbox console access could not be checked."
+        }
         status = "Checking xCloud access…"
         var selected = CloudOffering.gamePass
-        let cloud: CloudToken
-        do { cloud = try await service.cloud(token: streaming.Token, offering: selected) }
-        catch AuthError.service(_, let statusCode, _) where statusCode == 403 {
+        do {
+            let cloud: CloudToken
+            do { cloud = try await service.cloud(token: streaming.Token, offering: selected) }
+            catch AuthError.service(_, let statusCode, _) where statusCode == 403 {
+                try check(run)
+                selected = .freeToPlay
+                status = "Checking free-to-play xCloud access…"
+                cloud = try await service.cloud(token: streaming.Token, offering: selected)
+            }
             try check(run)
-            selected = .freeToPlay
-            status = "Checking free-to-play xCloud access…"
-            cloud = try await service.cloud(token: streaming.Token, offering: selected)
+            cloudCredential = cloud
+            offering = selected
+            regionNames = cloud.offeringSettings.regions.map(\.name)
+            defaultRegion = (cloud.offeringSettings.regions.first(where: { $0.isDefault == true })
+                ?? cloud.offeringSettings.regions.first)?.name
+            if !regionNames.contains(selectedRegion) { selectedRegion = "" }
+            accessExpires = Date().addingTimeInterval(Double(cloud.durationInSeconds))
+            cloudError = nil
+        } catch {
+            try check(run)
+            cloudError = (error as? AuthError)?.localizedDescription ?? "xCloud access could not be checked."
         }
-        try check(run)
-        cloudCredential = cloud
-        offering = selected
-        regionNames = cloud.offeringSettings.regions.map(\.name)
-        defaultRegion = (cloud.offeringSettings.regions.first(where: { $0.isDefault == true })
-            ?? cloud.offeringSettings.regions.first)?.name
-        if !regionNames.contains(selectedRegion) { selectedRegion = "" }
-        accessExpires = Date().addingTimeInterval(Double(cloud.durationInSeconds))
-        status = "xCloud credentials verified"
+        status = hasConsoleAccess && hasCloudAccess ? "Xbox console and xCloud access verified" :
+            hasConsoleAccess ? "Xbox console access verified" :
+            hasCloudAccess ? "xCloud access verified" : "Xbox signed in; streaming access unavailable"
     }
 
     private func finish(_ run: Int) {
@@ -192,10 +233,11 @@ final class XboxAccount {
     private func failed(_ error: Error, run: Int) {
         guard run == generation else { return }
         clearDeviceCode()
-        clearAccess()
+        if !hasXboxSignIn { clearAccess(); gamertag = nil }
         if error is CancellationError { status = "Canceled" }
         else {
-            status = hasSavedSignIn ? "Sign-in saved; xCloud access not verified" : "Sign-in failed"
+            status = hasXboxSignIn ? "Xbox signed in; streaming access unavailable" :
+                hasSavedSignIn ? "Sign-in saved; Xbox access not verified" : "Sign-in failed"
             errorMessage = (error as? AuthError)?.localizedDescription ?? "Authentication failed. Please try again."
         }
         finish(run)
@@ -204,6 +246,8 @@ final class XboxAccount {
     private func clearDeviceCode() { userCode = nil; verificationURL = nil; codeExpires = nil }
     private func clearAccess() {
         cloudCredential = nil; accessExpires = nil; offering = nil; regionNames = []
+        homeCredential = nil; homeExpires = nil; webToken = nil; webUserHash = nil
+        homeError = nil; cloudError = nil
         defaultRegion = nil
         library.reset()
     }

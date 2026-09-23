@@ -65,6 +65,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private var scaling: VideoScalingMode = .original
     private var hud: PerformanceHUDPreset = .compact
     private var cloud = false
+    private var console = false
     private var muted = false
     private var volume = 1.0
     private var fullscreen = false
@@ -157,15 +158,15 @@ final class PlaybackSettingsView: NSVisualEffectView {
             addRow(.close)
             label("D-pad ↑↓ · A select · B close\nVolume ←→ · Keyboard arrows / Return / Esc\nVideo continues; game input is held while settings are open.", size: 11)
         case .confirmation:
-            label("End Session?", size: 20)
-            label("This ends your cloud game. Unsaved progress may be lost.")
+            label(console ? "Disconnect from Xbox?" : "End Session?", size: 20)
+            label(console ? "XFrame will disconnect. The Xbox and game remain on." : "This ends the stream. Save your game before disconnecting if needed.")
             addRow(.cancel)
             addRow(.confirm)
         case .ending:
-            label("Ending Session…", size: 20)
-            label("Waiting for the cloud service to release the session. This request cannot be canceled.")
+            label(console ? "Disconnecting…" : "Ending Session…", size: 20)
+            label("Waiting for the streaming service to release the session. This request cannot be canceled.")
         case .failed(let message):
-            label("Unable to End Session", size: 20)
+            label(console ? "Unable to Disconnect" : "Unable to End Session", size: 20)
             label(message)
             addRow(.retry)
         }
@@ -173,9 +174,10 @@ final class PlaybackSettingsView: NSVisualEffectView {
         scroll.contentView.scroll(to: .zero)
         scroll.reflectScrolledClipView(scroll.contentView)
     }
-    func configure(cloud: Bool, muted: Bool, volume: Double, fullscreen: Bool, transitioning: Bool) {
-        let sourceChanged = self.cloud != cloud
-        self.cloud = cloud; self.muted = muted; self.volume = volume
+    func configure(cloud: Bool, muted: Bool, volume: Double, fullscreen: Bool, transitioning: Bool,
+                   console: Bool = false) {
+        let sourceChanged = self.cloud != cloud || self.console != console
+        self.cloud = cloud; self.console = console; self.muted = muted; self.volume = volume
         self.fullscreen = fullscreen; self.transitioning = transitioning
         if sourceChanged && mode == .settings { rebuild() }
         refreshSelection()
@@ -260,9 +262,9 @@ final class PlaybackSettingsView: NSVisualEffectView {
         case .volume: return "Volume: \(Int((volume * 100).rounded()))%  ← →"
         case .mute: return muted ? "✓ Mute" : "Mute"
         case .fullscreen: return fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"
-        case .end, .confirm: return "End Session"
+        case .end, .confirm: return console ? "Disconnect" : "End Session"
         case .cancel: return "Cancel"
-        case .retry: return "Retry End Session"
+        case .retry: return console ? "Retry Disconnect" : "Retry End Session"
         case .close: return "Close"
         }
     }

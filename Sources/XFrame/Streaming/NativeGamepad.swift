@@ -4,6 +4,10 @@ import GameController
 @MainActor
 final class NativeGamepad {
     private var controller: GCController?
+    private let rumble = ControllerRumble()
+    var rumbleStatus: String { rumble.status }
+    func vibrate(_ command: RumbleCommand) { rumble.play(command) }
+    func stopRumble() { rumble.stop() }
     private let systemGestures = GamepadSystemGestures()
     var capturesSystemGestures = false {
         didSet { updateSystemGestures() }
@@ -26,6 +30,7 @@ final class NativeGamepad {
         controller?.extendedGamepad?.valueChangedHandler = nil
         systemGestures.restore()
         controller = devices.first
+        rumble.select(controller)
         updateSystemGestures()
         replaced?()
         guard let controller, let pad = controller.extendedGamepad else { return }
@@ -47,6 +52,7 @@ final class NativeGamepad {
         systemGestures.restore()
         controller?.extendedGamepad?.valueChangedHandler = nil
         controller = nil
+        rumble.select(nil)
         changed = nil
         replaced = nil
     }

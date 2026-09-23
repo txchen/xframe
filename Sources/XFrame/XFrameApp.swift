@@ -140,9 +140,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.playback?.stop()
                 self.playback = nil
                 renderer.play(source, in: view)
-                view.sourceName = source == nil ? "1920×1080" : "xCloud H.264"
+                view.sourceName = source == nil ? "1920×1080" : self.account.library.sessionSource == .home ? "Xbox console H.264" : "xCloud H.264"
                 view.updateBackingSize()
-                self.diagnostics.showMessage(source == nil ? "Cloud playback stopped" : "Connecting cloud video…")
+                self.diagnostics.showMessage(source == nil ? "Stream playback stopped" : self.account.library.sessionSource == .home ? "Connecting console video…" : "Connecting cloud video…")
                 if source != nil {
                     self.playbackPresentation?.showWindowed()
                 } else if self.account.library.ownsSession {
@@ -172,8 +172,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard account.library.ownsSession else { return .terminateNow }
         showCloudLibrary()
         let alert = NSAlert()
-        alert.messageText = "End the cloud session before quitting"
-        alert.informativeText = "Use End Session and wait for confirmation. This avoids leaving a cloud console occupied."
+        alert.messageText = "End the streaming session before quitting"
+        alert.informativeText = account.library.sessionSource == .home
+            ? "Use Disconnect and wait for confirmation. Your Xbox and game will remain on."
+            : "Use End Session and wait for confirmation."
         alert.runModal()
         return .terminateCancel
     }
@@ -192,14 +194,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func showXboxAccount() {
         showCloudLibrary()
-        account.showingAccount = account.hasCloudAccess
+        account.showingAccount = account.hasXboxSignIn
     }
 
     @objc private func showCloudLibrary() {
         if libraryWindow == nil {
             let controller = NSHostingController(rootView: CloudLibraryView(library: account.library, account: account))
             let window = NSWindow(contentViewController: controller)
-            window.title = "XFrame — Cloud Games"
+            window.title = "XFrame — Games and Consoles"
             window.appearance = NSAppearance(named: .darkAqua)
             window.titlebarAppearsTransparent = true
             window.backgroundColor = NSColor(red: 0.055, green: 0.067, blue: 0.075, alpha: 1)
@@ -425,7 +427,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         playbackSettings.configure(cloud: account.library.ownsSession,
             muted: account.library.audioMuted, volume: account.library.audioVolume,
             fullscreen: window?.styleMask.contains(.fullScreen) == true,
-            transitioning: playbackPresentation?.transitioning == true)
+            transitioning: playbackPresentation?.transitioning == true,
+            console: account.library.ownsSession && account.library.sessionSource == .home)
     }
     private func startPanelInput() {
         panelInput.start(panel: playbackSettings) { [weak self] in

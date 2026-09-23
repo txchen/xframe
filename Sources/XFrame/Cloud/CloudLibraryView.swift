@@ -8,7 +8,9 @@ struct CloudLibraryView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-            if account.hasCloudAccess {
+            if account.hasXboxSignIn && library.showingConsoles {
+                consolePage
+            } else if account.hasCloudAccess {
             VStack(alignment: .leading, spacing: 20) {
             header
             HStack(spacing: 12) {
@@ -47,10 +49,90 @@ struct CloudLibraryView: View {
                 CloudStreamSettingsView(library: library)
             }
             .onChange(of: account.hasCloudAccess) { _, _ in account.showingAccount = false }
+            .onChange(of: account.hasConsoleAccess) { _, available in
+                if available && !account.hasCloudAccess { library.showingConsoles = true }
+            }
             .fileExporter(isPresented: Binding(get: { library.exportingDiagnostics }, set: { library.exportingDiagnostics = $0 }),
                           document: library.diagnosticDocument, contentType: .json, defaultFilename: "xframe-stream-diagnostics") { result in
                 if case .failure = result { library.viewError = "Could not save stream diagnostics." }
             }
+    }
+
+    private var consolePage: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Consoles").font(.system(size: 30, weight: .bold, design: .rounded))
+                    Text("Only consoles discovered on this LAN can stream here.")
+                        .font(.caption).foregroundStyle(LibraryStyle.secondary)
+                }
+                Spacer()
+                Button(library.loadingConsoles ? "Checking…" : "Refresh Consoles", systemImage: "arrow.clockwise") {
+                    do { library.loadConsoles(using: try account.homeService()) }
+                    catch { library.viewError = error.localizedDescription }
+                }.disabled(account.isBusy || library.loadingConsoles || library.ownsSession)
+            }
+            if !account.hasConsoleAccess {
+                Text(account.homeError ?? "Console access is unavailable. Check Xbox account access again.")
+                    .foregroundStyle(.orange)
+                Button("Check Access Again") { account.restore() }.disabled(account.isBusy)
+            }
+            Text(library.consoleStatus).font(.caption).foregroundStyle(LibraryStyle.secondary)
+            Text("If a powered-on Xbox is missing, check macOS Local Network permission and Xbox remote features, then refresh.")
+                .font(.caption).foregroundStyle(LibraryStyle.secondary)
+            if let message = library.consoleError ?? library.viewError {
+                Text(message).foregroundStyle(.red).textSelection(.enabled)
+            }
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(library.consoles) { console in
+                        HStack(spacing: 16) {
+                            Image(systemName: "xbox.logo").font(.title2)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(console.name).font(.headline)
+                                Text("\(console.model) · \(console.powerState) · \(console.local ? "Found on this LAN" : "Not found on this LAN")")
+                                    .font(.caption).foregroundStyle(LibraryStyle.secondary)
+                                if console.local && !console.inHomeService {
+                                    Text(console.homeServiceChecked
+                                         ? "Remote play is unavailable for this console. Check its remote features setting."
+                                         : "Remote play availability could not be checked. Refresh and try again.")
+                                        .font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                            Spacer()
+                            if library.ownsSession {
+                                if library.sessionSource == .home && library.activeGame == console.name {
+                                    Button("Disconnect") { library.requestEndSession?() }.disabled(library.ending)
+                                }
+                            } else if console.standby {
+                                Button("Wake Console") { library.wake(console) }
+                                    .disabled(library.loadingConsoles || account.isBusy)
+                            } else if console.local && console.inHomeService {
+                                Button("Connect") { library.startConsole(console) }
+                                    .disabled(library.loadingConsoles || account.isBusy)
+                            }
+                        }.padding(16)
+                            .background(LibraryStyle.surface, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+            }
+            if library.consoles.isEmpty && !library.loadingConsoles {
+                Text("No associated consoles loaded. Enable remote features on your Xbox, then refresh.")
+                    .foregroundStyle(LibraryStyle.secondary)
+            }
+            if library.ownsSession {
+                Text("End the current session and wait for cleanup before connecting to another console.")
+                    .font(.caption).foregroundStyle(LibraryStyle.secondary)
+            }
+            Text(library.status).font(.caption).foregroundStyle(LibraryStyle.secondary)
+            if library.ownsSession && library.sessionSource == .home {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    Text("\(library.controllerStatus) · \(library.rumbleStatus)")
+                        .font(.caption).foregroundStyle(LibraryStyle.secondary)
+                }
+            }
+            if let error = library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
+        }.padding(24)
     }
 
     private var sidebar: some View {
@@ -65,7 +147,15 @@ struct CloudLibraryView: View {
                     .foregroundStyle(LibraryStyle.secondary).padding(.bottom, 6)
                 collectionButton("Games", icon: "square.grid.2x2", favorites: false)
                 collectionButton("Favorites", icon: "star", favorites: true)
-            }.disabled(!account.hasCloudAccess)
+                Button {
+                    library.showingConsoles = true
+                } label: {
+                    Label("Consoles", systemImage: "gamecontroller")
+                        .font(.system(size: 13, weight: library.showingConsoles ? .semibold : .medium))
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .foregroundStyle(library.showingConsoles ? LibraryStyle.accent : LibraryStyle.secondary)
+                }.buttonStyle(.plain).disabled(!account.hasXboxSignIn)
+            }
             Spacer()
             Button {
                 library.showingStreamSettings = true
@@ -74,21 +164,21 @@ struct CloudLibraryView: View {
                     .font(.system(size: 12, weight: .medium))
             }.buttonStyle(.plain).accessibilityLabel("Streaming Settings")
             Button {
-                account.showingAccount = account.hasCloudAccess
+                account.showingAccount = account.hasXboxSignIn
             } label: {
                 HStack(spacing: 9) {
                     Image(systemName: "person.crop.circle.fill").font(.system(size: 24))
                         .foregroundStyle(LibraryStyle.accent)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(account.gamertag ?? "Xbox account").font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                        Text(account.isBusy ? "Connecting…" : account.hasCloudAccess ? "Manage account" : "Sign in")
+                        Text(account.isBusy ? "Connecting…" : account.hasXboxSignIn ? "Manage account" : "Sign in")
                             .font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(.plain).accessibilityLabel("Xbox Account")
             VStack(alignment: .leading, spacing: 10) {
-                Label("Xbox Cloud Gaming", systemImage: "cloud").font(.system(size: 12, weight: .medium))
-                Text("Native video.\nYour games, closer.").font(.system(size: 12)).lineSpacing(4)
+                Label("Xbox Streaming", systemImage: "gamecontroller").font(.system(size: 12, weight: .medium))
+                Text("Cloud and local console.\nNative video on your Mac.").font(.system(size: 12)).lineSpacing(4)
                     .foregroundStyle(LibraryStyle.secondary)
                 Text("DEVELOPMENT PREVIEW").font(.system(size: 8, weight: .semibold)).tracking(1)
                     .foregroundStyle(LibraryStyle.secondary).padding(.top, 12)
@@ -99,8 +189,9 @@ struct CloudLibraryView: View {
     }
 
     private func collectionButton(_ title: String, icon: String, favorites: Bool) -> some View {
-        let selected = library.query.favoritesOnly == favorites
+        let selected = !library.showingConsoles && library.query.favoritesOnly == favorites
         return Button {
+            library.showingConsoles = false
             library.updateQuery { $0.favoritesOnly = favorites }
         } label: {
             HStack(spacing: 10) {
@@ -112,7 +203,7 @@ struct CloudLibraryView: View {
                 .contentShape(Rectangle())
                 .foregroundStyle(selected ? LibraryStyle.accent : LibraryStyle.secondary)
                 .background(selected ? LibraryStyle.accent.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 8))
-        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
+        }.buttonStyle(.plain).disabled(!account.hasCloudAccess).accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var header: some View {

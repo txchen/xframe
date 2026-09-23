@@ -3,14 +3,15 @@ import QuartzCore
 @preconcurrency import WebRTC
 
 enum StreamError: Error, LocalizedError {
-    case signaling, connection, firstFrame, stalled, heartbeat, decoder(String)
+    case signaling, connection, firstFrame, stalled, heartbeat, localPath, decoder(String)
     var errorDescription: String? {
         switch self {
         case .signaling: "WebRTC negotiation failed."
         case .connection: "The WebRTC connection failed or was closed."
         case .firstFrame: "No hardware-decoded video frame arrived within 45 seconds."
-        case .heartbeat: "The cloud session heartbeat failed. End the session and retry."
-        case .stalled: "Cloud video stopped receiving frames."
+        case .heartbeat: "The streaming session heartbeat failed. End the session and retry."
+        case .stalled: "Stream video stopped receiving frames."
+        case .localPath: "A direct local network path to this Xbox could not be verified. The session was stopped."
         case .decoder(let reason): "Video pipeline failure: " + reason
         }
     }
@@ -21,6 +22,7 @@ enum StreamError: Error, LocalizedError {
         case .firstFrame: .firstFrameTimeout
         case .stalled: .videoStalled
         case .heartbeat: .heartbeatFailed
+        case .localPath: .transportFailed
         case .decoder: .decoderFailed
         }
     }
@@ -29,18 +31,29 @@ enum StreamError: Error, LocalizedError {
 @MainActor
 final class CloudVideoConnection {
     let video: LiveVideo
-    init(framePacing: FramePacingMode = .balanced) {
+    init(framePacing: FramePacingMode = .balanced, requireLocalMedia: Bool = false) {
         video = LiveVideo(framePacing: framePacing)
+        self.requireLocalMedia = requireLocalMedia
     }
+    private let requireLocalMedia: Bool
+    private var localPathVerified = false
+    private var localPathRejected = false
+    private var connectedAt: Double?
+    private var localVideoPresented = false
+    var localPathChanged: ((Bool) -> Void)?
     private let audio = CloudAudioPlayback()
+    private var requestedMuted = false
+    private var requestedVolume = 1.0
 
     func configureAudio(muted: Bool, volume: Double) {
-        audio.configure(muted: muted, volume: volume)
+        requestedMuted = muted
+        requestedVolume = volume
+        audio.configure(muted: muted || (requireLocalMedia && !localPathVerified), volume: volume)
         video.audioPlayback(attached: audio.hasTrack, muted: audio.muted, volume: audio.volume)
     }
-    var controllerEnabled = false { didSet { updateControllerCapture(); releaseInput() } }
+    var controllerEnabled = false { didSet { updateControllerCapture(); releaseInput(); if !controllerEnabled { gamepad.stopRumble() } } }
     var keyboardEnabled = false { didSet { updateControllerCapture(); releaseInput() } }
-    var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { releaseInput() } } }
+    var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { releaseInput(); gamepad.stopRumble() } } }
     private var keyboard = KeyboardGamepad()
     private var ownership = InputOwnership()
     private var inputEnabled: Bool { keyboardEnabled || controllerEnabled }
@@ -86,15 +99,16 @@ final class CloudVideoConnection {
     private var settingsShortcut = GamepadSettingsShortcut()
     var showPlaybackSettings: (() -> Void)?
     var settingsGamepad: ((GamepadSnapshot) -> Void)?
-    var playbackSettingsVisible = false { didSet { releaseInput() } }
+    var playbackSettingsVisible = false { didSet { releaseInput(); if playbackSettingsVisible { gamepad.stopRumble() } } }
     private var inputTask: Task<Void, Never>?
     private var gamepadReset = false
     private var advertised = false
     private var addAfter = 0.0
     private var blockedSince: Double?
     private(set) var controllerStatus = "Controller input off"
+    var rumbleStatus: String { gamepad.rumbleStatus }
     private var ownsController: Bool {
-        inputEnabled && playbackFocused && inputConnected && advertised && !closed && !recovering && health.disconnectedAt == nil && blockedSince == nil
+        inputEnabled && playbackFocused && inputConnected && advertised && !closed && !recovering && health.disconnectedAt == nil && blockedSince == nil && (!requireLocalMedia || localPathVerified)
     }
 
     private var factory: RTCPeerConnectionFactory?
@@ -109,6 +123,7 @@ final class CloudVideoConnection {
     private var recovering = false
     private let heartbeat = StreamHeartbeat()
     private var handshakeReady = false
+    private var handshakeSent = false
     private var controlStarted = false
     private var inputStarted = false
     private var closed = false
@@ -231,6 +246,10 @@ final class CloudVideoConnection {
             try checkActive()
             guard heartbeat.failure == nil else { throw StreamError.heartbeat }
             guard !connectionFailed else { throw StreamError.connection }
+            if requireLocalMedia {
+                if localPathRejected { throw StreamError.localPath }
+                if let connectedAt, !localPathVerified, CACurrentMediaTime() - connectedAt > 6 { throw StreamError.localPath }
+            }
             let stats = video.streamState
             if ContinuousClock.now >= nextStatsSample {
                 sampleNetworkStats(peer)
@@ -252,6 +271,7 @@ final class CloudVideoConnection {
                     report("Connection interrupted — recovering…")
                 }
             case .playing:
+                if requireLocalMedia && !localPathVerified { break }
                 if recovering {
                     recovering = false
                     video.setRecovering(false)
@@ -284,6 +304,18 @@ final class CloudVideoConnection {
         // Completion-style sampling does not block keepalive or stall checks.
         // Whitelist numeric fields; whole reports can contain network addresses.
         peer.statistics { [weak self] report in
+            let transport = report.statistics.values.first(where: { $0.type == "transport" && $0.values["selectedCandidatePairId"] != nil })
+            let selectedPair = (transport?.values["selectedCandidatePairId"] as? String).flatMap { report.statistics[$0] }
+            let localCandidate = (selectedPair?.values["localCandidateId"] as? String).flatMap { report.statistics[$0] }
+            let remoteCandidate = (selectedPair?.values["remoteCandidateId"] as? String).flatMap { report.statistics[$0] }
+            let path: (String, String, String, String)? = {
+                guard let local = localCandidate, let remote = remoteCandidate,
+                      let localAddress = (local.values["address"] ?? local.values["ip"]) as? String,
+                      let remoteAddress = (remote.values["address"] ?? remote.values["ip"]) as? String,
+                      let localType = local.values["candidateType"] as? String,
+                      let remoteType = remote.values["candidateType"] as? String else { return nil }
+                return (remoteAddress, localAddress, remoteType, localType)
+            }()
             if let inbound = report.statistics.values.first(where: {
                 $0.type == "inbound-rtp" && ($0.values["kind"] as? String) == "video"
             }) {
@@ -309,7 +341,25 @@ final class CloudVideoConnection {
                 video.audioNetworkSample(received: (inbound.values["packetsReceived"] as? NSNumber)?.intValue,
                     energy: (inbound.values["totalAudioEnergy"] as? NSNumber)?.doubleValue)
             }
-            Task { @MainActor [weak self] in self?.samplingStats = false }
+            Task { @MainActor [weak self] in
+                guard let self, !self.closed else { return }
+                self.samplingStats = false
+                if self.requireLocalMedia, let path {
+                    let valid = LocalMediaPath.isLocal(remote: path.0, local: path.1,
+                        remoteType: path.2, localType: path.3, interfaces: LocalMediaPath.interfaces())
+                    let wasVerified = self.localPathVerified
+                    self.localPathVerified = valid
+                    self.localPathRejected = !valid
+                    if !valid { self.releaseInput(); self.gamepad.stopRumble() }
+                    if wasVerified != valid {
+                        self.configureAudio(muted: self.requestedMuted, volume: self.requestedVolume)
+                        if valid && !self.localVideoPresented {
+                            self.localVideoPresented = true
+                            self.localPathChanged?(true)
+                        } else if !valid { self.localPathChanged?(false) }
+                    }
+                }
+            }
         }
     }
 
@@ -369,6 +419,17 @@ final class CloudVideoConnection {
         guard !closed else { return }
         let wasDisconnected = health.disconnectedAt != nil
         health.updateTransport(state, now: CACurrentMediaTime())
+        if requireLocalMedia {
+            if state == .connected && (connectedAt == nil || wasDisconnected) {
+                connectedAt = CACurrentMediaTime(); localPathVerified = false
+            }
+            if state == .disconnected || state == .failed {
+                localPathVerified = false
+                configureAudio(muted: requestedMuted, volume: requestedVolume)
+                releaseInput()
+                gamepad.stopRumble()
+            }
+        }
         if state == .failed { video.connectionEvent(.iceFailed) }
         if state == .disconnected && !wasDisconnected {
             releaseInput()
@@ -391,10 +452,15 @@ final class CloudVideoConnection {
     }
     fileprivate func channelOpened(_ name: String) {
         guard !closed else { return }
-        if name == "message" { send(["type": "Handshake", "version": "messageV1", "id": UUID().uuidString, "cv": nextCV()], on: name) }
         startControlIfReady()
     }
     fileprivate func message(_ data: Data, on name: String) {
+        guard !closed else { return }
+        if name == "input" {
+            if controllerEnabled && playbackFocused && (!requireLocalMedia || localPathVerified),
+               let command = RumbleCommand.parse(data) { gamepad.vibrate(command) }
+            return
+        }
         guard !closed, name == "message", data.count < 65536,
               let message = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         if message["type"] as? String == "HandshakeAck", message["version"] as? String == "messageV1", !handshakeReady {
@@ -414,6 +480,10 @@ final class CloudVideoConnection {
         }
     }
     private func startControlIfReady() {
+        guard !requireLocalMedia || localPathVerified else { return }
+        if !handshakeSent && channels["message"]?.readyState == .open {
+            handshakeSent = send(["type": "Handshake", "version": "messageV1", "id": UUID().uuidString, "cv": nextCV()], on: "message")
+        }
         guard handshakeReady else { return }
         if !controlStarted, channels["control"]?.readyState == .open {
             // Fixed protocol access key from the reference, not an account secret.
@@ -431,6 +501,11 @@ final class CloudVideoConnection {
     private func tickInput() {
         guard !closed else { return }
         gamepad.refresh()
+        if requireLocalMedia && !localPathVerified {
+            releaseInput()
+            controllerStatus = "Waiting for verified local Xbox path"
+            return
+        }
         startControlIfReady()
         let now = CACurrentMediaTime()
         guard handshakeReady && controlStarted && inputStarted,

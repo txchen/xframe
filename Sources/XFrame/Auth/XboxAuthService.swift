@@ -33,6 +33,7 @@ struct XboxToken: Decodable, Sendable {
     let Token: String
     let DisplayClaims: Claims?
     var gamertag: String? { DisplayClaims?.xui?.first?.gtg ?? DisplayClaims?.xui?.first?.mgt }
+    var userHash: String? { DisplayClaims?.xui?.first?.uhs }
 }
 
 struct CloudToken: Decodable, Sendable {
@@ -53,7 +54,14 @@ struct CloudToken: Decodable, Sendable {
 enum CloudOffering: String, Sendable {
     case gamePass = "xgpuweb"
     case freeToPlay = "xgpuwebf2p"
-    var label: String { self == .gamePass ? "xCloud catalog access" : "Free-to-play access only" }
+    case home = "xhome"
+    var label: String {
+        switch self {
+        case .gamePass: "xCloud catalog access"
+        case .freeToPlay: "Free-to-play access only"
+        case .home: "Xbox console access"
+        }
+    }
 }
 
 enum AuthError: Error, LocalizedError, Equatable {
@@ -191,16 +199,17 @@ struct XboxAuthService: Sendable {
     }
 
     func cloud(token: String, offering: CloudOffering) async throws -> CloudToken {
+        let stage = offering == .home ? "Xbox console access" : "xCloud access"
         let result: CloudToken = try await json(
             "https://\(offering.rawValue).gssv-play-prod.xboxlive.com/v2/login/user",
-            body: ["token": token, "offeringId": offering.rawValue], stage: "xCloud access",
+            body: ["token": token, "offeringId": offering.rawValue], stage: stage,
             headers: ["x-gssv-client": "XboxComBrowser"])
         guard !result.gsToken.isEmpty, result.durationInSeconds > 0,
               !result.offeringSettings.regions.isEmpty,
               result.offeringSettings.regions.allSatisfy({
                   $0.baseUri.scheme == "https" && $0.baseUri.user == nil && $0.baseUri.password == nil &&
                   $0.baseUri.port == nil && ($0.baseUri.host ?? "").hasSuffix(".xboxlive.com")
-              }) else { throw AuthError.invalidResponse("xCloud access") }
+              }) else { throw AuthError.invalidResponse(stage) }
         return result
     }
 

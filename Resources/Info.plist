@@ -12,5 +12,6 @@
     <key>LSMinimumSystemVersion</key><string>27.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
+    <key>NSLocalNetworkUsageDescription</key><string>XFrame discovers your Xbox and streams games directly on your local network.</string>
 </dict>
 </plist>
