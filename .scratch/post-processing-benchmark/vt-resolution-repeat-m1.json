@@ -1,0 +1,72 @@
+{
+  "machine": "arm64",
+  "macOS": "27.0",
+  "device": "Apple M1",
+  "pairsPerRun": 60,
+  "warmupPairsPerRun": 5,
+  "sourceSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "transcoded720SHA256": "6686ab3cfbe33d716d970df95bd5bde01f05114a9a8e2a598bef7f05f66d6643",
+  "method": "Native-size 720p/1080p decoded video; processor wall time; 720p transcode and decode outside measured processor time.",
+  "runs": [
+    {
+      "size": 720,
+      "trial": 1,
+      "medianMS": 5.471208307426423,
+      "p95MS": 5.919500021263957,
+      "decodeMedianMS": 0.051458366215229034,
+      "sessionStartMS": 45.16433330718428,
+      "realSeconds": 0.62,
+      "userCPUSeconds": 0.05
+    },
+    {
+      "size": 1080,
+      "trial": 1,
+      "medianMS": 89.30216665612534,
+      "p95MS": 90.2328749652952,
+      "decodeMedianMS": 0.11299998732283711,
+      "sessionStartMS": 79.25466663436964,
+      "realSeconds": 5.55,
+      "userCPUSeconds": 4.19
+    },
+    {
+      "size": 1080,
+      "trial": 2,
+      "medianMS": 86.1649583093822,
+      "p95MS": 90.64762503840029,
+      "decodeMedianMS": 0.11037499643862247,
+      "sessionStartMS": 78.98125000065193,
+      "realSeconds": 5.49,
+      "userCPUSeconds": 4.14
+    },
+    {
+      "size": 720,
+      "trial": 2,
+      "medianMS": 5.460624990519136,
+      "p95MS": 5.9416250442154706,
+      "decodeMedianMS": 0.05483330460265279,
+      "sessionStartMS": 23.13937497092411,
+      "realSeconds": 0.47,
+      "userCPUSeconds": 0.04
+    },
+    {
+      "size": 720,
+      "trial": 3,
+      "medianMS": 5.451583361718804,
+      "p95MS": 5.9466250240802765,
+      "decodeMedianMS": 0.053374969866126776,
+      "sessionStartMS": 22.795416647568345,
+      "realSeconds": 0.46,
+      "userCPUSeconds": 0.04
+    },
+    {
+      "size": 1080,
+      "trial": 3,
+      "medianMS": 86.4879583241418,
+      "p95MS": 90.27237497502938,
+      "decodeMedianMS": 0.10900001507252455,
+      "sessionStartMS": 78.73549999203533,
+      "realSeconds": 5.52,
+      "userCPUSeconds": 4.17
+    }
+  ]
+}

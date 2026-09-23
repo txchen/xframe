@@ -95,5 +95,9 @@ and exported [M1 JSON with MLX-DLSS](m1-result-mlx.json). Its p95 times were:
 
 An earlier six-case UI export without weights is retained as
 [M1 base JSON](m1-result.json). The sharp VideoToolbox 720p–1080p difference
-warrants quality and live-pipeline checks before offering a 720p downscale
-path. These are candidate results for this M1, not M5 predictions.
+was reproduced in three alternating runs and investigated with process stack
+sampling in [the resolution-gap research note](vt-resolution-research.md).
+The 1080p path spent substantial time in CPU resampling and host/ANE transfers;
+Apple does not document why it chooses that path. Quality and live-pipeline
+checks are still needed before offering a 720p downscale path. These are
+candidate results for this M1, not M5 predictions.

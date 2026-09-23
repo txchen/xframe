@@ -77,3 +77,10 @@ an image-quality comparison. It does not include a display loop, motion-vector
 input, or a gameplay quality evaluation. VideoToolbox on this M1 accepts at
 most 1920×1080 for pure temporal interpolation; the 2560×1440 Diablo II stream
 would require scaling or another backend.
+
+For a focused 720p-versus-1080p VideoToolbox repeat with alternating run order,
+run `scripts/benchmark-frame-generation/recheck-vt-resolutions.sh`. It writes
+per-frame results, process CPU time, and `summary.json` under
+`.build/benchmark-frame-generation/resolution-recheck/`. See the
+[M1 resolution-gap investigation](../../.scratch/post-processing-benchmark/vt-resolution-research.md)
+for the repeated results and Apple-framework profiling limits.
