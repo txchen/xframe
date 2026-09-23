@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct CloudLibraryView: View {
@@ -55,8 +56,8 @@ struct CloudLibraryView: View {
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 28) {
             HStack(spacing: 10) {
-                Image(systemName: "gamecontroller.fill").font(.system(size: 21))
-                    .foregroundStyle(LibraryStyle.accent)
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable().scaledToFit().frame(width: 30, height: 30)
                 Text("XFRAME").font(.system(size: 15, weight: .heavy, design: .rounded)).tracking(1.5)
             }.padding(.top, 10)
             VStack(alignment: .leading, spacing: 8) {

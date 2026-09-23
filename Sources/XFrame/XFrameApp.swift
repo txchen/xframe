@@ -8,6 +8,10 @@ import SwiftUI
 enum XFrameApp {
     static func main() {
         let app = NSApplication.shared
+        if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: iconURL) {
+            app.applicationIconImage = icon
+        }
         let delegate = AppDelegate()
         app.delegate = delegate
         app.setActivationPolicy(.regular)
