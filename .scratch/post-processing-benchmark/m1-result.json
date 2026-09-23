@@ -1,0 +1,77 @@
+{
+  "date" : "2026-09-23T15:18:41Z",
+  "device" : "Apple M1",
+  "fixture" : "Big Buck Bunny, silent 1920×1080 H.264, 30 fps, SHA-256 5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "macOS" : "Version 27.0 (Build 26A428)",
+  "measurements" : [
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial1440",
+      "medianMS" : 1.8417499959468842,
+      "p95MS" : 1.9366666674613953,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 1440p"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4k",
+      "medianMS" : 3.8327082875184715,
+      "p95MS" : 3.9173749973997474,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4kSharpen",
+      "medianMS" : 4.095958371181041,
+      "p95MS" : 4.182041622698307,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K + High sharpening"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "headroom",
+      "id" : "vt720",
+      "medianMS" : 5.756333353929222,
+      "p95MS" : 6.074833334423602,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "overBudget",
+      "id" : "vt1080",
+      "medianMS" : 89.80062499176711,
+      "p95MS" : 92.32925000833347,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 1080p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "This device supports at most 2073600 pixels for interpolation.",
+      "grade" : "unavailable",
+      "id" : "vt1440",
+      "samples" : 0,
+      "timing" : "none",
+      "title" : "VideoToolbox 1440p 30 → 60 fps"
+    }
+  ],
+  "notes" : [
+    "Headroom uses at most 70% of the relevant frame interval; Tight uses up to 100%. These are offline capacity hints, not an in-game FPS or latency guarantee.",
+    "MetalFX timings are GPU command intervals on a decoded video still. VideoToolbox timings are processor completion wall time over consecutive real video frames resized before timing where needed; its internal GPU time is not exposed.",
+    "MLX-DLSS is not an XFrame rendering backend and its proprietary weights are not bundled, so it is not assigned a built-in grade."
+  ]
+}

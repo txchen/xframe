@@ -1,0 +1,111 @@
+{
+  "date" : "2026-09-23T15:29:51Z",
+  "device" : "Apple M1",
+  "fixture" : "Big Buck Bunny, silent 1920×1080 H.264, 30 fps, SHA-256 5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "macOS" : "Version 27.0 (Build 26A428)",
+  "measurements" : [
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial1440",
+      "medianMS" : 1.7599166603758931,
+      "p95MS" : 1.8725000554695725,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 1440p"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4k",
+      "medianMS" : 3.7297916132956743,
+      "p95MS" : 3.801124985329807,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4kSharpen",
+      "medianMS" : 4.111041664145887,
+      "p95MS" : 4.195000045001507,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K + High sharpening"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "headroom",
+      "id" : "vt720",
+      "medianMS" : 5.716624960768968,
+      "p95MS" : 5.888375046197325,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "overBudget",
+      "id" : "vt1080",
+      "medianMS" : 90.03808331908658,
+      "p95MS" : 93.5217083315365,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 1080p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "This device supports at most 2073600 pixels for interpolation.",
+      "grade" : "unavailable",
+      "id" : "vt1440",
+      "samples" : 0,
+      "timing" : "none",
+      "title" : "VideoToolbox 1440p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 adjacent moving-frame pairs after five warmups. Decode and RGB preparation are outside timing; each sample includes helper input\/output transfer and MLX generation. Research video path, not live XFrame playback.",
+      "grade" : "overBudget",
+      "id" : "mlx720",
+      "medianMS" : 33.39837497333065,
+      "p95MS" : 34.51825003139675,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "MLX-DLSS video 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 adjacent moving-frame pairs after five warmups. Decode and RGB preparation are outside timing; each sample includes helper input\/output transfer and MLX generation. Research video path, not live XFrame playback.",
+      "grade" : "overBudget",
+      "id" : "mlx1080",
+      "medianMS" : 67.38800002494827,
+      "p95MS" : 69.08962497254834,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "MLX-DLSS video 1080p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 adjacent moving-frame pairs after five warmups. Decode and RGB preparation are outside timing; each sample includes helper input\/output transfer and MLX generation. Research video path, not live XFrame playback.",
+      "grade" : "overBudget",
+      "id" : "mlx1440",
+      "medianMS" : 115.56041665608063,
+      "p95MS" : 117.86891665542498,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "MLX-DLSS video 1440p 30 → 60 fps"
+    }
+  ],
+  "notes" : [
+    "Headroom uses at most 70% of the relevant frame interval; Tight uses up to 100%. Frame-generation grades apply to a native stream at the tested input size; resizing the fixture is outside timing. These are offline capacity hints, not an in-game FPS or latency guarantee.",
+    "MetalFX timings are GPU command intervals on a decoded NV12 video still, including color conversion. VideoToolbox timings are processor completion wall time over consecutive real video frames resized before timing where needed; its internal GPU time is not exposed.",
+    "Selected MLX-DLSS model SHA-256: 21faede75312631273f930a6fc1aed17f1eb5ac4a476a485551afc6d7ced2958. The selected file remains at its original location and is not copied into the app or report.",
+    "MLX-DLSS is a separate video research port with no game motion vectors or depth. Its helper round-trip wall time includes RGB transfer, not decoder or display latency; it is not a live XFrame backend."
+  ]
+}

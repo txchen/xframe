@@ -1,5 +1,25 @@
 # Third-Party Notices
 
+## Big Buck Bunny benchmark clip
+
+The built-in post-processing benchmark includes a six-second, silent 1080p30
+excerpt of *Big Buck Bunny*, copyright 2008 Blender Foundation / www.bigbuckbunny.org,
+licensed under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/).
+It was derived from the [1080p60 sample mirror](https://github.com/bower-media-samples/big-buck-bunny-1080p-60fps-30s)
+at commit `c4c7ec6aa5d68944d32faa28f332f999c8866cbc` by trimming seconds
+6–12, converting to 30 fps H.264, and removing audio. The included file's
+SHA-256 is `5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633`.
+
+## Optional MLX-DLSS benchmark helper
+
+The release app builds the video-only frame-generation helper from
+[iamwavecut/MLX-DLSS](https://github.com/iamwavecut/MLX-DLSS) at commit
+`0ca2deab092fe6f3e331bf4f616271dbc64521d0` (Apache 2.0), with
+[mlx-swift](https://github.com/ml-explore/mlx-swift) 0.31.6 and matching MLX
+Metal 0.31.1 kernels (MIT). Their full license and notice files are included
+under `Resources/Licenses/`. Model weights are supplied by the user at runtime
+and are not distributed with XFrame.
+
 ## XStreaming
 
 XFrame's Microsoft/Xbox/xCloud authentication, catalog, session, and streaming protocol implementations were informed by and adapted from [Geocld/XStreaming](https://github.com/Geocld/XStreaming), commit `383e19d324f2d3029d1c304752f4d38a9360bb95`, particularly `src/xal/msal.ts`, `src/MsalAuthentication.ts`, `src/xCloud/index.ts`, and the `src/webrtc/` channel and packet implementations.

@@ -29,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var lastURL: URL?
     private lazy var account = XboxAccount()
     private var libraryWindow: NSWindow?
+    private var benchmarkWindow: NSWindow?
+    private var benchmarkModel: PostProcessingBenchmarkModel?
+    private var benchmarkLifecycle: BenchmarkWindowLifecycle?
     private let playbackSettings = PlaybackSettingsView()
     private let panelInput = PlaybackPanelInput()
     private let diagnostics = PerformanceHUDView()
@@ -189,6 +192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
     func applicationWillTerminate(_ notification: Notification) {
+        benchmarkModel?.cancel()
         if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         panelInput.stop()
@@ -217,6 +221,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             libraryWindow = window
         }
         libraryWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func showPostProcessingBenchmark() {
+        if benchmarkWindow == nil {
+            let model = PostProcessingBenchmarkModel(sessionActive: { [weak self] in
+                self?.account.library.ownsSession ?? false
+            })
+            let controller = NSHostingController(rootView: PostProcessingBenchmarkView(model: model))
+            let window = NSWindow(contentViewController: controller)
+            window.title = "XFrame — Post-Processing Benchmark"
+            window.appearance = NSAppearance(named: .darkAqua)
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.isReleasedWhenClosed = false
+            let lifecycle = BenchmarkWindowLifecycle(model: model)
+            window.delegate = lifecycle
+            window.setContentSize(NSSize(width: 780, height: 580))
+            window.center()
+            benchmarkModel = model
+            benchmarkLifecycle = lifecycle
+            benchmarkWindow = window
+        }
+        benchmarkWindow?.makeKeyAndOrderFront(nil)
     }
 
     @objc private func openVideo() {
@@ -334,13 +360,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return consumed ? nil : event
     }
 
-    func windowDidResize(_ notification: Notification) { refreshVideoView() }
+    func windowDidResize(_ notification: Notification) {
+        if notification.object as? NSWindow === window { refreshVideoView() }
+    }
     func applicationDidChangeScreenParameters(_ notification: Notification) {
-        for window in [window, libraryWindow].compactMap({ $0 }) {
+        for window in [window, libraryWindow, benchmarkWindow].compactMap({ $0 }) {
             WindowPlacement.keepVisible(window)
         }
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard sender === window else { return true }
         if account.library.ownsSession { requestEndSession(); return false }
         playback?.stop()
         playback = nil
@@ -505,6 +534,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         games.target = self
         let viewItem = menu.addItem(withTitle: "View", action: nil, keyEquivalent: "")
         let viewMenu = NSMenu(title: "View")
+        let benchmark = viewMenu.addItem(withTitle: "Post-Processing Benchmark…",
+            action: #selector(showPostProcessingBenchmark), keyEquivalent: "b")
+        benchmark.keyEquivalentModifierMask = [.command, .shift]
+        benchmark.target = self
+        viewMenu.addItem(.separator())
         let scalingItem = viewMenu.addItem(withTitle: "Video Scaling", action: nil, keyEquivalent: "")
         let scalingMenu = NSMenu(title: "Video Scaling")
         scalingItem.submenu = scalingMenu

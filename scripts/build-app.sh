@@ -20,6 +20,7 @@ cp THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
 cp -R "$binary_dir/XFrame_XFrame.bundle" "$app_dir/Contents/Resources/"
 cp -R "$binary_dir/WebRTC.framework" "$app_dir/Contents/Frameworks/"
 cp .build/artifacts/webrtc/WebRTC/WebRTC.xcframework/LICENSE "$app_dir/Contents/Resources/WebRTC-LICENSE.txt"
+bash scripts/prepare-benchmark-mlx.sh "$app_dir/Contents/MacOS"
 signing_identity="${XFRAME_SIGNING_IDENTITY:-}"
 if [[ -z "$signing_identity" ]]; then
     if security find-certificate -c "XFrame Local Development" >/dev/null 2>&1; then
@@ -30,6 +31,8 @@ if [[ -z "$signing_identity" ]]; then
     fi
 fi
 codesign --force --sign "$signing_identity" "$app_dir/Contents/Frameworks/WebRTC.framework"
+codesign --force --sign "$signing_identity" "$app_dir/Contents/MacOS/mlxdlss-benchmark"
+codesign --force --sign "$signing_identity" "$app_dir/Contents/MacOS/mlx.metallib"
 codesign --force --sign "$signing_identity" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 touch "$app_dir"
