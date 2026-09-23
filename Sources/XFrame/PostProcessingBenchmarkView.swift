@@ -8,13 +8,25 @@ final class PostProcessingBenchmarkModel: ObservableObject {
     @Published var status = "Ready. The test uses a bundled video and leaves playback settings unchanged."
     @Published var running = false
     @Published var weightsURL: URL?
+    @Published var modelBusy = false
+    @Published var showDownloadURL = false
+    @Published var downloadURLString = ""
     private var worker: Task<PostProcessingBenchmarkReport, Error>?
     private let sessionActive: () -> Bool
+    private let modelCache = BenchmarkModelCache()
 
-    init(sessionActive: @escaping () -> Bool) { self.sessionActive = sessionActive }
+    init(sessionActive: @escaping () -> Bool) {
+        self.sessionActive = sessionActive
+        do {
+            weightsURL = try modelCache.cachedModel()
+            if weightsURL != nil { status = "Cached MLX-DLSS model ready. Run to include all nine workloads." }
+        } catch {
+            status = "Cached MLX-DLSS model needs replacement: \(error.localizedDescription)"
+        }
+    }
 
     func start() {
-        guard !running else { return }
+        guard !running, !modelBusy else { return }
         guard !sessionActive() else {
             status = "End the active streaming session before benchmarking so its GPU work does not distort the result."
             return
@@ -55,7 +67,57 @@ final class PostProcessingBenchmarkModel: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.begin { [weak self] response in
-            if response == .OK { self?.weightsURL = panel.url }
+            guard response == .OK, let source = panel.url, let self else { return }
+            self.modelBusy = true
+            self.status = "Importing and verifying model…"
+            let cache = self.modelCache
+            Task { [weak self] in
+                do {
+                    let url = try await Task.detached {
+                        let access = source.startAccessingSecurityScopedResource()
+                        defer { if access { source.stopAccessingSecurityScopedResource() } }
+                        return try cache.importModel(from: source)
+                    }.value
+                    self?.weightsURL = url
+                    self?.status = "Model cached. Future runs will include MLX-DLSS automatically."
+                } catch {
+                    self?.status = "Model import failed: \(error.localizedDescription)"
+                }
+                self?.modelBusy = false
+            }
+        }
+    }
+
+    func downloadModel() {
+        let input = downloadURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let remote = URL(string: input) else {
+            status = BenchmarkModelCacheError.invalidURL.localizedDescription
+            return
+        }
+        modelBusy = true
+        status = "Downloading and verifying model…"
+        let cache = modelCache
+        Task { [weak self] in
+            do {
+                let url = try await cache.download(from: remote)
+                self?.weightsURL = url
+                self?.downloadURLString = ""
+                self?.showDownloadURL = false
+                self?.status = "Model cached. Future runs will include MLX-DLSS automatically."
+            } catch {
+                self?.status = "Model download failed: \(error.localizedDescription)"
+            }
+            self?.modelBusy = false
+        }
+    }
+
+    func removeCachedModel() {
+        do {
+            try modelCache.remove()
+            weightsURL = nil
+            status = "Cached MLX-DLSS model removed. The original source was not changed."
+        } catch {
+            status = "Cannot remove cached model: \(error.localizedDescription)"
         }
     }
 
@@ -95,23 +157,37 @@ struct PostProcessingBenchmarkView: View {
                 if model.running {
                     Button("Cancel") { model.cancel() }
                 } else {
-                    Button("Run Benchmark") { model.start() }.buttonStyle(.borderedProminent)
+                    Button("Run Benchmark") { model.start() }
+                        .buttonStyle(.borderedProminent).disabled(model.modelBusy)
                 }
             }
             Text(model.status).font(.subheadline)
                 .foregroundStyle(model.status.hasPrefix("Benchmark failed") ? .red : .secondary)
             HStack(spacing: 8) {
-                Button("Choose MLX-DLSS Weights…") { model.chooseWeights() }
-                    .disabled(model.running)
-                if let weights = model.weightsURL {
-                    Text(weights.lastPathComponent).lineLimit(1).truncationMode(.middle)
-                    Button("Clear") { model.weightsURL = nil }.disabled(model.running)
+                Button("Import Local Model…") { model.chooseWeights() }
+                    .disabled(model.running || model.modelBusy)
+                Button("Download from URL…") { model.showDownloadURL.toggle() }
+                    .disabled(model.running || model.modelBusy)
+                if model.weightsURL != nil {
+                    Text("MLX-DLSS model cached").foregroundStyle(.secondary)
+                    Button("Remove Cache") { model.removeCachedModel() }
+                        .disabled(model.running || model.modelBusy)
                 } else {
-                    Text("Optional · no weights selected").foregroundStyle(.secondary)
+                    Text("Optional · no model cached").foregroundStyle(.secondary)
                 }
             }
             .font(.subheadline)
-            if model.running { ProgressView().progressViewStyle(.linear) }
+            if model.showDownloadURL {
+                HStack(spacing: 8) {
+                    TextField("Authorized HTTPS URL for framegen.safetensors", text: $model.downloadURLString)
+                        .textFieldStyle(.roundedBorder)
+                    Button("Download & Cache") { model.downloadModel() }
+                        .disabled(model.running || model.modelBusy || model.downloadURLString.isEmpty)
+                }
+                Text("Only the supported DLSS 310.7.0 model is accepted. Its SHA-256 is checked before caching; the URL is not saved.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if model.running || model.modelBusy { ProgressView().progressViewStyle(.linear) }
             Divider()
             if let report = model.report {
                 HStack {
@@ -133,7 +209,7 @@ struct PostProcessingBenchmarkView: View {
                 Text("Optional MLX-DLSS measures a separate video research path. Its model stays on your Mac; this test does not enable live game frame generation.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
-                Text("Tests MetalFX at 1440p and 4K, 4K with High sharpening, and VideoToolbox 720p / 1080p / 1440p 30 → 60 fps. Select local weights to add MLX-DLSS video generation at those three input sizes. Each workload runs offscreen, away from a game session.")
+                Text("Tests MetalFX at 1440p and 4K, 4K with High sharpening, and VideoToolbox 720p / 1080p / 1440p 30 → 60 fps. A cached model automatically adds MLX-DLSS video generation at those three input sizes. Import once or download from your authorized HTTPS source. Each workload runs offscreen, away from a game session.")
                     .font(.body).foregroundStyle(.secondary)
                 Spacer()
             }

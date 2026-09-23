@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Testing
 @testable import XFrame
 
@@ -12,6 +13,33 @@ import Testing
     let report = PostProcessingBenchmarkReport(date: .now, device: "Test", macOS: "Test", fixture: "Test",
         measurements: [result], notes: [])
     #expect(report.capacitySummary.contains("No tested frame-generation tier"))
+}
+
+@Test func benchmarkModelCacheImportsVerifiesAndRemoves() throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("xframe-model-cache-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: root) }
+    let source = root.appendingPathComponent("source.safetensors")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let data = Data("test frame generation model".utf8)
+    try data.write(to: source)
+    let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    let cache = BenchmarkModelCache(directory: root.appendingPathComponent("cache"), expectedSHA256: digest)
+    #expect(try cache.cachedModel() == nil)
+    let cached = try cache.importModel(from: source)
+    #expect(try cache.cachedModel() == cached)
+    #expect(try Data(contentsOf: cached) == data)
+    try Data("wrong model".utf8).write(to: source)
+    #expect(throws: BenchmarkModelCacheError.self) { try cache.importModel(from: source) }
+    #expect(try cache.cachedModel() == cached)
+    try cache.remove()
+    #expect(try cache.cachedModel() == nil)
+}
+
+@Test func benchmarkModelDownloaderRejectsNonHTTPS() async {
+    let cache = BenchmarkModelCache()
+    await #expect(throws: BenchmarkModelCacheError.self) {
+        try await cache.download(from: URL(string: "http://example.com/framegen.safetensors")!)
+    }
 }
 
 @Test func bundledBenchmarkExecutesItsAvailableBackends() async throws {

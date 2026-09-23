@@ -149,7 +149,7 @@ enum PostProcessingBenchmark {
         if let weightsURL {
             do {
                 let digest = try MLXFrameGenerationBenchmark.modelDigest(weightsURL)
-                notes.append("Selected MLX-DLSS model SHA-256: \(digest). The selected file remains at its original location and is not copied into the app or report.")
+                notes.append("Selected MLX-DLSS model SHA-256: \(digest). The cached model remains local and is not included in the app bundle or report.")
                 for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
                     try Task.checkCancellation()
                     let id = "mlx\(height)", title = "MLX-DLSS video \(height)p 30 → 60 fps"

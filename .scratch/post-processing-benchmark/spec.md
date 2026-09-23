@@ -3,8 +3,9 @@
 XFrame exposes **View → Post-Processing Benchmark…** (Command-Shift-B). It opens
 an independent window and uses a bundled, silent 1080p30 excerpt of *Big Buck
 Bunny*, so a supported Mac can run it without downloading a video, installing
-ffmpeg, or opening a game. A local `framegen.safetensors` file can be selected
-to add the packaged MLX-DLSS research helper; XFrame never bundles weights.
+ffmpeg, or opening a game. A local `framegen.safetensors` file can be imported
+once, or downloaded from an authorized HTTPS URL, to add the packaged
+MLX-DLSS research helper. XFrame never bundles weights.
 The app refuses to start a run while it owns an
 active streaming session. The run is cancellable, does not change playback
 preferences, and can export an ISO-dated JSON report.
@@ -35,8 +36,12 @@ MLX-DLSS takes 61 prepared RGB8 video frames and measures the wall time from
 sending each next frame to receiving its generated midpoint. It excludes
 decode, resize, and RGB preparation; it includes interprocess transfer, MLX
 generation, and output transfer. Five pairs warm up the model and 55 provide
-median/p95. The selected weights stay on disk; the report includes only their
-SHA-256. The helper is built from pinned source and its matching precompiled
+median/p95. An imported or downloaded model is verified against the known
+DLSS SDK 310.7.0 SHA-256 and stored owner-only in
+`~/Library/Application Support/XFrame/BenchmarkModels/`. XFrame automatically
+uses the valid cached copy on later launches. A failed download or wrong hash
+does not replace an existing cache; the URL is not saved. The report includes
+only the model SHA-256. The helper is built from pinned source and its matching precompiled
 Metal kernels into the release app, so the test does not need Swift, Python,
 or network access on the machine running XFrame. The built app grows by roughly
 155 MB. Building the app requires Python with pip to obtain matching kernels
@@ -56,18 +61,20 @@ macOS version and timing kind.
 
 MLX-DLSS remains a video-only research port, not an XFrame live rendering
 backend. Its proprietary extracted weights cannot be bundled in the public
-app. Selecting weights enables only the optional capacity test. The
+app. The [upstream project](https://github.com/iamwavecut/MLX-DLSS/blob/main/README.md)
+provides no hosted weights, so XFrame ships no preset model URL; users enter
+their own authorized HTTPS location. Selecting weights enables only the optional capacity test. The
 [standalone benchmark](../../scripts/benchmark-frame-generation/README.md)
 also remains available for deeper profiling. A future integrated MLX backend
 must be judged separately for gameplay quality and latency.
 
 On the M5, run `bash scripts/build-app.sh`, open `.build/XFrame.app`, then use
 **View → Post-Processing Benchmark…**. The first build fetches the pinned
-MLX-DLSS source and Metal wheel if absent; running the app is offline. Choose
-the M5's private `framegen.safetensors` file only if testing MLX-DLSS, then
-export JSON. Compare `fixture`, model digest (when selected), macOS version,
-timing kind, and p95 across the two reports. The local source and model paths
-are not embedded in the JSON.
+MLX-DLSS source and Metal wheel if absent. Import the M5's private
+`framegen.safetensors` file once, or download it from an authorized HTTPS
+location; subsequent runs use the cached copy without asking again. Export
+JSON and compare `fixture`, model digest, macOS version, timing kind, and p95
+across the two reports. Source URLs and model paths are not embedded in JSON.
 
 ## Verification on Apple M1 / macOS 27
 
