@@ -52,6 +52,7 @@ final class CloudVideoConnection {
         video.audioPlayback(attached: audio.hasTrack, muted: audio.muted, volume: audio.volume)
     }
     var controllerEnabled = false { didSet { updateControllerCapture(); releaseInput(); if !controllerEnabled { gamepad.stopRumble() } } }
+    var rumbleEnabled = true { didSet { if !rumbleEnabled { gamepad.stopRumble() } } }
     var keyboardEnabled = false { didSet { updateControllerCapture(); releaseInput() } }
     var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { releaseInput(); gamepad.stopRumble() } } }
     private var keyboard = KeyboardGamepad()
@@ -457,7 +458,7 @@ final class CloudVideoConnection {
     fileprivate func message(_ data: Data, on name: String) {
         guard !closed else { return }
         if name == "input" {
-            if controllerEnabled && playbackFocused && (!requireLocalMedia || localPathVerified),
+            if controllerEnabled && rumbleEnabled && playbackFocused && (!requireLocalMedia || localPathVerified),
                let command = RumbleCommand.parse(data) { gamepad.vibrate(command) }
             return
         }

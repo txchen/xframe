@@ -39,12 +39,13 @@ struct PlaybackSettingsNavigation {
 final class PlaybackSettingsView: NSVisualEffectView {
     enum Mode: Equatable { case settings, confirmation, ending, failed(String) }
     private enum Row: Equatable {
-        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), sharpening(SharpeningPreset), volume, mute, fullscreen, end, close, cancel, confirm, retry
+        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), sharpening(SharpeningPreset), volume, mute, rumble, fullscreen, end, close, cancel, confirm, retry
     }
     var selectScaling: ((VideoScalingMode) -> Void)?
     var selectSharpening: ((SharpeningPreset) -> Void)?
     var selectHUD: ((PerformanceHUDPreset) -> Void)?
     var selectAudio: ((Bool, Double) -> Void)?
+    var selectRumble: ((Bool) -> Void)?
     var toggleFullscreen: (() -> Void)?
     var requestEnd: (() -> Void)?
     var confirmEnd: (() -> Void)?
@@ -67,6 +68,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private var cloud = false
     private var console = false
     private var muted = false
+    private var rumbleEnabled = true
     private var volume = 1.0
     private var fullscreen = false
     private var transitioning = false
@@ -152,6 +154,8 @@ final class PlaybackSettingsView: NSVisualEffectView {
                 stack.addArrangedSubview(slider)
                 slider.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
                 addRow(.mute)
+                label("Controller")
+                addRow(.rumble)
             }
             addRow(.fullscreen)
             if cloud { addRow(.end) }
@@ -174,10 +178,12 @@ final class PlaybackSettingsView: NSVisualEffectView {
         scroll.contentView.scroll(to: .zero)
         scroll.reflectScrolledClipView(scroll.contentView)
     }
-    func configure(cloud: Bool, muted: Bool, volume: Double, fullscreen: Bool, transitioning: Bool,
+    func configure(cloud: Bool, muted: Bool, volume: Double, rumbleEnabled: Bool = true,
+                   fullscreen: Bool, transitioning: Bool,
                    console: Bool = false) {
         let sourceChanged = self.cloud != cloud || self.console != console
         self.cloud = cloud; self.console = console; self.muted = muted; self.volume = volume
+        self.rumbleEnabled = rumbleEnabled
         self.fullscreen = fullscreen; self.transitioning = transitioning
         if sourceChanged && mode == .settings { rebuild() }
         refreshSelection()
@@ -261,6 +267,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         case .sharpening(let preset): return (preset == sharpening ? "✓ " : "") + preset.title
         case .volume: return "Volume: \(Int((volume * 100).rounded()))%  ← →"
         case .mute: return muted ? "✓ Mute" : "Mute"
+        case .rumble: return "Controller Vibration: " + (rumbleEnabled ? "On" : "Off")
         case .fullscreen: return fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"
         case .end, .confirm: return console ? "Disconnect" : "End Session"
         case .cancel: return "Cancel"
@@ -290,6 +297,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         case .sharpening(let preset): selectSharpening?(preset)
         case .volume: break
         case .mute: muted.toggle(); refreshSelection(); selectAudio?(muted, volume)
+        case .rumble: rumbleEnabled.toggle(); refreshSelection(); selectRumble?(rumbleEnabled)
         case .fullscreen: toggleFullscreen?()
         case .end: requestEnd?()
         case .confirm, .retry: confirmEnd?()

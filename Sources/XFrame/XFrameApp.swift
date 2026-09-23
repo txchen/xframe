@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var scalingMenuItems: [NSMenuItem] = []
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
+    private var rumbleMenuItem: NSMenuItem?
     private var keyboardMenuItem: NSMenuItem?
     private var keyboardMonitor: Any?
 
@@ -80,6 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             playbackSettings.dismiss = { [weak self] in self?.hidePlaybackSettings() }
             playbackSettings.selectAudio = { [weak self] muted, volume in
                 self?.account.library.setAudio(muted: muted, volume: volume)
+            }
+            playbackSettings.selectRumble = { [weak self] enabled in
+                self?.account.library.rumbleEnabled = enabled
+                self?.refreshInputMenu()
             }
             playbackSettings.toggleFullscreen = { [weak self] in
                 guard let self, self.playbackPresentation?.transitioning == false else { return }
@@ -286,12 +291,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         account.library.controllerEnabled.toggle()
         refreshInputMenu()
     }
+    @objc private func toggleControllerVibration(_ sender: NSMenuItem) {
+        account.library.rumbleEnabled.toggle()
+        refreshInputMenu()
+        refreshPlaybackControls()
+    }
     @objc private func toggleKeyboardInput(_ sender: NSMenuItem) {
         account.library.keyboardEnabled.toggle()
         refreshInputMenu()
     }
     private func refreshInputMenu() {
         controllerMenuItem?.state = account.library.controllerEnabled ? .on : .off
+        rumbleMenuItem?.state = account.library.rumbleEnabled ? .on : .off
         keyboardMenuItem?.state = account.library.keyboardEnabled ? .on : .off
     }
     @objc private func showKeyboardControls() {
@@ -426,6 +437,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func refreshPlaybackControls() {
         playbackSettings.configure(cloud: account.library.ownsSession,
             muted: account.library.audioMuted, volume: account.library.audioVolume,
+            rumbleEnabled: account.library.rumbleEnabled,
             fullscreen: window?.styleMask.contains(.fullScreen) == true,
             transitioning: playbackPresentation?.transitioning == true,
             console: account.library.ownsSession && account.library.sessionSource == .home)
@@ -507,6 +519,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         fullScreen.keyEquivalentModifierMask = [.control, .command]
         controllerMenuItem = viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "")
         controllerMenuItem?.target = self
+        rumbleMenuItem = viewMenu.addItem(withTitle: "Controller Vibration", action: #selector(toggleControllerVibration(_:)), keyEquivalent: "")
+        rumbleMenuItem?.target = self
         keyboardMenuItem = viewMenu.addItem(withTitle: "Enable Keyboard Input", action: #selector(toggleKeyboardInput(_:)), keyEquivalent: "")
         keyboardMenuItem?.target = self
         refreshInputMenu()

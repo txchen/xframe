@@ -109,6 +109,22 @@ import Testing
     #expect(changes.last?.0 == false && changes.last?.1 == 0)
 }
 
+@Test @MainActor func controllerVibrationRowReflectsAndChangesPreference() throws {
+    let panel = PlaybackSettingsView()
+    panel.configure(cloud: true, muted: false, volume: 1, rumbleEnabled: true,
+                    fullscreen: false, transitioning: false)
+    panel.show(scaling: .original, hud: .compact)
+    var selected: Bool?
+    panel.selectRumble = { selected = $0 }
+    let toggle = try #require(buttons(in: panel).first { $0.title.contains("Controller Vibration") })
+    #expect(toggle.title.contains("On"))
+    toggle.performClick(nil)
+    #expect(selected == false && toggle.title.contains("Off"))
+    panel.configure(cloud: true, muted: false, volume: 1, rumbleEnabled: true,
+                    fullscreen: false, transitioning: false)
+    #expect(toggle.title.contains("On"))
+}
+
 @Test @MainActor func fullscreenTransitionRetainsSelectionAndDisablesRepeatedActivation() throws {
     let panel = PlaybackSettingsView()
     panel.show(scaling: .original, hud: .compact)

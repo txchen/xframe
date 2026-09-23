@@ -138,6 +138,12 @@ final class CloudLibrary {
             connection?.controllerEnabled = controllerEnabled
         }
     }
+    var rumbleEnabled = true {
+        didSet {
+            inputDefaults.set(rumbleEnabled, forKey: "XFrame.RumbleEnabled")
+            connection?.rumbleEnabled = rumbleEnabled
+        }
+    }
     var keyboardEnabled = false {
         didSet {
             connection?.keyboardEnabled = keyboardEnabled
@@ -150,7 +156,10 @@ final class CloudLibrary {
     func releaseKeyboard() { connection?.releaseKeyboard() }
     var playbackFocused = false { didSet { connection?.playbackFocused = playbackFocused } }
     var controllerStatus: String { connection?.controllerStatus ?? "Controller input off" }
-    var rumbleStatus: String { connection?.rumbleStatus ?? "Controller haptics available during a stream" }
+    var rumbleStatus: String {
+        if !rumbleEnabled { return "Controller vibration off" }
+        return connection?.rumbleStatus ?? "Controller haptics available during a stream"
+    }
     @ObservationIgnored private var service: (any SessionServing)?
     @ObservationIgnored private var handle: URL?
     @ObservationIgnored private var task: Task<Void, Never>?
@@ -181,6 +190,7 @@ final class CloudLibrary {
         self.preferencesStore = preferencesStore
         self.inputDefaults = inputDefaults
         controllerEnabled = inputDefaults.bool(forKey: "XFrame.ControllerEnabled")
+        rumbleEnabled = inputDefaults.object(forKey: "XFrame.RumbleEnabled") as? Bool ?? true
         audioMuted = inputDefaults.bool(forKey: "XFrame.AudioMuted")
         let storedVolume = inputDefaults.object(forKey: "XFrame.AudioVolume") as? Double ?? 1
         audioVolume = storedVolume.isFinite ? min(1, max(0, storedVolume)) : 1
@@ -387,6 +397,7 @@ final class CloudLibrary {
                             connection.settingsGamepad = { [weak library = self] state in library?.settingsGamepad?(state) }
                             connection.playbackSettingsVisible = playbackSettingsVisible
                             connection.controllerEnabled = controllerEnabled
+                            connection.rumbleEnabled = rumbleEnabled
                             connection.keyboardEnabled = keyboardEnabled
                             connection.playbackFocused = playbackFocused
                             connection.configureAudio(muted: audioMuted, volume: audioVolume)

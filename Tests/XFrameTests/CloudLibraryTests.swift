@@ -23,6 +23,20 @@ private let sessionURL = URL(string: "https://test.gssv-play-prod.xboxlive.com/v
     #expect(!CloudLibrary(inputDefaults: defaults).controllerEnabled)
 }
 
+@Test @MainActor func rumblePreferenceDefaultsOnAndRestoresOff() throws {
+    let suite = "XFrameTests.Rumble.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let first = CloudLibrary(inputDefaults: defaults)
+    #expect(first.rumbleEnabled)
+    first.rumbleEnabled = false
+    #expect(first.rumbleStatus == "Controller vibration off")
+    let restored = CloudLibrary(inputDefaults: defaults)
+    #expect(!restored.rumbleEnabled)
+    restored.rumbleEnabled = true
+    #expect(CloudLibrary(inputDefaults: defaults).rumbleEnabled)
+}
+
 private actor FakeCloud: CloudServing {
     var creates = 0
     var launches: [CloudStreamPreferences] = []
