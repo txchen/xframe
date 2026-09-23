@@ -26,7 +26,8 @@
       "leftRTP": 4294901760,
       "rightRTP": 4294901760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0
     },
@@ -37,7 +38,8 @@
       "leftRTP": 4294903260,
       "rightRTP": 4294903260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0
     },
@@ -48,7 +50,8 @@
       "leftRTP": 4294904760,
       "rightRTP": 4294904760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 3.9999999999999964
     },
@@ -59,7 +62,8 @@
       "leftRTP": 4294906260,
       "rightRTP": 4294906260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -70,7 +74,8 @@
       "leftRTP": 4294907760,
       "rightRTP": 4294907760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -81,7 +86,8 @@
       "leftRTP": 4294909260,
       "rightRTP": 4294909260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -92,7 +98,8 @@
       "leftRTP": 4294910760,
       "rightRTP": 4294910760,
       "alpha": 0,
-      "futureSourceWaitMS": -1.3877787807814457e-14,
+      "originalRetimeMS": -1.3877787807814457e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -103,7 +110,8 @@
       "leftRTP": 4294912260,
       "rightRTP": 4294912260,
       "alpha": 0,
-      "futureSourceWaitMS": -1.3877787807814457e-14,
+      "originalRetimeMS": -1.3877787807814457e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -114,7 +122,8 @@
       "leftRTP": 4294913760,
       "rightRTP": 4294913760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -125,7 +134,8 @@
       "leftRTP": 4294915260,
       "rightRTP": 4294915260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -136,7 +146,8 @@
       "leftRTP": 4294916760,
       "rightRTP": 4294916760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -147,7 +158,8 @@
       "leftRTP": 4294918260,
       "rightRTP": 4294918260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -158,7 +170,8 @@
       "leftRTP": 4294919760,
       "rightRTP": 4294919760,
       "alpha": 0,
-      "futureSourceWaitMS": -2.7755575615628914e-14,
+      "originalRetimeMS": -2.7755575615628914e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -169,7 +182,8 @@
       "leftRTP": 4294921260,
       "rightRTP": 4294921260,
       "alpha": 0,
-      "futureSourceWaitMS": -2.7755575615628914e-14,
+      "originalRetimeMS": -2.7755575615628914e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -180,7 +194,8 @@
       "leftRTP": 4294922760,
       "rightRTP": 4294922760,
       "alpha": 0,
-      "futureSourceWaitMS": -2.7755575615628914e-14,
+      "originalRetimeMS": -2.7755575615628914e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -191,7 +206,8 @@
       "leftRTP": 4294924260,
       "rightRTP": 4294924260,
       "alpha": 0,
-      "futureSourceWaitMS": -2.7755575615628914e-14,
+      "originalRetimeMS": -2.7755575615628914e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -202,7 +218,8 @@
       "leftRTP": 4294925760,
       "rightRTP": 4294925760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -213,7 +230,8 @@
       "leftRTP": 4294927260,
       "rightRTP": 4294927260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -224,7 +242,8 @@
       "leftRTP": 4294928760,
       "rightRTP": 4294928760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -235,7 +254,8 @@
       "leftRTP": 4294930260,
       "rightRTP": 4294930260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -246,7 +266,8 @@
       "leftRTP": 4294931760,
       "rightRTP": 4294931760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -257,7 +278,8 @@
       "leftRTP": 4294933260,
       "rightRTP": 4294933260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -268,7 +290,8 @@
       "leftRTP": 4294934760,
       "rightRTP": 4294934760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -279,7 +302,8 @@
       "leftRTP": 4294936260,
       "rightRTP": 4294936260,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -290,7 +314,8 @@
       "leftRTP": 4294937760,
       "rightRTP": 4294937760,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -301,7 +326,8 @@
       "leftRTP": 4294939260,
       "rightRTP": 4294939260,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -312,7 +338,8 @@
       "leftRTP": 4294940760,
       "rightRTP": 4294940760,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -323,7 +350,8 @@
       "leftRTP": 4294942260,
       "rightRTP": 4294942260,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -334,7 +362,8 @@
       "leftRTP": 4294943760,
       "rightRTP": 4294943760,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -345,7 +374,8 @@
       "leftRTP": 4294945260,
       "rightRTP": 4294945260,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -356,7 +386,8 @@
       "leftRTP": 4294946760,
       "rightRTP": 4294946760,
       "alpha": 0,
-      "futureSourceWaitMS": -5.551115123125783e-14,
+      "originalRetimeMS": -5.551115123125783e-14,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -367,7 +398,8 @@
       "leftRTP": 4294948260,
       "rightRTP": 4294948260,
       "alpha": 0,
-      "futureSourceWaitMS": -1.1102230246251565e-13,
+      "originalRetimeMS": -1.1102230246251565e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -378,7 +410,8 @@
       "leftRTP": 4294949760,
       "rightRTP": 4294949760,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -389,7 +422,8 @@
       "leftRTP": 4294951260,
       "rightRTP": 4294951260,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -400,6 +434,7 @@
       "leftRTP": 4294952760,
       "rightRTP": 4294952760,
       "alpha": 0,
+      "originalRetimeMS": 1.1102230246251565e-13,
       "futureSourceWaitMS": 1.1102230246251565e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -411,6 +446,7 @@
       "leftRTP": 4294954260,
       "rightRTP": 4294954260,
       "alpha": 0,
+      "originalRetimeMS": 1.1102230246251565e-13,
       "futureSourceWaitMS": 1.1102230246251565e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -422,6 +458,7 @@
       "leftRTP": 4294955760,
       "rightRTP": 4294955760,
       "alpha": 0,
+      "originalRetimeMS": 2.220446049250313e-13,
       "futureSourceWaitMS": 2.220446049250313e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -433,6 +470,7 @@
       "leftRTP": 4294957260,
       "rightRTP": 4294957260,
       "alpha": 0,
+      "originalRetimeMS": 2.220446049250313e-13,
       "futureSourceWaitMS": 2.220446049250313e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -444,6 +482,7 @@
       "leftRTP": 4294958760,
       "rightRTP": 4294958760,
       "alpha": 0,
+      "originalRetimeMS": 3.3306690738754696e-13,
       "futureSourceWaitMS": 3.3306690738754696e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -455,6 +494,7 @@
       "leftRTP": 4294960260,
       "rightRTP": 4294960260,
       "alpha": 0,
+      "originalRetimeMS": 3.3306690738754696e-13,
       "futureSourceWaitMS": 3.3306690738754696e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -466,6 +506,7 @@
       "leftRTP": 4294961760,
       "rightRTP": 4294961760,
       "alpha": 0,
+      "originalRetimeMS": 4.440892098500626e-13,
       "futureSourceWaitMS": 4.440892098500626e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -477,6 +518,7 @@
       "leftRTP": 4294963260,
       "rightRTP": 4294963260,
       "alpha": 0,
+      "originalRetimeMS": 4.440892098500626e-13,
       "futureSourceWaitMS": 4.440892098500626e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -488,6 +530,7 @@
       "leftRTP": 4294964760,
       "rightRTP": 4294964760,
       "alpha": 0,
+      "originalRetimeMS": 5.551115123125783e-13,
       "futureSourceWaitMS": 5.551115123125783e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -499,6 +542,7 @@
       "leftRTP": 4294966260,
       "rightRTP": 4294966260,
       "alpha": 0,
+      "originalRetimeMS": 5.551115123125783e-13,
       "futureSourceWaitMS": 5.551115123125783e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -510,6 +554,7 @@
       "leftRTP": 464,
       "rightRTP": 464,
       "alpha": 0,
+      "originalRetimeMS": 6.661338147750939e-13,
       "futureSourceWaitMS": 6.661338147750939e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -521,6 +566,7 @@
       "leftRTP": 1964,
       "rightRTP": 1964,
       "alpha": 0,
+      "originalRetimeMS": 6.661338147750939e-13,
       "futureSourceWaitMS": 6.661338147750939e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -532,6 +578,7 @@
       "leftRTP": 3464,
       "rightRTP": 3464,
       "alpha": 0,
+      "originalRetimeMS": 6.661338147750939e-13,
       "futureSourceWaitMS": 6.661338147750939e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -543,6 +590,7 @@
       "leftRTP": 4964,
       "rightRTP": 4964,
       "alpha": 0,
+      "originalRetimeMS": 7.771561172376096e-13,
       "futureSourceWaitMS": 7.771561172376096e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -554,6 +602,7 @@
       "leftRTP": 6464,
       "rightRTP": 6464,
       "alpha": 0,
+      "originalRetimeMS": 7.771561172376096e-13,
       "futureSourceWaitMS": 7.771561172376096e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -565,6 +614,7 @@
       "leftRTP": 7964,
       "rightRTP": 7964,
       "alpha": 0,
+      "originalRetimeMS": 8.881784197001252e-13,
       "futureSourceWaitMS": 8.881784197001252e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -576,6 +626,7 @@
       "leftRTP": 9464,
       "rightRTP": 9464,
       "alpha": 0,
+      "originalRetimeMS": 8.881784197001252e-13,
       "futureSourceWaitMS": 8.881784197001252e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -587,6 +638,7 @@
       "leftRTP": 10964,
       "rightRTP": 10964,
       "alpha": 0,
+      "originalRetimeMS": 9.992007221626409e-13,
       "futureSourceWaitMS": 9.992007221626409e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -598,6 +650,7 @@
       "leftRTP": 12464,
       "rightRTP": 12464,
       "alpha": 0,
+      "originalRetimeMS": 9.992007221626409e-13,
       "futureSourceWaitMS": 9.992007221626409e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -609,6 +662,7 @@
       "leftRTP": 13964,
       "rightRTP": 13964,
       "alpha": 0,
+      "originalRetimeMS": 1.1102230246251565e-12,
       "futureSourceWaitMS": 1.1102230246251565e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -620,6 +674,7 @@
       "leftRTP": 15464,
       "rightRTP": 15464,
       "alpha": 0,
+      "originalRetimeMS": 1.1102230246251565e-12,
       "futureSourceWaitMS": 1.1102230246251565e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -631,6 +686,7 @@
       "leftRTP": 16964,
       "rightRTP": 16964,
       "alpha": 0,
+      "originalRetimeMS": 1.2212453270876722e-12,
       "futureSourceWaitMS": 1.2212453270876722e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -642,6 +698,7 @@
       "leftRTP": 18464,
       "rightRTP": 18464,
       "alpha": 0,
+      "originalRetimeMS": 1.2212453270876722e-12,
       "futureSourceWaitMS": 1.2212453270876722e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -653,6 +710,7 @@
       "leftRTP": 19964,
       "rightRTP": 19964,
       "alpha": 0,
+      "originalRetimeMS": 1.3322676295501878e-12,
       "futureSourceWaitMS": 1.3322676295501878e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -664,6 +722,7 @@
       "leftRTP": 21464,
       "rightRTP": 21464,
       "alpha": 0,
+      "originalRetimeMS": 1.3322676295501878e-12,
       "futureSourceWaitMS": 1.3322676295501878e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -675,6 +734,7 @@
       "leftRTP": 22964,
       "rightRTP": 22964,
       "alpha": 0,
+      "originalRetimeMS": 1.4432899320127035e-12,
       "futureSourceWaitMS": 1.4432899320127035e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -686,6 +746,7 @@
       "leftRTP": 24464,
       "rightRTP": 24464,
       "alpha": 0,
+      "originalRetimeMS": 1.3322676295501878e-12,
       "futureSourceWaitMS": 1.3322676295501878e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -697,6 +758,7 @@
       "leftRTP": 24464,
       "rightRTP": 26714,
       "alpha": 0.6666666666666133,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333334636,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -704,13 +766,14 @@
     {
       "tick": 62,
       "sourceSeconds": 1.0333333333333334,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 26714,
-      "rightRTP": 28964,
-      "alpha": 0.3333333333332889,
-      "futureSourceWaitMS": 16.666666666667716,
+      "rightRTP": 26714,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333332194,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 63,
@@ -719,6 +782,7 @@
       "leftRTP": 28964,
       "rightRTP": 28964,
       "alpha": 0,
+      "originalRetimeMS": 1.1102230246251565e-12,
       "futureSourceWaitMS": 1.1102230246251565e-12,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -730,6 +794,7 @@
       "leftRTP": 28964,
       "rightRTP": 31214,
       "alpha": 0.6666666666666222,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333334414,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -737,13 +802,14 @@
     {
       "tick": 65,
       "sourceSeconds": 1.0833333333333333,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 31214,
-      "rightRTP": 33464,
-      "alpha": 0.3333333333332889,
-      "futureSourceWaitMS": 16.666666666667716,
+      "rightRTP": 31214,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333332194,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.666666666666835
+      "requiredDelayMS": 0
     },
     {
       "tick": 66,
@@ -752,6 +818,7 @@
       "leftRTP": 33464,
       "rightRTP": 33464,
       "alpha": 0,
+      "originalRetimeMS": 8.881784197001252e-13,
       "futureSourceWaitMS": 8.881784197001252e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -763,6 +830,7 @@
       "leftRTP": 33464,
       "rightRTP": 35714,
       "alpha": 0.6666666666666311,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333334192,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -770,13 +838,14 @@
     {
       "tick": 68,
       "sourceSeconds": 1.1333333333333333,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 35714,
-      "rightRTP": 37964,
-      "alpha": 0.3333333333332978,
-      "futureSourceWaitMS": 16.666666666667496,
+      "rightRTP": 35714,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333332416,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 69,
@@ -785,6 +854,7 @@
       "leftRTP": 37964,
       "rightRTP": 37964,
       "alpha": 0,
+      "originalRetimeMS": 8.881784197001252e-13,
       "futureSourceWaitMS": 8.881784197001252e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -796,6 +866,7 @@
       "leftRTP": 37964,
       "rightRTP": 40214,
       "alpha": 0.66666666666664,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.33333333333397,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -803,13 +874,14 @@
     {
       "tick": 71,
       "sourceSeconds": 1.1833333333333333,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 40214,
-      "rightRTP": 42464,
-      "alpha": 0.33333333333330667,
-      "futureSourceWaitMS": 16.666666666667275,
+      "rightRTP": 40214,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333332638,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 72,
@@ -818,6 +890,7 @@
       "leftRTP": 42464,
       "rightRTP": 42464,
       "alpha": 0,
+      "originalRetimeMS": 6.661338147750939e-13,
       "futureSourceWaitMS": 6.661338147750939e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -829,6 +902,7 @@
       "leftRTP": 42464,
       "rightRTP": 44714,
       "alpha": 0.66666666666664,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.33333333333397,
       "available": true,
       "requiredDelayMS": 12.33333333333353
@@ -836,13 +910,14 @@
     {
       "tick": 74,
       "sourceSeconds": 1.2333333333333334,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 44714,
-      "rightRTP": 46964,
-      "alpha": 0.33333333333331555,
-      "futureSourceWaitMS": 16.66666666666705,
+      "rightRTP": 44714,
+      "alpha": 0,
+      "originalRetimeMS": -8.33333333333286,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 75,
@@ -851,6 +926,7 @@
       "leftRTP": 46964,
       "rightRTP": 46964,
       "alpha": 0,
+      "originalRetimeMS": 4.440892098500626e-13,
       "futureSourceWaitMS": 4.440892098500626e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -862,6 +938,7 @@
       "leftRTP": 46964,
       "rightRTP": 49214,
       "alpha": 0.6666666666666489,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333333748,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -869,13 +946,14 @@
     {
       "tick": 77,
       "sourceSeconds": 1.2833333333333334,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 49214,
-      "rightRTP": 51464,
-      "alpha": 0.33333333333332443,
-      "futureSourceWaitMS": 16.666666666666828,
+      "rightRTP": 49214,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333333082,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 78,
@@ -884,6 +962,7 @@
       "leftRTP": 51464,
       "rightRTP": 51464,
       "alpha": 0,
+      "originalRetimeMS": 2.220446049250313e-13,
       "futureSourceWaitMS": 2.220446049250313e-13,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
@@ -895,6 +974,7 @@
       "leftRTP": 51464,
       "rightRTP": 53714,
       "alpha": 0.6666666666666577,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333333526,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -902,13 +982,14 @@
     {
       "tick": 80,
       "sourceSeconds": 1.3333333333333333,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 53714,
-      "rightRTP": 55964,
-      "alpha": 0.33333333333332443,
-      "futureSourceWaitMS": 16.666666666666828,
+      "rightRTP": 53714,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333333082,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.666666666666835
+      "requiredDelayMS": 0
     },
     {
       "tick": 81,
@@ -917,7 +998,8 @@
       "leftRTP": 55964,
       "rightRTP": 55964,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -928,6 +1010,7 @@
       "leftRTP": 55964,
       "rightRTP": 58214,
       "alpha": 0.6666666666666666,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 8.333333333333304,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -935,13 +1018,14 @@
     {
       "tick": 83,
       "sourceSeconds": 1.3833333333333333,
-      "kind": "interpolate",
+      "kind": "original",
       "leftRTP": 58214,
-      "rightRTP": 60464,
-      "alpha": 0.3333333333333333,
-      "futureSourceWaitMS": 16.666666666666607,
+      "rightRTP": 58214,
+      "alpha": 0,
+      "originalRetimeMS": -8.333333333333304,
+      "futureSourceWaitMS": 0,
       "available": true,
-      "requiredDelayMS": 20.66666666666661
+      "requiredDelayMS": 0
     },
     {
       "tick": 84,
@@ -950,17 +1034,19 @@
       "leftRTP": 60464,
       "rightRTP": 60464,
       "alpha": 0,
-      "futureSourceWaitMS": 0.0,
+      "originalRetimeMS": 0.0,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 85,
       "sourceSeconds": 1.4166666666666667,
-      "kind": "interpolate",
-      "leftRTP": 60464,
+      "kind": "original",
+      "leftRTP": 62714,
       "rightRTP": 62714,
-      "alpha": 0.6666666666666755,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333333082,
       "futureSourceWaitMS": 8.333333333333082,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -972,6 +1058,7 @@
       "leftRTP": 62714,
       "rightRTP": 64964,
       "alpha": 0.3333333333333422,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.666666666666387,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -983,17 +1070,19 @@
       "leftRTP": 64964,
       "rightRTP": 64964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.220446049250313e-13,
+      "originalRetimeMS": -2.220446049250313e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 88,
       "sourceSeconds": 1.4666666666666666,
-      "kind": "interpolate",
-      "leftRTP": 64964,
+      "kind": "original",
+      "leftRTP": 67214,
       "rightRTP": 67214,
-      "alpha": 0.6666666666666755,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333333082,
       "futureSourceWaitMS": 8.333333333333082,
       "available": true,
       "requiredDelayMS": 12.33333333333353
@@ -1005,6 +1094,7 @@
       "leftRTP": 67214,
       "rightRTP": 69464,
       "alpha": 0.3333333333333511,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.666666666666163,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1016,17 +1106,19 @@
       "leftRTP": 69464,
       "rightRTP": 69464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-13,
+      "originalRetimeMS": -4.440892098500626e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 91,
       "sourceSeconds": 1.5166666666666666,
-      "kind": "interpolate",
-      "leftRTP": 69464,
+      "kind": "original",
+      "leftRTP": 71714,
       "rightRTP": 71714,
-      "alpha": 0.6666666666666844,
+      "alpha": 0,
+      "originalRetimeMS": 8.33333333333286,
       "futureSourceWaitMS": 8.33333333333286,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1038,6 +1130,7 @@
       "leftRTP": 71714,
       "rightRTP": 73964,
       "alpha": 0.33333333333335996,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666594,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1049,17 +1142,19 @@
       "leftRTP": 73964,
       "rightRTP": 73964,
       "alpha": 0,
-      "futureSourceWaitMS": -6.661338147750939e-13,
+      "originalRetimeMS": -6.661338147750939e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 94,
       "sourceSeconds": 1.5666666666666667,
-      "kind": "interpolate",
-      "leftRTP": 73964,
+      "kind": "original",
+      "leftRTP": 76214,
       "rightRTP": 76214,
-      "alpha": 0.6666666666666933,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333332638,
       "futureSourceWaitMS": 8.333333333332638,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1071,6 +1166,7 @@
       "leftRTP": 76214,
       "rightRTP": 78464,
       "alpha": 0.33333333333335996,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666594,
       "available": true,
       "requiredDelayMS": 20.666666666666835
@@ -1082,17 +1178,19 @@
       "leftRTP": 78464,
       "rightRTP": 78464,
       "alpha": 0,
-      "futureSourceWaitMS": -8.881784197001252e-13,
+      "originalRetimeMS": -8.881784197001252e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 97,
       "sourceSeconds": 1.6166666666666667,
-      "kind": "interpolate",
-      "leftRTP": 78464,
+      "kind": "original",
+      "leftRTP": 80714,
       "rightRTP": 80714,
-      "alpha": 0.6666666666667022,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333332416,
       "futureSourceWaitMS": 8.333333333332416,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1104,6 +1202,7 @@
       "leftRTP": 80714,
       "rightRTP": 82964,
       "alpha": 0.33333333333336884,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666572,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1115,17 +1214,19 @@
       "leftRTP": 82964,
       "rightRTP": 82964,
       "alpha": 0,
-      "futureSourceWaitMS": -8.881784197001252e-13,
+      "originalRetimeMS": -8.881784197001252e-13,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 100,
       "sourceSeconds": 1.6666666666666667,
-      "kind": "interpolate",
-      "leftRTP": 82964,
+      "kind": "original",
+      "leftRTP": 85214,
       "rightRTP": 85214,
-      "alpha": 0.666666666666711,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333332194,
       "futureSourceWaitMS": 8.333333333332194,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1137,6 +1238,7 @@
       "leftRTP": 85214,
       "rightRTP": 87464,
       "alpha": 0.3333333333333777,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.6666666666655,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1148,17 +1250,19 @@
       "leftRTP": 87464,
       "rightRTP": 87464,
       "alpha": 0,
-      "futureSourceWaitMS": -1.1102230246251565e-12,
+      "originalRetimeMS": -1.1102230246251565e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 103,
       "sourceSeconds": 1.7166666666666666,
-      "kind": "interpolate",
-      "leftRTP": 87464,
+      "kind": "original",
+      "leftRTP": 89714,
       "rightRTP": 89714,
-      "alpha": 0.666666666666711,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333332194,
       "futureSourceWaitMS": 8.333333333332194,
       "available": true,
       "requiredDelayMS": 12.33333333333353
@@ -1170,6 +1274,7 @@
       "leftRTP": 89714,
       "rightRTP": 91964,
       "alpha": 0.3333333333333866,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.666666666665275,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1181,17 +1286,19 @@
       "leftRTP": 91964,
       "rightRTP": 91964,
       "alpha": 0,
-      "futureSourceWaitMS": -1.3322676295501878e-12,
+      "originalRetimeMS": -1.3322676295501878e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 106,
       "sourceSeconds": 1.7666666666666666,
-      "kind": "interpolate",
-      "leftRTP": 91964,
+      "kind": "original",
+      "leftRTP": 94214,
       "rightRTP": 94214,
-      "alpha": 0.6666666666667199,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333331971,
       "futureSourceWaitMS": 8.333333333331971,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1203,6 +1310,7 @@
       "leftRTP": 94214,
       "rightRTP": 96464,
       "alpha": 0.3333333333333955,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666505,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1214,17 +1322,19 @@
       "leftRTP": 96464,
       "rightRTP": 96464,
       "alpha": 0,
-      "futureSourceWaitMS": -1.5543122344752192e-12,
+      "originalRetimeMS": -1.5543122344752192e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 109,
       "sourceSeconds": 1.8166666666666667,
-      "kind": "interpolate",
-      "leftRTP": 96464,
+      "kind": "original",
+      "leftRTP": 98714,
       "rightRTP": 98714,
-      "alpha": 0.6666666666667288,
+      "alpha": 0,
+      "originalRetimeMS": 8.33333333333175,
       "futureSourceWaitMS": 8.33333333333175,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1236,6 +1346,7 @@
       "leftRTP": 98714,
       "rightRTP": 100964,
       "alpha": 0.3333333333333955,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666505,
       "available": true,
       "requiredDelayMS": 20.666666666666835
@@ -1247,17 +1358,19 @@
       "leftRTP": 100964,
       "rightRTP": 100964,
       "alpha": 0,
-      "futureSourceWaitMS": -1.7763568394002505e-12,
+      "originalRetimeMS": -1.7763568394002505e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 112,
       "sourceSeconds": 1.8666666666666667,
-      "kind": "interpolate",
-      "leftRTP": 100964,
+      "kind": "original",
+      "leftRTP": 103214,
       "rightRTP": 103214,
-      "alpha": 0.6666666666667377,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333331527,
       "futureSourceWaitMS": 8.333333333331527,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1269,6 +1382,7 @@
       "leftRTP": 103214,
       "rightRTP": 105464,
       "alpha": 0.33333333333340437,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666483,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1280,17 +1394,19 @@
       "leftRTP": 105464,
       "rightRTP": 105464,
       "alpha": 0,
-      "futureSourceWaitMS": -1.7763568394002505e-12,
+      "originalRetimeMS": -1.7763568394002505e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 115,
       "sourceSeconds": 1.9166666666666667,
-      "kind": "interpolate",
-      "leftRTP": 105464,
+      "kind": "original",
+      "leftRTP": 107714,
       "rightRTP": 107714,
-      "alpha": 0.6666666666667466,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333331305,
       "futureSourceWaitMS": 8.333333333331305,
       "available": true,
       "requiredDelayMS": 12.333333333333307
@@ -1302,6 +1418,7 @@
       "leftRTP": 107714,
       "rightRTP": 109964,
       "alpha": 0.33333333333341325,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.66666666666461,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1313,17 +1430,19 @@
       "leftRTP": 109964,
       "rightRTP": 109964,
       "alpha": 0,
-      "futureSourceWaitMS": -1.9984014443252818e-12,
+      "originalRetimeMS": -1.9984014443252818e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
     {
       "tick": 118,
       "sourceSeconds": 1.9666666666666666,
-      "kind": "interpolate",
-      "leftRTP": 109964,
+      "kind": "original",
+      "leftRTP": 112214,
       "rightRTP": 112214,
-      "alpha": 0.6666666666667466,
+      "alpha": 0,
+      "originalRetimeMS": 8.333333333331305,
       "futureSourceWaitMS": 8.333333333331305,
       "available": true,
       "requiredDelayMS": 12.33333333333353
@@ -1335,6 +1454,7 @@
       "leftRTP": 112214,
       "rightRTP": 114464,
       "alpha": 0.33333333333342213,
+      "originalRetimeMS": null,
       "futureSourceWaitMS": 16.666666666664387,
       "available": true,
       "requiredDelayMS": 20.66666666666661
@@ -1346,7 +1466,8 @@
       "leftRTP": 114464,
       "rightRTP": 114464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.220446049250313e-12,
+      "originalRetimeMS": -2.220446049250313e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1357,7 +1478,8 @@
       "leftRTP": 115964,
       "rightRTP": 115964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.220446049250313e-12,
+      "originalRetimeMS": -2.220446049250313e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1368,7 +1490,8 @@
       "leftRTP": 117464,
       "rightRTP": 117464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.220446049250313e-12,
+      "originalRetimeMS": -2.220446049250313e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1379,7 +1502,8 @@
       "leftRTP": 118964,
       "rightRTP": 118964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.220446049250313e-12,
+      "originalRetimeMS": -2.220446049250313e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1390,7 +1514,8 @@
       "leftRTP": 120464,
       "rightRTP": 120464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1401,7 +1526,8 @@
       "leftRTP": 121964,
       "rightRTP": 121964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1412,7 +1538,8 @@
       "leftRTP": 123464,
       "rightRTP": 123464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1423,7 +1550,8 @@
       "leftRTP": 124964,
       "rightRTP": 124964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1434,7 +1562,8 @@
       "leftRTP": 126464,
       "rightRTP": 126464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1445,7 +1574,8 @@
       "leftRTP": 127964,
       "rightRTP": 127964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1456,7 +1586,8 @@
       "leftRTP": 129464,
       "rightRTP": 129464,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1467,7 +1598,8 @@
       "leftRTP": 130964,
       "rightRTP": 130964,
       "alpha": 0,
-      "futureSourceWaitMS": -2.6645352591003757e-12,
+      "originalRetimeMS": -2.6645352591003757e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1478,7 +1610,8 @@
       "leftRTP": 132464,
       "rightRTP": 132464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1489,7 +1622,8 @@
       "leftRTP": 133964,
       "rightRTP": 133964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1500,7 +1634,8 @@
       "leftRTP": 135464,
       "rightRTP": 135464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1511,7 +1646,8 @@
       "leftRTP": 136964,
       "rightRTP": 136964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1522,7 +1658,8 @@
       "leftRTP": 138464,
       "rightRTP": 138464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1533,7 +1670,8 @@
       "leftRTP": 139964,
       "rightRTP": 139964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1544,7 +1682,8 @@
       "leftRTP": 141464,
       "rightRTP": 141464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.1086244689504383e-12,
+      "originalRetimeMS": -3.1086244689504383e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1555,7 +1694,8 @@
       "leftRTP": 142964,
       "rightRTP": 142964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1566,7 +1706,8 @@
       "leftRTP": 144464,
       "rightRTP": 144464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1577,7 +1718,8 @@
       "leftRTP": 145964,
       "rightRTP": 145964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1588,7 +1730,8 @@
       "leftRTP": 147464,
       "rightRTP": 147464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1599,7 +1742,8 @@
       "leftRTP": 148964,
       "rightRTP": 148964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1610,7 +1754,8 @@
       "leftRTP": 150464,
       "rightRTP": 150464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1621,7 +1766,8 @@
       "leftRTP": 151964,
       "rightRTP": 151964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1632,7 +1778,8 @@
       "leftRTP": 153464,
       "rightRTP": 153464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.552713678800501e-12,
+      "originalRetimeMS": -3.552713678800501e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1643,7 +1790,8 @@
       "leftRTP": 154964,
       "rightRTP": 154964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1654,7 +1802,8 @@
       "leftRTP": 156464,
       "rightRTP": 156464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1665,7 +1814,8 @@
       "leftRTP": 157964,
       "rightRTP": 157964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1676,7 +1826,8 @@
       "leftRTP": 159464,
       "rightRTP": 159464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1687,7 +1838,8 @@
       "leftRTP": 160964,
       "rightRTP": 160964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1698,7 +1850,8 @@
       "leftRTP": 162464,
       "rightRTP": 162464,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1709,7 +1862,8 @@
       "leftRTP": 163964,
       "rightRTP": 163964,
       "alpha": 0,
-      "futureSourceWaitMS": -3.9968028886505635e-12,
+      "originalRetimeMS": -3.9968028886505635e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1720,7 +1874,8 @@
       "leftRTP": 165464,
       "rightRTP": 165464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1731,7 +1886,8 @@
       "leftRTP": 166964,
       "rightRTP": 166964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1742,7 +1898,8 @@
       "leftRTP": 168464,
       "rightRTP": 168464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1753,7 +1910,8 @@
       "leftRTP": 169964,
       "rightRTP": 169964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1764,7 +1922,8 @@
       "leftRTP": 171464,
       "rightRTP": 171464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1775,7 +1934,8 @@
       "leftRTP": 172964,
       "rightRTP": 172964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1786,7 +1946,8 @@
       "leftRTP": 174464,
       "rightRTP": 174464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1797,7 +1958,8 @@
       "leftRTP": 175964,
       "rightRTP": 175964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.440892098500626e-12,
+      "originalRetimeMS": -4.440892098500626e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1808,7 +1970,8 @@
       "leftRTP": 177464,
       "rightRTP": 177464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1819,7 +1982,8 @@
       "leftRTP": 178964,
       "rightRTP": 178964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1830,7 +1994,8 @@
       "leftRTP": 180464,
       "rightRTP": 180464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1841,7 +2006,8 @@
       "leftRTP": 181964,
       "rightRTP": 181964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1852,7 +2018,8 @@
       "leftRTP": 183464,
       "rightRTP": 183464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1863,7 +2030,8 @@
       "leftRTP": 184964,
       "rightRTP": 184964,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1874,7 +2042,8 @@
       "leftRTP": 186464,
       "rightRTP": 186464,
       "alpha": 0,
-      "futureSourceWaitMS": -4.884981308350689e-12,
+      "originalRetimeMS": -4.884981308350689e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1885,7 +2054,8 @@
       "leftRTP": 187964,
       "rightRTP": 187964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1896,7 +2066,8 @@
       "leftRTP": 189464,
       "rightRTP": 189464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1907,7 +2078,8 @@
       "leftRTP": 190964,
       "rightRTP": 190964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1918,7 +2090,8 @@
       "leftRTP": 192464,
       "rightRTP": 192464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1929,7 +2102,8 @@
       "leftRTP": 193964,
       "rightRTP": 193964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1940,7 +2114,8 @@
       "leftRTP": 195464,
       "rightRTP": 195464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1951,7 +2126,8 @@
       "leftRTP": 196964,
       "rightRTP": 196964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1962,7 +2138,8 @@
       "leftRTP": 198464,
       "rightRTP": 198464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.329070518200751e-12,
+      "originalRetimeMS": -5.329070518200751e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1973,7 +2150,8 @@
       "leftRTP": 199964,
       "rightRTP": 199964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.773159728050814e-12,
+      "originalRetimeMS": -5.773159728050814e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1984,7 +2162,8 @@
       "leftRTP": 201464,
       "rightRTP": 201464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.773159728050814e-12,
+      "originalRetimeMS": -5.773159728050814e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -1995,7 +2174,8 @@
       "leftRTP": 202964,
       "rightRTP": 202964,
       "alpha": 0,
-      "futureSourceWaitMS": -5.773159728050814e-12,
+      "originalRetimeMS": -5.773159728050814e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     },
@@ -2006,15 +2186,17 @@
       "leftRTP": 204464,
       "rightRTP": 204464,
       "alpha": 0,
-      "futureSourceWaitMS": -5.773159728050814e-12,
+      "originalRetimeMS": -5.773159728050814e-12,
+      "futureSourceWaitMS": 0,
       "available": true,
       "requiredDelayMS": 4.0000000000000036
     }
   ],
   "summary": {
-    "original": 141,
-    "generated": 40,
+    "original": 161,
+    "generated": 20,
     "unavailable": 0,
+    "sourceFramesCompetingForSameTick": 0,
     "fixedDelayToCoverAvailableMS": 20.666666666666835
   },
   "assumptions": [

@@ -23,21 +23,44 @@ def evaluate(report, fps=60):
         source.append(source[-1] + delta / 90000)
     decoded = {e['rtp']: e['seconds'] for e in stages['decoded']}
     origin = inputs[0]['seconds']
+    # Retiming a real input frame to its nearest display tick preserves it as
+    # an original. Exact equality is too strict for RTP timestamps quantized
+    # to 90 kHz and for sources running at 42/58 rather than exactly 60 Hz.
+    originals = {}
+    collided = 0
+    for i, source_time in enumerate(source):
+        tick = math.floor(source_time * fps + 0.5)
+        if tick > math.floor(source[-1] * fps + 1e-7):
+            continue
+        old = originals.get(tick)
+        if old is None:
+            originals[tick] = i
+        elif abs(source_time - tick / fps) < abs(source[old] - tick / fps):
+            originals[tick] = i
+            collided += 1
+        else:
+            collided += 1
     ticks = []
     for k in range(math.floor(source[-1] * fps + 1e-7) + 1):
         t = k / fps
-        right = bisect.bisect_left(source, t - 1e-7)
-        if right == len(source):
-            break
-        exact = abs(source[right] - t) < 1e-7
-        left = right if exact else right - 1
+        original = originals.get(k)
+        if original is not None:
+            left = right = original
+        else:
+            right = bisect.bisect_left(source, t)
+            if right == len(source):
+                break
+            left = right - 1
+            if left < 0:
+                continue
         a, b = inputs[left], inputs[right]
         ready = [decoded.get(a['rtp']), decoded.get(b['rtp'])]
         available = all(v is not None for v in ready)
-        ticks.append(dict(tick=k, sourceSeconds=t, kind='original' if exact else 'interpolate',
+        ticks.append(dict(tick=k, sourceSeconds=t, kind='original' if original is not None else 'interpolate',
                           leftRTP=a['rtp'], rightRTP=b['rtp'],
-                          alpha=0 if exact else (t-source[left])/(source[right]-source[left]),
-                          futureSourceWaitMS=(source[right]-t)*1000,
+                          alpha=0 if original is not None else (t-source[left])/(source[right]-source[left]),
+                          originalRetimeMS=(source[left]-t)*1000 if original is not None else None,
+                          futureSourceWaitMS=max(0, source[right]-t)*1000,
                           available=available,
                           requiredDelayMS=max(0, max(ready)-origin-t)*1000 if available else None))
     # Common full one-second local windows make stage rates comparable.
@@ -52,12 +75,20 @@ def evaluate(report, fps=60):
         row['sourceFPS'] = ((len(indices)-1)/(source[indices[-1]]-source[indices[0]])) if len(indices)>1 else None
         windows.append(row)
     delays = [t['requiredDelayMS'] for t in ticks if t['available']]
+    ordered_delays = sorted(delays)
+    def percentile(p):
+        return ordered_delays[math.ceil(p * len(ordered_delays)) - 1] if ordered_delays else None
     return dict(targetFPS=fps, windows=windows, ticks=ticks,
                 summary=dict(original=sum(t['kind']=='original' for t in ticks),
                              generated=sum(t['kind']=='interpolate' for t in ticks),
                              unavailable=sum(not t['available'] for t in ticks),
+                             sourceFramesCompetingForSameTick=collided,
+                             requiredDelayP50MS=percentile(.50),
+                             requiredDelayP95MS=percentile(.95),
+                             requiredDelayP99MS=percentile(.99),
                              fixedDelayToCoverAvailableMS=max(delays, default=None)),
-                assumptions=['Decoder input is post WebRTC jitter buffer, not packet receipt.',
+                assumptions=['Original frames are retimed to the nearest 60 Hz tick; collisions keep the nearest frame.',
+                             'Decoder input is post WebRTC jitter buffer, not packet receipt.',
                              'RTP cadence is not unique game-image cadence.',
                              'Delay is relative to first decoder input plus source time; includes local arrival jitter/decode.',
                              'Two-sided interpolation; excludes generation/GPU cost and display scheduling.',

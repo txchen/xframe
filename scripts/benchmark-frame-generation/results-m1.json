@@ -1,0 +1,31 @@
+{
+  "dateLocal": "2026-09-22",
+  "device": "Apple M1",
+  "memoryGB": 16,
+  "macOS": "27.0",
+  "input": "Big Buck Bunny, seconds 6-12, H.264 1920x1080 30 fps",
+  "inputSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "pairs": 60,
+  "targetIntervalMS": 33.333333333333336,
+  "videoToolbox": {
+    "steadyP50MS": [87.98516663955525, 92.70158334402367],
+    "steadyP95MS": [91.930125025101, 93.80108333425596],
+    "processGPUTimeMS": null,
+    "gpuTimeNote": "Not attributable via AGX process counter"
+  },
+  "mlxDLSSVideo": {
+    "inputFrames": 61,
+    "outputFrames": 121,
+    "generationSeconds": 2.952239167,
+    "generationWallMSPerFrame": 49.20398611666667,
+    "processGPUTimeObservedMS": 3054.350082
+  },
+  "mlxDLSSRawStream": {
+    "inputFrames": 61,
+    "generatedFrames": 60,
+    "streamSeconds": 3.439661209,
+    "processGPUTimeObservedMS": 3088.797666,
+    "processGPUTimeObservedMSPerFrame": 51.4799611,
+    "gpuTimeNote": "AGX lower bound; includes RGB conversion and model startup; excludes decode and encode"
+  }
+}

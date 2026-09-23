@@ -34,7 +34,8 @@ class ReplayTests(unittest.TestCase):
     def test_transition_and_wrap(self):
         result = replay.evaluate(fixture())
         middle = [t for t in result['ticks'] if 1 <= t['sourceSeconds'] < 2]
-        self.assertEqual(sum(t['kind']=='interpolate' for t in middle), 40)
+        self.assertEqual(sum(t['kind']=='original' for t in middle), 40)
+        self.assertEqual(sum(t['kind']=='interpolate' for t in middle), 20)
         self.assertAlmostEqual(max(t['futureSourceWaitMS'] for t in middle), 1000/60)
         self.assertAlmostEqual(result['summary']['fixedDelayToCoverAvailableMS'], 1000/60+4)
         self.assertEqual(result['summary']['unavailable'], 0)
@@ -49,16 +50,33 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(result['summary']['unavailable'], 0)
         for tick in result['ticks']:
             left, right = times[tick['leftRTP']], times[tick['rightRTP']]
-            self.assertLessEqual(left, tick['sourceSeconds'] + 1e-7)
-            self.assertGreaterEqual(right, tick['sourceSeconds'] - 1e-7)
-            self.assertAlmostEqual(left + tick['alpha']*(right-left), tick['sourceSeconds'], places=6)
-            self.assertAlmostEqual(tick['requiredDelayMS'], (right+.004-tick['sourceSeconds'])*1000)
+            if tick['kind'] == 'original':
+                self.assertEqual(tick['leftRTP'], tick['rightRTP'])
+                self.assertLessEqual(abs(tick['originalRetimeMS']), 1000/120+.01)
+            else:
+                self.assertLessEqual(left, tick['sourceSeconds'] + 1e-7)
+                self.assertGreaterEqual(right, tick['sourceSeconds'] - 1e-7)
+                self.assertAlmostEqual(left + tick['alpha']*(right-left), tick['sourceSeconds'], places=6)
+            self.assertAlmostEqual(tick['requiredDelayMS'], max(0,(right+.004-tick['sourceSeconds'])*1000))
+        self.assertGreater(result['summary']['original'], 250)
+        self.assertLess(result['summary']['generated'], 150)
         self.assertLessEqual(result['summary']['fixedDelayToCoverAvailableMS'], 1000/42+4.02)
 
     def test_missing_reference(self):
         data = fixture()
         data['frameTrace'] = [e for e in data['frameTrace'] if not (e['stage']=='decoded' and abs(e['seconds']-1.029)<1e-8)]
         self.assertGreater(replay.evaluate(data)['summary']['unavailable'], 0)
+    def test_competing_originals_keep_the_closer_frame(self):
+        data = {'frameTrace': []}
+        for time in (0, .009, .010, .032):
+            rtp = round(time * 90000)
+            for stage, offset in [('decoderInput', 0), ('decoded', .002), ('delivered', .003), ('presented', .020)]:
+                data['frameTrace'].append(dict(stage=stage, rtp=rtp, seconds=time+offset))
+        result = replay.evaluate(data)
+        middle = next(t for t in result['ticks'] if t['tick'] == 1)
+        self.assertEqual(middle['kind'], 'original')
+        self.assertEqual(middle['leftRTP'], round(.010*90000))
+        self.assertEqual(result['summary']['sourceFramesCompetingForSameTick'], 1)
     def test_discontinuity(self):
         data = fixture()
         data['frameTrace'][4]['rtp'] = data['frameTrace'][0]['rtp']
