@@ -11,14 +11,14 @@ struct RumbleCommand: Equatable, Sendable {
     let delay: TimeInterval
     let repeatCount: Int
 
-    // A stream can send another vibration command at any time. Treat each command
-    // as a replacement pulse; queued repeats and delays can otherwise outlive it.
+    // Match XStreaming's ordinary controller path: use the transmitted duration
+    // and motor levels, replacing the preceding command. Other clients disagree
+    // about scheduling delay/repeat, so retain them without expanding them here.
     var pulse: RumblePulse? {
         guard max(strong, weak, leftTrigger, rightTrigger) > 0 else { return nil }
-        func bounded(_ value: Double) -> Double { min(0.6, max(0, value * 0.6)) }
-        return RumblePulse(leftHandle: bounded(strong), rightHandle: bounded(weak),
-                           leftTrigger: bounded(leftTrigger), rightTrigger: bounded(rightTrigger),
-                           duration: min(0.5, max(0.03, duration)))
+        return RumblePulse(leftHandle: strong, rightHandle: weak,
+                           leftTrigger: leftTrigger, rightTrigger: rightTrigger,
+                           duration: min(30, max(0.03, duration)))
     }
 
     static func parse(_ data: Data) -> RumbleCommand? {
@@ -34,9 +34,9 @@ struct RumbleCommand: Equatable, Sendable {
             weak: min(1, Double(bytes[offset + 3]) / 100),
             leftTrigger: min(1, Double(bytes[offset + 4]) / 100),
             rightTrigger: min(1, Double(bytes[offset + 5]) / 100),
-            duration: Double(min(duration, 2000)) / 1000,
-            delay: Double(min(delay, 2000)) / 1000,
-            repeatCount: min(Int(bytes[offset + 10]), 3))
+            duration: Double(duration) / 1000,
+            delay: Double(delay) / 1000,
+            repeatCount: Int(bytes[offset + 10]))
     }
 }
 

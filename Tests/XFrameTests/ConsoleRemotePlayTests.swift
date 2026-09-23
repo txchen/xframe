@@ -33,19 +33,24 @@ import Testing
     #expect(RumbleCommand.parse(metadata) == command)
     let loud = Data([0x80, 0, 0, 0, 255, 255, 255, 255, 0xff, 0xff, 0xff, 0xff, 255])
     #expect(RumbleCommand.parse(loud)?.strong == 1)
-    #expect(RumbleCommand.parse(loud)?.duration == 2)
-    #expect(RumbleCommand.parse(loud)?.repeatCount == 3)
+    #expect(RumbleCommand.parse(loud)?.duration == 65.535)
+    #expect(RumbleCommand.parse(loud)?.delay == 65.535)
+    #expect(RumbleCommand.parse(loud)?.repeatCount == 255)
 }
 
-@Test func rumblePlaybackBoundsOnePulseAndDoesNotExpandRepeats() throws {
+@Test func rumblePlaybackUsesTransmittedDurationAndMotorLevels() throws {
     let packet = Data([0x80, 0, 0, 0, 100, 80, 100, 100, 0xd0, 0x07, 0xd0, 0x07, 3])
     let command = try #require(RumbleCommand.parse(packet))
     let pulse = try #require(command.pulse)
-    #expect(pulse.duration <= 0.5)
-    #expect(pulse.leftHandle <= 0.6)
-    #expect(pulse.rightHandle <= 0.6)
-    #expect(pulse.defaultHandle <= 0.6)
+    #expect(pulse.duration == 2)
+    #expect(pulse.leftHandle == 1)
+    #expect(pulse.rightHandle == 0.8)
+    #expect(pulse.defaultHandle == 1)
     #expect(pulse.defaultHandle == max(pulse.leftHandle, pulse.rightHandle))
+    #expect(RumbleCommand(strong: 0.5, weak: 0, leftTrigger: 0, rightTrigger: 0,
+                          duration: 0, delay: 0, repeatCount: 0).pulse?.duration == 0.03)
+    #expect(RumbleCommand(strong: 0.5, weak: 0, leftTrigger: 0, rightTrigger: 0,
+                          duration: 65.535, delay: 0, repeatCount: 0).pulse?.duration == 30)
     #expect(RumbleCommand(strong: 0, weak: 0, leftTrigger: 0, rightTrigger: 0,
                           duration: 2, delay: 1, repeatCount: 3).pulse == nil)
 }
