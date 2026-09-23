@@ -84,3 +84,10 @@ per-frame results, process CPU time, and `summary.json` under
 `.build/benchmark-frame-generation/resolution-recheck/`. See the
 [M1 resolution-gap investigation](../../.scratch/post-processing-benchmark/vt-resolution-research.md)
 for the repeated results and Apple-framework profiling limits.
+
+The [1080p → 720p VideoToolbox → 1080p MetalFX pipeline probe](benchmark-vt720-spatial.swift)
+measures the stages together, including one per-source-frame downsize and one
+per-generated-frame upscale. Build and run it using the commands in the
+[M1 pipeline result](../../.scratch/post-processing-benchmark/vt720-spatial-pipeline.md).
+Its optional modes isolate stage interaction; it does not measure presentation
+latency or image quality.

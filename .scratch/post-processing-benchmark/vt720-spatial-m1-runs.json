@@ -1,0 +1,213 @@
+{
+  "date": "2026-09-23",
+  "device": "Apple M1",
+  "macOS": "Version 27.0 (Build 26A428)",
+  "sourceSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "fullRuns": [
+    {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 19.699458323884755,
+        "medianMS": 15.264708315953612,
+        "p95MS": 19.525416661053896
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 2.910708310082555,
+        "medianMS": 1.9590416341088712,
+        "p95MS": 2.8736666426993906
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 13.44366668490693,
+        "medianMS": 10.493791662156582,
+        "p95MS": 13.24775000102818
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "full",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "sourceSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+      "upscaleGPU": {
+        "maxMS": 1.867624989245087,
+        "medianMS": 1.7255833372473717,
+        "p95MS": 1.830083318054676
+      },
+      "upscaleWall": {
+        "maxMS": 3.9111666847020388,
+        "medianMS": 3.0334999901242554,
+        "p95MS": 3.6524583119899035
+      },
+      "warmups": 5
+    },
+    {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 20.054624998010695,
+        "medianMS": 18.182250030804425,
+        "p95MS": 19.804625015240163
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 2.96791666187346,
+        "medianMS": 2.5276666856370866,
+        "p95MS": 2.8995833126828074
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 13.847875001374632,
+        "medianMS": 12.115666642785072,
+        "p95MS": 13.340041681658477
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "full",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "sourceSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+      "upscaleGPU": {
+        "maxMS": 1.8789583118632436,
+        "medianMS": 1.7544999718666077,
+        "p95MS": 1.8769999733194709
+      },
+      "upscaleWall": {
+        "maxMS": 3.6722083459608257,
+        "medianMS": 3.468916635029018,
+        "p95MS": 3.63279168959707
+      },
+      "warmups": 5
+    },
+    {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 20.39333333959803,
+        "medianMS": 17.727250000461936,
+        "p95MS": 19.53187503386289
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 3.0330416630022228,
+        "medianMS": 2.5391666567884386,
+        "p95MS": 2.88341665873304
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 14.028000005055219,
+        "medianMS": 11.54545834288001,
+        "p95MS": 13.358583324588835
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "full",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "sourceSHA256": "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+      "upscaleGPU": {
+        "maxMS": 1.8889583298005164,
+        "medianMS": 1.7499583773314953,
+        "p95MS": 1.827916712500155
+      },
+      "upscaleWall": {
+        "maxMS": 3.735249978490174,
+        "medianMS": 3.431374963838607,
+        "p95MS": 3.583416633773595
+      },
+      "warmups": 5
+    }
+  ],
+  "controls": {
+    "pre-resize": {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 13.894833333324641,
+        "medianMS": 12.9977916367352,
+        "p95MS": 13.673208362888545
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 0.00020832521840929985,
+        "medianMS": 0.000125030055642128,
+        "p95MS": 0.00016670674085617065
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 10.364583344198763,
+        "medianMS": 9.668208367656916,
+        "p95MS": 10.122666659299284
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "pre-resize",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "upscaleGPU": {
+        "maxMS": 1.787999994121492,
+        "medianMS": 1.756208308506757,
+        "p95MS": 1.7782083596102893
+      },
+      "upscaleWall": {
+        "maxMS": 3.591458313167095,
+        "medianMS": 3.3534583635628223,
+        "p95MS": 3.5756250144913793
+      },
+      "warmups": 5
+    },
+    "no-spatial": {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 12.39316666033119,
+        "medianMS": 10.799666633829474,
+        "p95MS": 11.76562497857958
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 2.8423750190995634,
+        "medianMS": 2.5492916465736926,
+        "p95MS": 2.745750010944903
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 9.707791672553867,
+        "medianMS": 8.291333331726491,
+        "p95MS": 9.120416652876884
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "no-spatial",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "upscaleGPU": null,
+      "upscaleWall": null,
+      "warmups": 5
+    },
+    "pre-resize-no-spatial": {
+      "budgetMS": 33.333333333333336,
+      "combinedWall": {
+        "maxMS": 7.070291670970619,
+        "medianMS": 5.688250006642193,
+        "p95MS": 6.707833323162049
+      },
+      "device": "Apple M1",
+      "downscale": {
+        "maxMS": 4.1676685214042664e-05,
+        "medianMS": 0,
+        "p95MS": 4.1676685214042664e-05
+      },
+      "generated": "720p midpoint → MetalFX Spatial 1080p",
+      "interpolation": {
+        "maxMS": 7.055249996483326,
+        "medianMS": 5.686458316631615,
+        "p95MS": 6.693166622426361
+      },
+      "macOS": "Version 27.0 (Build 26A428)",
+      "mode": "pre-resize-no-spatial",
+      "notes": "Full mode: one new 1080p source per pair, only the generated midpoint is upscaled. Pre-resize and no-spatial modes isolate stage interaction. CVPixelBuffer allocations, video decode, model/scaler setup and display are outside timing. Combined wall is sequential and includes per-frame Metal texture wrapping, encoding and GPU completion when spatial runs.",
+      "samples": 55,
+      "source": "1080p30 H.264 video, 61 decoded frames",
+      "upscaleGPU": null,
+      "upscaleWall": null,
+      "warmups": 5
+    }
+  }
+}

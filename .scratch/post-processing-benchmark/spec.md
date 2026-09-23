@@ -101,3 +101,9 @@ The 1080p path spent substantial time in CPU resampling and host/ANE transfers;
 Apple does not document why it chooses that path. Quality and live-pipeline
 checks are still needed before offering a 720p downscale path. These are
 candidate results for this M1, not M5 predictions.
+
+The proposed combined path (1080p downsize → 720p VideoToolbox midpoint → 1080p
+MetalFX Spatial) was measured separately in the [M1 pipeline probe](vt720-spatial-pipeline.md).
+Its full-chain p95 was 19.5–19.8 ms per 30 fps source pair, with a calculated
+minimum of about 36.5 ms added buffering for evenly spaced 60 Hz presentation.
+The probe omits live decode, display, and generated-frame quality assessment.
