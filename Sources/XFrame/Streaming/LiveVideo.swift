@@ -5,6 +5,7 @@ import QuartzCore
 protocol VideoSource: AnyObject, Sendable {
     var performance: PlaybackPerformance { get }
     func stop()
+    var playbackState: String { get }
     func snapshot() -> PlaybackStats
     func nextFrame(at hostTime: Double) -> VideoFrame?
     func didPresent()
@@ -59,19 +60,20 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func diagnosticEvents() -> [StreamDiagnosticEvent] { lock.withLock { events } }
     func diagnosticsText() -> String { diagnosticEvents().map(\.line).joined(separator: "\n") }
     func diagnosticReport() -> StreamDiagnosticReport {
-        lock.withLock {
+        var (snapshot, outcome, duration, events) = lock.withLock {
             var snapshot = stats
             if bitrateSampleAt.map({ (endedAt ?? CACurrentMediaTime()) - $0 > 3 }) ?? true {
                 snapshot.videoBitrateMbps = nil
                 snapshot.networkRoundTripMS = nil
                 snapshot.jitterBufferMS = nil
             }
-            snapshot.timings = performance.snapshot()
             snapshot.queued = frames.count
-            return StreamDiagnosticReport(stats: snapshot,
-                outcome: failed ? .failed : (stopped ? .stopped : .active),
-                duration: (endedAt ?? CACurrentMediaTime()) - createdAt, events: events, frameTrace: frameTrace.snapshot())
+            let outcome: StreamDiagnosticReport.Outcome = failed ? .failed : (stopped ? .stopped : .active)
+            return (snapshot, outcome, (endedAt ?? CACurrentMediaTime()) - createdAt, events)
         }
+        snapshot.timings = performance.snapshot()
+        return StreamDiagnosticReport(stats: snapshot, outcome: outcome, duration: duration,
+                                      events: events, frameTrace: frameTrace.snapshot())
     }
 
     init(framePacing: FramePacingMode = .balanced) {
@@ -229,10 +231,10 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     var streamState: (state: String, hasFrames: Bool) {
         lock.withLock { (stats.state, stats.decoded > 0) }
     }
+    var playbackState: String { lock.withLock { stats.state } }
     func snapshot() -> PlaybackStats {
-        lock.withLock {
+        var result = lock.withLock {
             var result = stats
-            result.timings = performance.snapshot()
             result.queued = frames.count
             if !stopped, bitrateSampleAt.map({ CACurrentMediaTime() - $0 > 3 }) ?? true {
                 result.videoBitrateMbps = nil
@@ -245,6 +247,9 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             result.elapsed = started.map { (endedAt ?? CACurrentMediaTime()) - $0 } ?? 0
             return result
         }
+        // Never hold the media queue lock while summarizing diagnostic windows.
+        result.timings = performance.snapshot()
+        return result
     }
     var secondsSinceFrame: Double? { lock.withLock { lastFrameAt.map { CACurrentMediaTime() - $0 } } }
 }

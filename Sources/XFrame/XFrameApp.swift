@@ -62,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let view = MetalView(frame: NSRect(x: 0, y: 0, width: 960, height: 540), device: device)
             let renderer = try MetalRenderer(view: view)
             renderer.scalingMode = scalingMode
+            renderer.hudPreset = hudPreset
             renderer.sharpening = sharpening
             playbackSettings.updateSharpening(sharpening)
             renderer.scalingReport = { [weak self] status in
@@ -125,9 +126,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 playbackSettings.heightAnchor.constraint(lessThanOrEqualTo: content.heightAnchor, constant: -24)
             ])
             NSLayoutConstraint.activate([
-                diagnostics.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 12),
+                diagnostics.leadingAnchor.constraint(greaterThanOrEqualTo: content.leadingAnchor, constant: 12),
                 diagnostics.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),
-                diagnostics.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -12)
+                diagnostics.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -12),
+                diagnostics.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12)
             ])
             renderer.report = { [weak self] stats in
                 guard let self else { return }
@@ -425,6 +427,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         hudPreset = preset
         playbackSettings.update(scaling: scalingMode, hud: preset)
         diagnostics.preset = preset
+        renderer?.hudPreset = preset
         UserDefaults.standard.set(preset.rawValue, forKey: "XFrame.PerformanceHUD")
         for item in hudMenuItems {
             item.state = item.representedObject as? String == preset.rawValue ? .on : .off

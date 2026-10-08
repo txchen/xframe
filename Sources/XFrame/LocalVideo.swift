@@ -91,13 +91,18 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
         condition.unlock()
     }
 
-    func snapshot() -> PlaybackStats {
+    var playbackState: String {
         condition.lock(); defer { condition.unlock() }
+        return stats.state
+    }
+    func snapshot() -> PlaybackStats {
+        condition.lock()
         var result = stats
-        result.timings = performance.snapshot()
         result.queued = frames.count
         result.inputFinished = finished
         if let anchor { result.elapsed = max(0, (endTime > 0 ? endTime : CACurrentMediaTime()) - anchor) }
+        condition.unlock()
+        result.timings = performance.snapshot()
         return result
     }
 

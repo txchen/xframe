@@ -94,15 +94,20 @@ final class PlaybackPerformance: @unchecked Sendable {
     }
     func stop() { lock.withLock { stopped = true } }
     func snapshot() -> PlaybackTimingSnapshot {
-        lock.withLock {
-            var details = pacing
-            details.arrivalInterval = windows[.arrivalInterval]?.summary
-            details.drawInterval = windows[.drawInterval]?.summary
-            details.drawableWait = windows[.drawableWait]?.summary
-            return PlaybackTimingSnapshot(scaling: scaling, scaler: windows[.scaler]?.summary, decode: windows[.decode]?.summary,
+        // Copy bounded storage while locked; sorting never blocks sample writers.
+        let (windows, scaling, pacing) = lock.withLock {
+            // Explicit bounded copies avoid deferring Array COW to a video writer.
+            let copy = self.windows.mapValues { Window(samples: $0.samples.map { $0 }, count: $0.count) }
+            return (copy, self.scaling, self.pacing)
+        }
+        var details = pacing
+        details.arrivalInterval = windows[.arrivalInterval]?.summary
+        details.drawInterval = windows[.drawInterval]?.summary
+        details.drawableWait = windows[.drawableWait]?.summary
+        return PlaybackTimingSnapshot(scaling: scaling, scaler: windows[.scaler]?.summary, decode: windows[.decode]?.summary,
             frameWait: windows[.frameWait]?.summary, gpu: windows[.gpu]?.summary,
             presentation: windows[.presentation]?.summary,
-            gpuQueue: windows[.gpuQueue]?.summary, displayWait: windows[.displayWait]?.summary, pacing: details) }
+            gpuQueue: windows[.gpuQueue]?.summary, displayWait: windows[.displayWait]?.summary, pacing: details)
     }
 }
 

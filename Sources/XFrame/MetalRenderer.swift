@@ -30,9 +30,18 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var source: (any VideoSource)?
     private let inFlight = DispatchSemaphore(value: 3)
     private var lastDrawableSize = CGSize.zero
-    private var lastReport = 0.0
+    private let hudSampler = HUDSampler()
+    var hudPreset: PerformanceHUDPreset = .compact { didSet { restartHUD() } }
     private var work = RenderWorkState()
-    var report: ((PlaybackStats) -> Void)?
+    var report: ((HUDDocument) -> Void)?
+
+    private func restartHUD() {
+        hudSampler.stop()
+        guard let source, hudPreset != .hidden else { return }
+        let preset = hudPreset
+        hudSampler.start(collect: { HUDDocument(stats: source.snapshot(), preset: preset) },
+                         deliver: { [weak self] in self?.report?($0) })
+    }
 
     init(view: MTKView) throws {
         guard let device = view.device, let queue = device.makeCommandQueue() else {
@@ -84,6 +93,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func play(_ source: (any VideoSource)?, in view: MTKView) {
         self.source?.stop()
         self.source = source
+        restartHUD()
         currentVideo = nil
         spatial = nil
         failedSpatialStatus = nil
@@ -99,14 +109,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func draw(in view: MTKView) {
         let now = CACurrentMediaTime()
         source?.performance.note(.draw, at: now)
-        if let source, now - lastReport >= 1.0 {
-            lastReport = now
-            let stats = source.snapshot()
-            report?(stats)
-            if stats.state == "Ended" || stats.state.hasPrefix("Failed:") {
-                view.isPaused = true
-                view.enableSetNeedsDisplay = true
-            }
+        if let state = source?.playbackState, state == "Ended" || state.hasPrefix("Failed:") {
+            view.isPaused = true
+            view.enableSetNeedsDisplay = true
+            return
         }
         guard inFlight.wait(timeout: .now()) == .success else { source?.performance.note(.busy); return }
         var committed = false
@@ -121,7 +127,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             }
             catch {
                 source?.fail(error.localizedDescription)
-                if let source { report?(source.snapshot()) }
                 view.isPaused = true
                 return
             }
