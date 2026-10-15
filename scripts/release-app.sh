@@ -59,6 +59,8 @@ notarize)
     xcrun notarytool log "$submission_id" --keychain-profile "$profile" "$release/notary-log.json"
     [[ "$(json_value "$release/notary-status.json" id)" == "$submission_id" && "$(json_value "$release/notary-status.json" status)" == Accepted ]] || fail 'Notarization was not accepted; inspect logs'
     verify_archive
+    [[ "$(json_value "$release/notary-log.json" jobId)" == "$submission_id" && "$(json_value "$release/notary-log.json" status)" == Accepted ]] || fail 'Notary log does not match accepted submission'
+    [[ "$(json_value "$release/notary-log.json" sha256)" == "$(checksum "$release/submission.zip")" ]] || fail 'Notary log archive checksum mismatch'
     extraction="$(mktemp -d "$release/staple-XXXXXXXX")"
     ditto -x -k "$release/submission.zip" "$extraction"
     bash scripts/verify-release.sh "$extraction/XFrame.app" signed "$release/release-info.plist" > "$release/verification-before-staple.log" 2>&1
@@ -68,8 +70,9 @@ notarize)
     mkdir "$extraction/verify"
     ditto -x -k "$candidate" "$extraction/verify"
     bash scripts/verify-release.sh "$extraction/verify/XFrame.app" notarized "$release/release-info.plist" > "$release/verification-final.log" 2>&1
+    printf '%s  %s\n' "$(checksum "$candidate")" "$(basename "$final")" > "$extraction/final.sha256"
+    mv "$extraction/final.sha256" "$final.sha256"
     ln "$candidate" "$final"
-    (cd "$release" && shasum -a 256 "$(basename "$final")" > "$(basename "$final").sha256")
     echo "Verified release: $final"
     ;;
 *) fail 'Usage: release-app.sh prepare | notarize prepared-directory [keychain-profile]' ;;
