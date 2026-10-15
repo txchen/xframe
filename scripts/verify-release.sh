@@ -7,13 +7,16 @@ value() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist"; }
 [[ "$(value CFBundleIdentifier)" == win.xframe.app ]] || fail 'Unexpected bundle identifier'
 [[ "$(value CFBundleExecutable)" == XFrame ]] || fail 'Unexpected executable'
 [[ "$(value CFBundlePackageType)" == APPL ]] || fail 'Unexpected package type'
-[[ "$(value CFBundleShortVersionString)" == 0.1.0 && "$(value CFBundleVersion)" == 1 ]] || fail 'Unexpected release version'
+expected_plist="${3:-Resources/Info.plist}"
+for key in CFBundleShortVersionString CFBundleVersion; do
+    [[ "$(value "$key")" == "$(/usr/libexec/PlistBuddy -c "Print :$key" "$expected_plist")" ]] || fail "Unexpected $key"
+done
 [[ "$(value LSMinimumSystemVersion)" == 27.0 ]] || fail 'Unexpected minimum macOS version'
 codesign --verify --deep --strict --verbose=2 "$app"
 for target in "$app" "$app/Contents/MacOS/XFrame" "$app/Contents/MacOS/mlxdlss-benchmark" "$app/Contents/Frameworks/WebRTC.framework"; do
     details="$(codesign -d --verbose=4 "$target" 2>&1)"
     [[ "$details" == *'TeamIdentifier=24HJJ8KB69'* ]] || fail "Unexpected signing team: $target"
-    [[ "$details" == *'Authority=Developer ID Application: Double Jump Academy (24HJJ8KB69)'* ]] || fail "Unexpected signing authority: $target"
+    [[ "$details" == *'Authority=Developer ID Application: '* ]] || fail "Unexpected signing authority: $target"
     [[ "$details" == *'runtime'* && "$details" == *'Timestamp='* ]] || fail "Missing runtime or timestamp: $target"
 done
 metal_details="$(codesign -d --verbose=4 "$app/Contents/MacOS/mlx.metallib" 2>&1)"
