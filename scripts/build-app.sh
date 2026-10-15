@@ -10,7 +10,7 @@ fi
 # The standalone macOS 27 Command Line Tools cannot initialize swiftbuild here.
 swift build --build-system native -c release --arch arm64
 binary_dir="$(swift build --build-system native -c release --arch arm64 --show-bin-path)"
-app_dir="$PWD/.build/XFrame.app"
+app_dir="${XFRAME_APP_OUTPUT:-$PWD/.build/XFrame.app}"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 mkdir -p "$app_dir/Contents/Frameworks"
 cp "$binary_dir/XFrame" "$app_dir/Contents/MacOS/XFrame"
@@ -30,11 +30,21 @@ if [[ -z "$signing_identity" ]]; then
         echo "Warning: ad-hoc signing changes Keychain identity after rebuilds." >&2
     fi
 fi
-codesign --force --sign "$signing_identity" "$app_dir/Contents/Frameworks/WebRTC.framework"
-codesign --force --sign "$signing_identity" "$app_dir/Contents/MacOS/mlxdlss-benchmark"
-codesign --force --sign "$signing_identity" "$app_dir/Contents/MacOS/mlx.metallib"
-codesign --force --sign "$signing_identity" "$app_dir"
+signing_options=()
+if [[ "$signing_identity" == "Developer ID Application: "* ]]; then
+    signing_options=(--options runtime --timestamp)
+fi
+codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir/Contents/Frameworks/WebRTC.framework"
+codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir/Contents/MacOS/mlxdlss-benchmark"
+metal_options=()
+if [[ "$signing_identity" == "Developer ID Application: "* ]]; then
+    metal_options=(--timestamp)
+fi
+codesign --force --sign "$signing_identity" "${metal_options[@]}" "$app_dir/Contents/MacOS/mlx.metallib"
+codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 touch "$app_dir"
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app_dir"
+if [[ "${XFRAME_SKIP_REGISTRATION:-0}" != 1 ]]; then
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app_dir"
+fi
 echo "Built $app_dir"
