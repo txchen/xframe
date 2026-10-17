@@ -109,7 +109,7 @@ struct LocalMediaPath: Sendable {
         for transport in transports {
             guard let pairID = transport.strings["selectedCandidatePairId"],
                   let pair = byID[pairID], pair.type == "candidate-pair",
-                  pair.strings["state"] == "succeeded",
+                  pair.strings["state"] == "succeeded" || pair.strings["state"] == "in-progress",
                   let localID = pair.strings["localCandidateId"], let local = byID[localID], local.type == "local-candidate",
                   let remoteID = pair.strings["remoteCandidateId"], let remote = byID[remoteID], remote.type == "remote-candidate" else { missing = true; continue }
             func endpoint(_ record: Stats) throws -> Endpoint? {
