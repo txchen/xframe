@@ -1,5 +1,6 @@
 import Foundation
 import QuartzCore
+import OSLog
 @preconcurrency import WebRTC
 
 enum StreamError: Error, LocalizedError {
@@ -34,12 +35,13 @@ final class CloudVideoConnection {
     init(framePacing: FramePacingMode = .balanced, requireLocalMedia: Bool = false) {
         video = LiveVideo(framePacing: framePacing)
         self.requireLocalMedia = requireLocalMedia
+        if requireLocalMedia { audio.configure(muted: true, volume: requestedVolume) }
     }
     private let requireLocalMedia: Bool
-    private var localPathVerified = false
-    private var localPathRejected = false
-    private var connectedAt: Double?
-    private var localVideoPresented = false
+    private var localGate = LocalPathGate()
+    private var localPathVerified: Bool { localGate.isVerified }
+    private let pathLog = Logger(subsystem: "win.xframe.app", category: "LocalMediaPath")
+    private var admissionCounts: [String: Int] = [:]
     var localPathChanged: ((Bool) -> Void)?
     private let audio = CloudAudioPlayback()
     private var requestedMuted = false
@@ -129,7 +131,8 @@ final class CloudVideoConnection {
     private var inputStarted = false
     private var closed = false
     private var messageCounter = 0
-    private var samplingStats = false
+    private var statsRequest: (id: UUID, started: Double)?
+    private var nextLocalStatsSample = 0.0
     private let correlationID = UUID().uuidString.replacingOccurrences(of: "-", with: "")
 
     func run(service: any CloudSignaling, session: URL, report: (String) -> Void) async throws {
@@ -185,7 +188,7 @@ final class CloudVideoConnection {
         let config = RTCConfiguration()
         config.sdpSemantics = .unifiedPlan
         config.bundlePolicy = .maxBundle
-        config.iceServers = [RTCIceServer(urlStrings: ["stun:worldaz.relay.teams.microsoft.com:3478"])]
+        config.iceServers = requireLocalMedia ? [] : [RTCIceServer(urlStrings: ["stun:worldaz.relay.teams.microsoft.com:3478"])]
         let events = PeerEvents(owner: self)
         self.events = events
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
@@ -206,25 +209,30 @@ final class CloudVideoConnection {
         guard let audioReceiver = peer.addTransceiver(of: .audio, init: receive) else { throw StreamError.signaling }
         received(audioReceiver.receiver.track)
         report("Negotiating H.264 video…")
-        let offer = try await makeOffer(peer)
+        let rawOffer = try await makeOffer(peer)
+        let offer = try filteredSDP(rawOffer, side: .local)
         try checkActive()
         try await setDescription(peer, sdp: offer, local: true)
         try checkActive()
         let answer = try await service.exchangeSDP(at: session, offer: offer)
         try checkActive()
-        try await setDescription(peer, sdp: answer, local: false)
+        try await setDescription(peer, sdp: filteredSDP(answer, side: .remote), local: false)
         let gatherDeadline = ContinuousClock.now.advanced(by: .seconds(8))
         while !gatheringComplete && ContinuousClock.now < gatherDeadline {
             try await Task.sleep(for: .milliseconds(100))
         }
         try checkActive()
-        guard !candidates.isEmpty else { throw StreamError.connection }
+        candidates = candidates.filter { admitCandidate($0.candidate, side: .local) }
+        guard !candidates.isEmpty else { throw requireLocalMedia ? StreamError.localPath : .connection }
         report("Connecting encrypted video transport…")
         let remote = try await service.exchangeICE(at: session, candidates: candidates)
         try checkActive()
+        var acceptedRemote = 0
         for candidate in remote {
             try checkActive()
             if candidate.candidate.contains("end-of-candidates") { continue }
+            guard admitCandidate(candidate.candidate, side: .remote) else { continue }
+            acceptedRemote += 1
             let raw = candidate.candidate.hasPrefix("a=") ? String(candidate.candidate.dropFirst(2)) : candidate.candidate
             let ice = RTCIceCandidate(sdp: raw, sdpMLineIndex: candidate.sdpMLineIndex, sdpMid: candidate.sdpMid)
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -234,6 +242,7 @@ final class CloudVideoConnection {
                 }
             }
         }
+        if requireLocalMedia && acceptedRemote == 0 { throw StreamError.localPath }
         try checkActive()
         let keepAliveInterval = try await service.keepAliveInterval(at: session)
         try checkActive()
@@ -248,11 +257,10 @@ final class CloudVideoConnection {
             guard heartbeat.failure == nil else { throw StreamError.heartbeat }
             guard !connectionFailed else { throw StreamError.connection }
             if requireLocalMedia {
-                if localPathRejected { throw StreamError.localPath }
-                if let connectedAt, !localPathVerified, CACurrentMediaTime() - connectedAt > 6 { throw StreamError.localPath }
+                if localGate.state == .rejected { throw StreamError.localPath }
             }
             let stats = video.streamState
-            if ContinuousClock.now >= nextStatsSample {
+            if !requireLocalMedia && ContinuousClock.now >= nextStatsSample {
                 sampleNetworkStats(peer)
                 nextStatsSample = ContinuousClock.now.advanced(by: .seconds(1))
             }
@@ -298,25 +306,62 @@ final class CloudVideoConnection {
         }
     }
 
+    private func updateLocalGate(_ change: (inout LocalPathGate) -> Void) {
+        let previous = localGate.state
+        let verified = localGate.isVerified
+        change(&localGate)
+        if previous != localGate.state {
+            pathLog.notice("home gate \(String(describing: previous), privacy: .public) -> \(String(describing: self.localGate.state), privacy: .public)")
+        }
+        guard verified != localGate.isVerified else { return }
+        configureAudio(muted: requestedMuted, volume: requestedVolume)
+        if !localGate.isVerified { releaseInput(); gamepad.stopRumble() }
+        localPathChanged?(localGate.isVerified)
+        if localGate.isVerified { startControlIfReady() }
+    }
+
+    private func admitCandidate(_ text: String, side: LocalMediaPath.Side) -> Bool {
+        guard requireLocalMedia else { return true }
+        let result: String
+        do {
+            let endpoint = try LocalMediaPath.candidate(text, side: side, interfaces: LocalMediaPath.interfaces())
+            result = "accepted-udp-" + endpoint.kind
+        } catch {
+            result = (error as? LocalMediaPath.Refusal)?.rawValue ?? "malformed"
+        }
+        let key = "\(side)-\(result)"
+        admissionCounts[key, default: 0] += 1
+        pathLog.notice("home candidate \(key, privacy: .public) count=\(self.admissionCounts[key, default: 0])")
+        return result.hasPrefix("accepted-")
+    }
+
+    private func filteredSDP(_ sdp: String, side: LocalMediaPath.Side) throws -> String {
+        guard requireLocalMedia else { return sdp }
+        for line in sdp.components(separatedBy: .newlines) where line.hasPrefix("a=candidate:") {
+            _ = admitCandidate(line, side: side)
+        }
+        do { return try LocalMediaPath.filterSDP(sdp, side: side, interfaces: LocalMediaPath.interfaces()) }
+        catch { throw StreamError.localPath }
+    }
+
     private func sampleNetworkStats(_ peer: RTCPeerConnection) {
-        guard !samplingStats, !closed else { return }
-        samplingStats = true
+        guard !closed else { return }
+        let now = CACurrentMediaTime()
+        if let request = statsRequest, now - request.started < 2.5 { return }
+        let requestID = UUID()
+        statsRequest = (requestID, now)
+        let epoch = localGate.epoch
         let video = self.video
         // Completion-style sampling does not block keepalive or stall checks.
         // Whitelist numeric fields; whole reports can contain network addresses.
         peer.statistics { [weak self] report in
-            let transport = report.statistics.values.first(where: { $0.type == "transport" && $0.values["selectedCandidatePairId"] != nil })
-            let selectedPair = (transport?.values["selectedCandidatePairId"] as? String).flatMap { report.statistics[$0] }
-            let localCandidate = (selectedPair?.values["localCandidateId"] as? String).flatMap { report.statistics[$0] }
-            let remoteCandidate = (selectedPair?.values["remoteCandidateId"] as? String).flatMap { report.statistics[$0] }
-            let path: (String, String, String, String)? = {
-                guard let local = localCandidate, let remote = remoteCandidate,
-                      let localAddress = (local.values["address"] ?? local.values["ip"]) as? String,
-                      let remoteAddress = (remote.values["address"] ?? remote.values["ip"]) as? String,
-                      let localType = local.values["candidateType"] as? String,
-                      let remoteType = remote.values["candidateType"] as? String else { return nil }
-                return (remoteAddress, localAddress, remoteType, localType)
-            }()
+            let records = report.statistics.values.map { stat in
+                LocalMediaPath.Stats(id: stat.id, type: stat.type,
+                    strings: ["selectedCandidatePairId", "localCandidateId", "remoteCandidateId", "transportId",
+                              "state", "address", "ip", "candidateType", "protocol"].reduce(into: [String: String]()) { result, key in
+                        if let value = stat.values[key] as? String { result[key] = value }
+                    }, port: (stat.values["port"] as? NSNumber)?.intValue)
+            }
             if let inbound = report.statistics.values.first(where: {
                 $0.type == "inbound-rtp" && ($0.values["kind"] as? String) == "video"
             }) {
@@ -343,22 +388,16 @@ final class CloudVideoConnection {
                     energy: (inbound.values["totalAudioEnergy"] as? NSNumber)?.doubleValue)
             }
             Task { @MainActor [weak self] in
-                guard let self, !self.closed else { return }
-                self.samplingStats = false
-                if self.requireLocalMedia, let path {
-                    let valid = LocalMediaPath.isLocal(remote: path.0, local: path.1,
-                        remoteType: path.2, localType: path.3, interfaces: LocalMediaPath.interfaces())
-                    let wasVerified = self.localPathVerified
-                    self.localPathVerified = valid
-                    self.localPathRejected = !valid
-                    if !valid { self.releaseInput(); self.gamepad.stopRumble() }
-                    if wasVerified != valid {
-                        self.configureAudio(muted: self.requestedMuted, volume: self.requestedVolume)
-                        if valid && !self.localVideoPresented {
-                            self.localVideoPresented = true
-                            self.localPathChanged?(true)
-                        } else if !valid { self.localPathChanged?(false) }
-                    }
+                guard let self, !self.closed, self.peer === peer,
+                      let request = self.statsRequest, request.id == requestID else { return }
+                let sampledAt = request.started
+                self.statsRequest = nil
+                guard CACurrentMediaTime() - sampledAt < 2.5 else { return }
+                if self.requireLocalMedia {
+                    let valid = LocalMediaPath.selectedPath(records, interfaces: LocalMediaPath.interfaces())
+                    let classification = valid.map { $0 ? "direct-lan" : "forbidden" } ?? "missing"
+                    self.pathLog.notice("home selected stats \(classification, privacy: .public)")
+                    self.updateLocalGate { $0.observe(valid, epoch: epoch, now: CACurrentMediaTime()) }
                 }
             }
         }
@@ -370,12 +409,14 @@ final class CloudVideoConnection {
         inputTask?.cancel()
         inputTask = nil
         releaseInput()
-        if advertised {
+        if advertised && (!requireLocalMedia || localPathVerified) {
             _ = input.send(timestampMS: CACurrentMediaTime() * 1000) { [self] data in
                 channels["input"]?.sendData(RTCDataBuffer(data: data, isBinary: true)) ?? false
             }
             _ = send(["message": "gamepadChanged", "gamepadIndex": 0, "wasAdded": false], on: "control")
         }
+        if requireLocalMedia { updateLocalGate { $0.close() } }
+        statsRequest = nil
         gamepad.stop()
         closed = true
         audio.stop()
@@ -414,21 +455,20 @@ final class CloudVideoConnection {
             connectionFailed = true
         }
     }
-    fileprivate func generated(_ candidate: CloudICECandidate) { if !closed { candidates.append(candidate) } }
+    fileprivate func generated(_ candidate: CloudICECandidate) {
+        if !closed && admitCandidate(candidate.candidate, side: .local) { candidates.append(candidate) }
+    }
     fileprivate func gathered() { gatheringComplete = true }
     fileprivate func transportChanged(_ state: StreamHealth.Transport) {
         guard !closed else { return }
         let wasDisconnected = health.disconnectedAt != nil
         health.updateTransport(state, now: CACurrentMediaTime())
         if requireLocalMedia {
-            if state == .connected && (connectedAt == nil || wasDisconnected) {
-                connectedAt = CACurrentMediaTime(); localPathVerified = false
-            }
-            if state == .disconnected || state == .failed {
-                localPathVerified = false
-                configureAudio(muted: requestedMuted, volume: requestedVolume)
-                releaseInput()
-                gamepad.stopRumble()
+            let epoch = localGate.epoch
+            updateLocalGate { $0.transportChanged(state == .connected, now: CACurrentMediaTime()) }
+            if epoch != localGate.epoch {
+                statsRequest = nil
+                nextLocalStatsSample = 0
             }
         }
         if state == .failed { video.connectionEvent(.iceFailed) }
@@ -501,6 +541,18 @@ final class CloudVideoConnection {
     }
     private func tickInput() {
         guard !closed else { return }
+        if requireLocalMedia {
+            let now = CACurrentMediaTime()
+            let previous = localGate.state
+            updateLocalGate { $0.tick(now: now) }
+            if previous != .rejected && localGate.state == .rejected {
+                pathLog.error("home verification evidence timed out")
+            }
+            if let peer, now >= nextLocalStatsSample {
+                nextLocalStatsSample = now + 1
+                sampleNetworkStats(peer)
+            }
+        }
         gamepad.refresh()
         if requireLocalMedia && !localPathVerified {
             releaseInput()
@@ -570,6 +622,7 @@ final class CloudVideoConnection {
     }
 
     private func sendInput(on channel: RTCDataChannel, now: Double) -> Bool {
+        guard !closed, !requireLocalMedia || localPathVerified else { return false }
         // Keep WebRTC's queue small too, so stale held states cannot accumulate indefinitely.
         let accepted = input.send(timestampMS: now * 1000, minimumButtonHoldMS: ownership.active == .keyboard ? 50 : 0) { data in
             channel.bufferedAmount < 4096 && channel.sendData(RTCDataBuffer(data: data, isBinary: true))
