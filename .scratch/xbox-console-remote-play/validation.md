@@ -1,6 +1,6 @@
 # Xbox console remote play validation
 
-Status: implementation candidate ready for physical Series X validation. The roadmap item remains open.
+Status: Series X video, audio and input verified; presentation-lifetime interruption fixed with 175 passing tests. Actual transient verification recovery passed. Extended stability, wake and physical rumble acceptance remain open.
 
 ## Static and automated evidence — 2026-09-22
 
@@ -8,7 +8,7 @@ Status: implementation candidate ready for physical Series X validation. The roa
 - `bash scripts/build-app.sh`: release app built at `.build/XFrame.app` and signed. `codesign --verify --deep --strict .build/XFrame.app` passed. The packaged `Info.plist` contains `NSLocalNetworkUsageDescription`.
 - `git diff --check`: passed.
 - The home provider has no `Power/TurnOff` command. Wake uses a separate `Power/WakeUp` request. Disconnect closes local media/input and deletes the home session using the shared owner; cleanup failure retains ownership for retry.
-- On a home stream, the selected WebRTC ICE pair must have host candidates with IPv4 addresses on the same active `en*`/`eth*` subnet. Video presentation, audio output, and input handshake wait for this check. A relayed, nonlocal, or unknown selected path fails closed. The policy intentionally does not accept routed private subnets, IPv6-only paths, or VPN interfaces yet.
+- On a home stream, the selected WebRTC ICE pair must use direct host, srflx or prflx candidates with private IPv4 addresses on the same active `en*`/`eth*` subnet. Video presentation, audio output, and input handshake wait for this check. A relayed, nonlocal, or unknown selected path fails closed. The policy intentionally does not accept routed private subnets, IPv6-only paths, or VPN interfaces yet.
 
 The standalone Command Line Tools' default `swiftbuild` engine fails to initialize on this machine; the project's existing native-build workaround was used. The test command adds the installed `Testing.framework` search path.
 

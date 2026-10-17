@@ -1,6 +1,6 @@
 # Xbox Console Remote Play — working spec
 
-Status: Series X LAN dashboard video and keyboard control verified; audio, physical controller, wake, and interruption acceptance remain pending.
+Status: Series X LAN video, audio, keyboard and physical controller operation verified. Presentation-lifetime interruption fixed; actual transient verification recovery passed; extended stability remains under observation. Wake and physical rumble remain pending.
 
 ## Confirmed decisions
 

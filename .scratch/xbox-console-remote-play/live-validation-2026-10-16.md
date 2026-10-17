@@ -1,6 +1,6 @@
 # Series X LAN validation, 2026-10-16
 
-Status: real Series X video and keyboard control verified; audio and physical controller acceptance pending.
+Status: video and keyboard verified by agent; audio and physical controller operation confirmed by user. Presentation lifetime repair passed regression and actual transient LAN verification recovery; longer-run acceptance remains limited to the recorded observation.
 
 ## Environment and baseline
 
@@ -32,9 +32,33 @@ The `.build/XFrame-LAN.app` variant failed six discovery sends with errno 65 whi
 
 ## Remaining physical verification
 
-- Audible menu/game audio and user-observed physical controller response/rumble.
+- Physical rumble. The user has confirmed audio and controller operation; the app identifies Xbox Wireless Controller.
 - Explicit wake from standby with the new payload and response handling.
 - Same-session recovery from a brief network interruption.
 - Disconnect leaves the console powered on and reconnect succeeds without changing its game.
 
 Candidate admission and sampled selected-pair verification do not constitute a packet firewall. Keep observed route evidence separate from stronger claims about every possible host routing or ICE behavior.
+
+## Follow-up interruption report
+
+The user confirmed visible video, audible audio, and working physical controller input before another interruption. Two sessions ended with `Stream video stopped receiving frames`. The first lost frames around 21:32:39 and closed at 21:32:54; the second lost selected-path evidence around 21:39:09 and ended with the same UI error. The gate revocation follows the loss of media; it is not established as the initiating fault. Sustained streaming acceptance is failed. The subsequent HUD identifies Xbox Wireless Controller; vibration remains unconfirmed.
+
+## Presentation lifetime regression
+
+A diagnostic session recovered LAN verification one second after a transient selected-pair `in-progress` sample, while STUN responses and HTTP heartbeat kept succeeding. It nevertheless hit the fifteen-second frame watchdog. `MetalRenderer.play(nil)` had permanently stopped the session-owned `LiveVideo`. The regression test `liveVideoKeepsReceivingFramesAfterRendererReattachment` reproduced this without networking: decoded count remained 0 and both requested frames were absent (four failures). Removing renderer lifecycle authority restored repeated detach/reattach, while explicit owner shutdown still rejects later frames. All 175 tests passed after the fix. The subsequent ad-hoc build ran about four minutes before a separate actual ICE communication loss; see the next section.
+
+## Signing identity experiment
+
+After the lifetime repair, the ad-hoc build lost inbound consent traffic around 21:52:06. Responses froze at 104 while requests exceeded 343. A successful heartbeat at 21:51:55 precedes this event and does not prove server state after it. ICE became disconnected at 21:52:11 and the media watchdog ended the session at 21:52:20.
+
+At the failure boundary, macOS refreshed its networkprivacy application UUID cache. CoreSpotlight rejected the ad-hoc process because a higher-provenance Developer ID app also claims the bundle identifier. The same workspace contains Developer ID and ad-hoc builds. This correlation motivates an identity experiment; it is not sufficient to prove that the privacy rule blocked media.
+
+The current `.build/XFrame-LAN-Diagnostic.app` was rebuilt using the project's established Developer ID identity, without modifying credentials or OS network settings. Code signing verification passed; notarization was not performed for this diagnostic artifact. The console was discovered and streaming started around 21:54:46. At 21:58:26 the gate revoked verification, then restored it at 21:58:27. Unlike the old app, the same session continued receiving and presenting video beyond the prior fifteen-second failure boundary. The live HUD showed 60 fps receive/output, with decoded frames continuing past 14,344. This verifies the presentation-lifetime repair on the original physical surface. It does not prove that Developer ID signing alone fixes every possible transport interruption.
+
+## Latency measurement explanation
+
+The user asked why a LAN stream displayed roughly 40 ms latency despite 2 ms RTT. A detailed HUD sample showed an estimate of 38.7 ms: RTT 3.0 ms, receiver buffer 1.8 ms, decode mean approximately 2.6 ms, and decoded arrival-to-presentation mean 31.3 ms. The latter included queue 7.4 ms, GPU queue 0.4 ms, GPU execution 0.3 ms, and GPU-end-to-presented-time 23.2 ms. These are one rolling sample, not a benchmark or optimization result. `pipelineLatencyEstimateMS` sums full RTT, buffer, decode mean and presentation mean; it is not input-to-photon latency and excludes host processing.
+
+`FramePresentation` uses timestamps for the same frame, so the display-wait metric is not callback delivery delay. At 60 Hz, waiting for the immediately next eligible refresh is under one refresh interval; compositor deadlines or queued presentations can defer eligibility to a later refresh. The observed 23 ms is therefore possible, but its specific cause has not been profiled. No latency-tuning change was made during the stability comparison.
+
+The signed session remained active through 21:59:38, approximately five minutes after connection, including the verified one-second gate recovery. It was left running. No long-run or forced network outage acceptance is claimed.
