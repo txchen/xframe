@@ -85,9 +85,9 @@ private func candidate(_ address: String, kind: String = "host", protocolName: S
     #expect(recovery.state == .closed)
 }
 
-private func selectedStats() -> [LocalMediaPath.Stats] {
+private func selectedStats(state: String = "succeeded") -> [LocalMediaPath.Stats] {
     [.init(id: "transport", type: "transport", strings: ["selectedCandidatePairId": "pair"], port: nil),
-     .init(id: "pair", type: "candidate-pair", strings: ["state": "succeeded", "localCandidateId": "local", "remoteCandidateId": "remote"], port: nil),
+     .init(id: "pair", type: "candidate-pair", strings: ["state": state, "localCandidateId": "local", "remoteCandidateId": "remote"], port: nil),
      .init(id: "local", type: "local-candidate", strings: ["address": "192.168.1.10", "candidateType": "host", "protocol": "udp"], port: 1234),
      .init(id: "remote", type: "remote-candidate", strings: ["address": "192.168.1.20", "candidateType": "prflx", "protocol": "udp"], port: 1234)]
 }
@@ -108,4 +108,54 @@ private func selectedStats() -> [LocalMediaPath.Stats] {
     var missingProtocol = Array(records.dropLast())
     missingProtocol.append(.init(id: "remote", type: "remote-candidate", strings: ["address": "192.168.1.20", "candidateType": "host"], port: 1234))
     #expect(LocalMediaPath.selectedPath(missingProtocol, interfaces: lanInterfaces) == nil)
+}
+
+@Test func selectedPairConsentCheckKeepsPresentationVerified() {
+    var gate = LocalPathGate()
+    gate.transportChanged(true, now: 0)
+    for (index, state) in ["succeeded", "in-progress", "succeeded"].enumerated() {
+        let evidence = LocalMediaPath.selectedPath(selectedStats(state: state), interfaces: lanInterfaces)
+        gate.observe(evidence, epoch: gate.epoch, now: Double(index + 1))
+        #expect(gate.isVerified, "Selected LAN pair must remain verified during \(state)")
+    }
+    gate.transportChanged(false, now: 4)
+    gate.observe(LocalMediaPath.selectedPath(selectedStats(state: "in-progress"), interfaces: lanInterfaces), epoch: gate.epoch, now: 5)
+    #expect(!gate.isVerified)
+}
+
+@Test func selectedPairConsentCheckStillRejectsInvalidEndpoints() {
+    let records = selectedStats(state: "in-progress")
+    for strings in [
+        ["address": "8.8.8.8", "candidateType": "host", "protocol": "udp"],
+        ["address": "192.168.2.20", "candidateType": "host", "protocol": "udp"],
+        ["address": "192.168.1.20", "candidateType": "relay", "protocol": "udp"],
+        ["address": "192.168.1.20", "candidateType": "host", "protocol": "tcp"]
+    ] {
+        let invalid = Array(records.dropLast()) + [LocalMediaPath.Stats(id: "remote", type: "remote-candidate", strings: strings, port: 1234)]
+        let evidence = LocalMediaPath.selectedPath(invalid, interfaces: lanInterfaces)
+        #expect(evidence == false)
+        var gate = LocalPathGate()
+        gate.transportChanged(true, now: 0)
+        gate.observe(true, epoch: gate.epoch, now: 1)
+        gate.observe(evidence, epoch: gate.epoch, now: 2)
+        #expect(gate.state == .rejected)
+    }
+}
+
+@Test func selectedPairConsentCheckStillRequiresCompleteEvidence() {
+    let records = selectedStats(state: "in-progress")
+    var missingProtocol = Array(records.dropLast())
+    missingProtocol.append(.init(id: "remote", type: "remote-candidate", strings: ["address": "192.168.1.20", "candidateType": "host"], port: 1234))
+    for incomplete in [records.filter { $0.id != "local" }, Array(records.dropLast()), missingProtocol] {
+        let evidence = LocalMediaPath.selectedPath(incomplete, interfaces: lanInterfaces)
+        #expect(evidence == nil)
+        var gate = LocalPathGate()
+        gate.transportChanged(true, now: 0)
+        gate.observe(true, epoch: gate.epoch, now: 1)
+        gate.observe(evidence, epoch: gate.epoch, now: 2)
+        #expect(!gate.isVerified)
+    }
+    for state in ["frozen", "waiting", "failed", "", "unknown"] {
+        #expect(LocalMediaPath.selectedPath(selectedStats(state: state), interfaces: lanInterfaces) == nil)
+    }
 }
