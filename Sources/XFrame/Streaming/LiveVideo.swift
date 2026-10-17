@@ -4,7 +4,6 @@ import QuartzCore
 
 protocol VideoSource: AnyObject, Sendable {
     var performance: PlaybackPerformance { get }
-    func stop()
     var playbackState: String { get }
     func snapshot() -> PlaybackStats
     func nextFrame(at hostTime: Double) -> VideoFrame?

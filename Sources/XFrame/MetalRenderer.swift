@@ -91,7 +91,6 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func invalidate() { invalidated = true }
 
     func play(_ source: (any VideoSource)?, in view: MTKView) {
-        self.source?.stop()
         self.source = source
         restartHUD()
         currentVideo = nil

@@ -22,10 +22,17 @@ import Testing
 
     for frameID in 1...2 {
         renderer.play(nil, in: view)
+        #expect(view.isPaused)
         renderer.play(source, in: view)
         source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixels),
             rotation: ._0, timeStampNs: Int64(frameID)))
         #expect(source.snapshot().decoded == frameID)
         #expect(source.nextFrame(at: 0)?.id == frameID)
     }
+
+    source.stop()
+    source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixels),
+        rotation: ._0, timeStampNs: 3))
+    #expect(source.snapshot().decoded == 2)
+    #expect(source.nextFrame(at: 0) == nil)
 }
