@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // Monotonic seconds are supplied by the connection, allowing exact boundary tests.
 struct StreamHealth {
@@ -38,6 +39,8 @@ struct StreamHealth {
 // Heartbeats run independently so an HTTP request cannot suspend the media watchdog.
 @MainActor
 final class StreamHeartbeat {
+    var diagnosticsEnabled = false
+    private let log = Logger(subsystem: "win.xframe.app", category: "StreamHeartbeat")
     private(set) var failure: (any Error)?
     private var task: Task<Void, Never>?
     func start(interval: Double, pulse: @escaping @Sendable () async throws -> Void,
@@ -46,15 +49,34 @@ final class StreamHeartbeat {
                }, event: @escaping (StreamDiagnosticEvent.Kind) -> Void) {
         guard task == nil else { return }
         let interval = interval.isFinite ? min(60, max(1, interval)) : 20
+        let diagnose = diagnosticsEnabled
+        let log = self.log
+        if diagnose { log.notice("home heartbeat start interval=\(interval)") }
         task = Task { [weak self] in
             var failures = 0
             while !Task.isCancelled {
+                let started = ContinuousClock.now
+                if diagnose { log.notice("home heartbeat request begin priorFailures=\(failures)") }
                 do {
                     try await pulse()
+                    if diagnose { log.notice("home heartbeat request end success duration=\(String(describing: started.duration(to: .now)), privacy: .public)") }
                     try Task.checkCancellation()
                     if failures > 0 { event(.heartbeatRecovered) }
                     failures = 0
                 } catch {
+                    if diagnose {
+                        let kind: String
+                        let code: Int
+                        switch error {
+                        case CloudError.http(let status): kind = "http"; code = status
+                        case CloudError.rejected(let status, _): kind = "rejected"; code = status
+                        case CloudError.network: kind = "network"; code = 0
+                        case CloudError.expired: kind = "expired"; code = 0
+                        case is CancellationError: kind = "cancelled"; code = 0
+                        default: kind = "other"; code = (error as NSError).code
+                        }
+                        log.notice("home heartbeat request end error=\(kind, privacy: .public) code=\(code) duration=\(String(describing: started.duration(to: .now)), privacy: .public) cancelled=\(Task.isCancelled)")
+                    }
                     guard !Task.isCancelled else { return }
                     failures += 1
                     guard Self.isTransient(error), failures < 5 else {
@@ -68,7 +90,10 @@ final class StreamHeartbeat {
             }
         }
     }
-    func stop() { task?.cancel(); task = nil }
+    func stop() {
+        if diagnosticsEnabled { log.notice("home heartbeat stop") }
+        task?.cancel(); task = nil
+    }
     private static func isTransient(_ error: any Error) -> Bool {
         switch error {
         case CloudError.network: true

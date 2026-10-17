@@ -148,6 +148,21 @@ final class CloudVideoConnection {
         guard !closed else { throw CancellationError() }
         do { try await operation() }
         catch {
+            if requireLocalMedia {
+                let terminal: String
+                switch error {
+                case StreamError.signaling: terminal = "signaling"
+                case StreamError.connection: terminal = "connection"
+                case StreamError.firstFrame: terminal = "firstFrame"
+                case StreamError.stalled: terminal = "stalled"
+                case StreamError.heartbeat: terminal = "heartbeat"
+                case StreamError.localPath: terminal = "localPath"
+                case StreamError.decoder: terminal = "decoder"
+                case is CancellationError: terminal = "cancelled"
+                default: terminal = "other"
+                }
+                pathLog.notice("home terminal reason=\(terminal, privacy: .public) cancelled=\(Task.isCancelled) closed=\(self.closed)")
+            }
             if !Task.isCancelled && !(error is CancellationError) && !closed {
                 video.fail((error as? LocalizedError)?.errorDescription ?? "Stream failed",
                            kind: (error as? StreamError)?.diagnosticKind ?? .startupFailed)
@@ -243,6 +258,7 @@ final class CloudVideoConnection {
         try checkActive()
         let keepAliveInterval = try await service.keepAliveInterval(at: session)
         try checkActive()
+        heartbeat.diagnosticsEnabled = requireLocalMedia
         heartbeat.start(interval: keepAliveInterval, pulse: { try await service.keepAlive(at: session) }) { [weak self] kind in
             self?.video.connectionEvent(kind)
         }
@@ -351,7 +367,43 @@ final class CloudVideoConnection {
         let video = self.video
         // Completion-style sampling does not block keepalive or stall checks.
         // Whitelist numeric fields; whole reports can contain network addresses.
+        let diagnose = requireLocalMedia
+        let pathLog = self.pathLog
         peer.statistics { [weak self] report in
+            if diagnose {
+                let stats = Array(report.statistics.values)
+                let transports = stats.filter { $0.type == "transport" }
+                let pairs = stats.filter { $0.type == "candidate-pair" }
+                let media = stats.filter { $0.type == "inbound-rtp" }
+                let unlinkedMedia = media.filter { record in
+                    guard let id = record.values["transportId"] as? String else { return true }
+                    return !transports.contains { $0.id == id }
+                }.count
+                pathLog.notice("home stats records=\(stats.count) transports=\(transports.count) pairs=\(pairs.count) inbound=\(media.count) unlinkedInbound=\(unlinkedMedia)")
+                for transport in transports {
+                    let pairID = transport.values["selectedCandidatePairId"] as? String
+                    let pair = pairID.flatMap { report.statistics[$0] }
+                    pathLog.notice("home transport selectedIDPresent=\(pairID != nil) selectedRecordPresent=\(pair != nil) selectedIsPair=\(pair?.type == "candidate-pair")")
+                }
+                for pair in pairs {
+                    let rawState = pair.values["state"] as? String ?? "missing"
+                    let state = ["frozen", "waiting", "in-progress", "failed", "succeeded", "missing"].contains(rawState) ? rawState : "other"
+                    let selected = transports.contains { ($0.values["selectedCandidatePairId"] as? String) == pair.id }
+                    let local = (pair.values["localCandidateId"] as? String).flatMap { report.statistics[$0] }
+                    let remote = (pair.values["remoteCandidateId"] as? String).flatMap { report.statistics[$0] }
+                    let endpoints = [local, remote].compactMap { $0 }
+                    let completeEndpoints = endpoints.filter { record in
+                        (record.values["address"] is String || record.values["ip"] is String) &&
+                        record.values["candidateType"] is String && record.values["protocol"] is String && record.values["port"] is NSNumber
+                    }.count
+                    let requestsSent = (pair.values["requestsSent"] as? NSNumber)?.int64Value ?? -1
+                    let responsesReceived = (pair.values["responsesReceived"] as? NSNumber)?.int64Value ?? -1
+                    let requestsReceived = (pair.values["requestsReceived"] as? NSNumber)?.int64Value ?? -1
+                    let responsesSent = (pair.values["responsesSent"] as? NSNumber)?.int64Value ?? -1
+                    let consentRequests = (pair.values["consentRequestsSent"] as? NSNumber)?.int64Value ?? -1
+                    pathLog.notice("home pair selected=\(selected) state=\(state, privacy: .public) localPresent=\(local?.type == "local-candidate") remotePresent=\(remote?.type == "remote-candidate") completeEndpoints=\(completeEndpoints) requestsSent=\(requestsSent) responsesReceived=\(responsesReceived) requestsReceived=\(requestsReceived) responsesSent=\(responsesSent) consentRequestsSent=\(consentRequests)")
+                }
+            }
             let records = report.statistics.values.map { stat in
                 LocalMediaPath.Stats(id: stat.id, type: stat.type,
                     strings: ["selectedCandidatePairId", "localCandidateId", "remoteCandidateId", "transportId",
@@ -456,7 +508,8 @@ final class CloudVideoConnection {
         if !closed && admitCandidate(candidate.candidate, side: .local) { candidates.append(candidate) }
     }
     fileprivate func gathered() { gatheringComplete = true }
-    fileprivate func transportChanged(_ state: StreamHealth.Transport) {
+    fileprivate func transportChanged(_ state: StreamHealth.Transport, iceState: Int) {
+        if requireLocalMedia { pathLog.notice("home ICE rawState=\(iceState) closed=\(self.closed)") }
         guard !closed else { return }
         let wasDisconnected = health.disconnectedAt != nil
         health.updateTransport(state, now: CACurrentMediaTime())
@@ -667,7 +720,7 @@ private final class PeerEvents: NSObject, RTCPeerConnectionDelegate, RTCDataChan
         case .failed, .closed: state = .failed
         default: state = .connecting
         }
-        Task { @MainActor [weak owner] in owner?.transportChanged(state) }
+        Task { @MainActor [weak owner] in owner?.transportChanged(state, iceState: newState.rawValue) }
     }
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {
         if newState == .complete { Task { @MainActor [weak owner] in owner?.gathered() } }
