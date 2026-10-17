@@ -12,4 +12,4 @@ WebRTC `Connection::Ping` sets `state_ = IceCandidatePairState::IN_PROGRESS` aft
 
 ## Implementation and automated verification
 
-Regression commit 43247aa failed before the fix (three tests, nine expected issues). Commit 398d9dd allows only `succeeded` and `in-progress` for the selected pair, preserving all endpoint and subnet checks. All 178 tests passed. Independent review found no bypass or fail-closed regression. A separately signed candidate is being prepared; the active playing session is not restarted. Physical acceptance of this specific flicker repair remains pending until switching builds.
+Regression commit 43247aa failed before the fix (three tests, nine expected issues). Commit 398d9dd allows only `succeeded` and `in-progress` for the selected pair, preserving all endpoint and subnet checks. All 178 tests passed. Independent review found no bypass or fail-closed regression. The Developer ID signed candidate `.build/lan-consent-candidate/XFrame.app` built and passed strict signature verification; the active playing session is not restarted. Physical acceptance of this specific flicker repair remains pending until switching builds.
