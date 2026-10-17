@@ -69,7 +69,9 @@ import Testing
 
 @Test func discoveryResponseUsesCertificateLiveID() throws {
     let certificate = try #require(Data(base64Encoded: "MIIBgzCCASmgAwIBAgIUL88qD9eaGrJlmbuMWJbmsWycQVgwCgYIKoZIzj0EAwIwFzEVMBMGA1UEAwwMVEVTVC1MSVZFLUlEMB4XDTI2MDkyMzAyMTY1NFoXDTI2MDkyNDAyMTY1NFowFzEVMBMGA1UEAwwMVEVTVC1MSVZFLUlEMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEb+YPs9JcIXFBLN0vaNJfFV/bQ+o4kDfNyYrtQkiY7WWEqQoy15LO7eaDDegEWeCYBIYHfItSoCeYpoqDJmrXCaNTMFEwHQYDVR0OBBYEFBMfe7iGAZEZTJx58enMRD596GoEMB8GA1UdIwQYMBaAFBMfe7iGAZEZTJx58enMRD596GoEMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIgInGsVXaDeHjtc3I6HDGbqkZRopweXz6tJDftKR8ZCyYCIQDVDJ5/MXm6BjdKxogYLnqCm9chdphPaq798M4UX4RFpA=="))
-    var payload = Data([0, 0, 0, 3, 0, 1, 0, 0])
+    // OpenXbox simple.discovery_response: UInt32 flags + UInt16 type, then SGString.
+    // https://github.com/OpenXbox/xbox-smartglass-core-python/blob/master/xbox/sg/packet/simple.py
+    var payload = Data([0, 0, 0, 3, 0, 1])
     func appendString(_ value: String) {
         let utf8 = Array(value.utf8)
         payload.append(contentsOf: [UInt8(utf8.count >> 8), UInt8(utf8.count & 255)])
@@ -87,4 +89,20 @@ import Testing
     #expect(found.name == "Living Room")
     #expect(found.liveID == "TEST-LIVE-ID")
     #expect(ConsoleDiscovery.parse(Data(packet.dropLast())) == nil)
+    // The name length starts at byte 12, not byte 14.
+    #expect(Array(packet[12..<14]) == [0, 11])
+    for length in 0..<packet.count {
+        #expect(ConsoleDiscovery.parse(Data(packet.prefix(length))) == nil)
+    }
+    var malformed = packet
+    malformed[25] = 1 // Name terminator.
+    #expect(ConsoleDiscovery.parse(malformed) == nil)
+    malformed = packet
+    malformed[12] = 0xff // Name exceeds the packet.
+    #expect(ConsoleDiscovery.parse(malformed) == nil)
+    malformed = packet + Data([0])
+    let payloadLength = malformed.count - 6
+    malformed[2] = UInt8(payloadLength >> 8)
+    malformed[3] = UInt8(payloadLength & 255)
+    #expect(ConsoleDiscovery.parse(malformed) == nil)
 }

@@ -70,7 +70,8 @@ enum ConsoleDiscovery {
         let bytes = [UInt8](packet)
         guard bytes.count >= 30, bytes[0] == 0xdd, bytes[1] == 0x01,
               Int(bytes[2]) * 256 + Int(bytes[3]) == bytes.count - 6 else { return nil }
-        var offset = 6 + 8
+        // Six-byte header, UInt32 flags, then UInt16 device type.
+        var offset = 6 + 4 + 2
         func string() -> String? {
             guard offset + 2 <= bytes.count else { return nil }
             let length = Int(bytes[offset]) * 256 + Int(bytes[offset + 1])
@@ -81,12 +82,13 @@ enum ConsoleDiscovery {
             offset += length + 1
             return value
         }
-        guard let name = string(), string() != nil, offset + 6 <= bytes.count else { return nil }
+        guard let name = string(), let identifier = string(),
+              UUID(uuidString: identifier) != nil, offset + 6 <= bytes.count else { return nil }
         offset += 4 // Last error.
         let certificateLength = Int(bytes[offset]) * 256 + Int(bytes[offset + 1])
         offset += 2
         guard certificateLength > 0, certificateLength < 3000,
-              offset + certificateLength <= bytes.count,
+              offset + certificateLength == bytes.count,
               let certificate = SecCertificateCreateWithData(nil, Data(bytes[offset..<offset + certificateLength]) as CFData),
               let liveID = SecCertificateCopySubjectSummary(certificate) as String?,
               !liveID.isEmpty, liveID.count < 256 else { return nil }

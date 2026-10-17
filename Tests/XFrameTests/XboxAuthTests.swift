@@ -184,7 +184,7 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
     let harness = AuthHarness([
         Reply(#"{"result":[{"id":"live-id","name":"Series X","model":"XboxSeriesX"},{"id":"elsewhere","name":"Other Xbox"}]}"#),
         Reply(#"{"results":[{"serverId":"live-id","deviceName":"Series X","powerState":"On"}]}"#),
-        Reply(#"{"result":{}}"#),
+        Reply(#"{"destination":{"id":"live-id"},"opId":"test-operation","status":{"errorCode":"OK"}}"#),
         Reply(202, #"{"sessionPath":"/v5/sessions/home/test-session"}"#),
         Reply(204, "")
     ])

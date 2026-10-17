@@ -253,24 +253,24 @@ final class CloudLibrary {
               consoles.contains(console), let homeService else { return }
         loadingConsoles = true
         consoleError = nil
-        consoleStatus = "Sending wake command…"
+        consoleStatus = "Sending wake command (up to 30 seconds)…"
         consoleTask = Task {
             defer { loadingConsoles = false; consoleTask = nil }
             do {
                 try await homeService.wake(console.id)
                 // A successful command is not a successful LAN discovery or a connect request.
-                for _ in 0..<12 {
+                for attempt in 1...12 {
                     try Task.checkCancellation()
+                    consoleStatus = "Wake accepted. Checking for console on this LAN (\(attempt)/12)…"
                     try await Task.sleep(for: .seconds(2))
                     let available = await ConsoleDiscovery.discover()
+                    try Task.checkCancellation()
                     if available.contains(where: { $0.liveID.caseInsensitiveCompare(console.id) == .orderedSame }) {
                         consoles = consoles.map { item in
                             guard item.id == console.id else { return item }
-                            var awake = item
-                            awake.local = true
-                            awake = HomeConsole(id: awake.id, name: awake.name, model: awake.model,
-                                                powerState: "On", local: true, inHomeService: awake.inHomeService)
-                            return awake
+                            return HomeConsole(id: item.id, name: item.name, model: item.model,
+                                               powerState: "On", local: true, inHomeService: item.inHomeService,
+                                               homeServiceChecked: item.homeServiceChecked)
                         }
                         consoleStatus = "Console is available on this LAN. Click Connect to start."
                         return

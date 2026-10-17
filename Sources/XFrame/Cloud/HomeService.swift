@@ -34,7 +34,8 @@ struct HomeService: HomeServing {
         let config = URLSessionConfiguration.ephemeral
         config.urlCache = nil
         config.httpShouldSetCookies = false
-        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForRequest = 20
+        config.timeoutIntervalForResource = 30
         self.session = session ?? URLSession(configuration: config, delegate: AuthRedirectPolicy(), delegateQueue: nil)
     }
 
@@ -95,18 +96,21 @@ struct HomeService: HomeServing {
     func wake(_ id: String) async throws {
         guard !id.isEmpty, id.count < 256 else { throw CloudError.response }
         let payload: [String: Any] = ["destination": "Xbox", "type": "Power", "command": "WakeUp",
-            "sessionId": UUID().uuidString, "sourceId": "com.microsoft.smartglass", "parameters": [Any](),
+            "sessionId": UUID().uuidString, "sourceId": "com.microsoft.smartglass", "parameters": [[:]] as [[String: String]],
             "linkedXboxId": id]
         let data = try await webRequest("commands", method: "POST", body: JSONSerialization.data(withJSONObject: payload))
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              root["result"] != nil else { throw CloudError.response }
+              let status = root["status"] as? [String: Any],
+              status["errorCode"] as? String == "OK",
+              let operation = root["opId"] as? String, !operation.isEmpty,
+              root["destination"] is [String: Any] else { throw CloudError.response }
     }
 
     private func webRequest(_ path: String, method: String = "GET", body: Data? = nil,
                             contractVersion: String = "4") async throws -> Data {
         guard let url = URL(string: "https://xccs.xboxlive.com/" + path),
               url.host == "xccs.xboxlive.com", url.scheme == "https" else { throw CloudError.response }
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, timeoutInterval: 20)
         request.httpMethod = method
         request.httpBody = body
         request.setValue("XBL3.0 x=\(userHash);\(webToken)", forHTTPHeaderField: "Authorization")
