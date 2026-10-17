@@ -227,12 +227,10 @@ final class CloudVideoConnection {
         report("Connecting encrypted video transport…")
         let remote = try await service.exchangeICE(at: session, candidates: candidates)
         try checkActive()
-        var acceptedRemote = 0
         for candidate in remote {
             try checkActive()
             if candidate.candidate.contains("end-of-candidates") { continue }
             guard admitCandidate(candidate.candidate, side: .remote) else { continue }
-            acceptedRemote += 1
             let raw = candidate.candidate.hasPrefix("a=") ? String(candidate.candidate.dropFirst(2)) : candidate.candidate
             let ice = RTCIceCandidate(sdp: raw, sdpMLineIndex: candidate.sdpMLineIndex, sdpMid: candidate.sdpMid)
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -242,7 +240,6 @@ final class CloudVideoConnection {
                 }
             }
         }
-        if requireLocalMedia && acceptedRemote == 0 { throw StreamError.localPath }
         try checkActive()
         let keepAliveInterval = try await service.keepAliveInterval(at: session)
         try checkActive()

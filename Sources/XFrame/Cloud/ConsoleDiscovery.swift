@@ -1,6 +1,7 @@
 import Foundation
 import Darwin
 import Security
+import OSLog
 
 struct DiscoveredConsole: Sendable, Equatable {
     let liveID: String
@@ -17,6 +18,10 @@ enum ConsoleDiscovery {
     }
 
     private static func probe() -> [DiscoveredConsole] {
+        let log = Logger(subsystem: "win.xframe.app", category: "ConsoleDiscovery")
+        var sent = 0
+        var received = 0
+        var sendError: Int32 = 0
         let fd = socket(AF_INET, SOCK_DGRAM, 0)
         guard fd >= 0 else { return [] }
         defer { Darwin.close(fd) }
@@ -29,13 +34,14 @@ enum ConsoleDiscovery {
                 destination.sin_family = sa_family_t(AF_INET)
                 destination.sin_port = UInt16(5050).bigEndian
                 _ = address.withCString { inet_pton(AF_INET, $0, &destination.sin_addr) }
-                _ = request.withUnsafeBytes { bytes in
+                let count = request.withUnsafeBytes { bytes in
                     withUnsafePointer(to: &destination) { pointer in
                         pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddr in
                             sendto(fd, bytes.baseAddress, bytes.count, 0, sockaddr, socklen_t(MemoryLayout<sockaddr_in>.size))
                         }
                     }
                 }
+                if count == request.count { sent += 1 } else { sendError = errno }
             }
         }
         var found: [String: DiscoveredConsole] = [:]
@@ -59,10 +65,12 @@ enum ConsoleDiscovery {
                 }
             }
             let source = sender.sin_addr.s_addr.bigEndian
+            if count > 0 { received += 1 }
             guard count > 0, LocalMediaPath.isPrivateIPv4(source),
                   interfaces.contains(where: { $0.mask != 0 && source & $0.mask == $0.address & $0.mask }) else { continue }
             if let console = parse(Data(buffer.prefix(count))) { found[console.liveID] = console }
         }
+        log.notice("Discovery interfaces=\(interfaces.count) sent=\(sent) received=\(received) parsed=\(found.count) sendError=\(sendError)")
         return Array(found.values)
     }
 

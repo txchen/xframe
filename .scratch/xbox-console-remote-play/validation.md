@@ -33,3 +33,7 @@ The first attempted mitigation in `ed48980` imposed an unjustified 0.5-second an
 After retesting the corrected xCloud build, the user reported that Palworld vibration felt normal and good. This verifies the user-observed cloud behavior for that session; the controller model and connection mode were not restated for this particular trial. Series X remote-play rumble and DualShock 4 rumble remain untested. A saved Controller Vibration preference now gates incoming rumble on the shared cloud/console connection and stops an active haptic player when turned off; the View menu and playback panel expose the same setting. The toggle's persistence and panel state have automated coverage, but immediate physical stop still needs a live check.
 
 The toggle build passed all 158 automated tests and a release build. A separately staged `.build/XFrame-rumble-toggle.app` passed strict deep signature verification while the prior build continued running.
+
+## Series X validation on 2026-10-16
+
+[Live validation](live-validation-2026-10-16.md) records the corrected discovery parser, real 1080p dashboard streaming, verified local selected-pair policy, keyboard navigation, 174 passing tests, and remaining physical checks. The successful app is `.build/XFrame-LAN-Diagnostic.app`. A separate development app variant encountered an unresolved local-network send failure; it is not the accepted artifact.

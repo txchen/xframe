@@ -1,6 +1,6 @@
 # Xbox Console Remote Play — working spec
 
-Status: implementation candidate built; physical Series X acceptance pending.
+Status: Series X LAN dashboard video and keyboard control verified; audio, physical controller, wake, and interruption acceptance remain pending.
 
 ## Confirmed decisions
 

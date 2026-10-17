@@ -34,14 +34,14 @@ signing_options=()
 if [[ "$signing_identity" == "Developer ID Application: "* ]]; then
     signing_options=(--options runtime --timestamp)
 fi
-codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir/Contents/Frameworks/WebRTC.framework"
-codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir/Contents/MacOS/mlxdlss-benchmark"
+codesign --force --sign "$signing_identity" ${signing_options[@]+"${signing_options[@]}"} "$app_dir/Contents/Frameworks/WebRTC.framework"
+codesign --force --sign "$signing_identity" ${signing_options[@]+"${signing_options[@]}"} "$app_dir/Contents/MacOS/mlxdlss-benchmark"
 metal_options=()
 if [[ "$signing_identity" == "Developer ID Application: "* ]]; then
     metal_options=(--timestamp)
 fi
-codesign --force --sign "$signing_identity" "${metal_options[@]}" "$app_dir/Contents/MacOS/mlx.metallib"
-codesign --force --sign "$signing_identity" "${signing_options[@]}" "$app_dir"
+codesign --force --sign "$signing_identity" ${metal_options[@]+"${metal_options[@]}"} "$app_dir/Contents/MacOS/mlx.metallib"
+codesign --force --sign "$signing_identity" ${signing_options[@]+"${signing_options[@]}"} "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 touch "$app_dir"
 if [[ "${XFRAME_SKIP_REGISTRATION:-0}" != 1 ]]; then

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import XFrame
 
-@Test func localMediaRequiresHostCandidatesOnSamePhysicalSubnet() {
+@Test func localMediaRequiresDirectCandidatesOnSamePhysicalSubnet() {
     let interfaces = [LocalMediaPath.Interface(address: LocalMediaPath.ipv4("192.168.1.10")!, mask: 0xffff_ff00)]
     #expect(LocalMediaPath.isLocal(remote: "192.168.1.25", local: "192.168.1.10",
                                    remoteType: "host", localType: "host", interfaces: interfaces))
@@ -12,7 +12,7 @@ import Testing
     }
     #expect(!LocalMediaPath.isLocal(remote: "192.168.1.25", local: "192.168.1.10",
                                     remoteType: "relay", localType: "host", interfaces: interfaces))
-    #expect(!LocalMediaPath.isLocal(remote: "192.168.1.25", local: "192.168.1.10",
+    #expect(LocalMediaPath.isLocal(remote: "192.168.1.25", local: "192.168.1.10",
                                     remoteType: "host", localType: "srflx", interfaces: interfaces))
     #expect(!LocalMediaPath.isLocal(remote: "192.168.1.25", local: "192.168.1.10",
                                     remoteType: "host", localType: "host", interfaces: []))
