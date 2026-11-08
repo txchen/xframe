@@ -15,32 +15,39 @@ enum MLXFrameGenerationBenchmark {
     }
 
     static func measure(frames: [CVPixelBuffer], width: Int, height: Int,
-                        weightsURL: URL) async throws -> BenchmarkMeasurement {
+                        weightsURL: URL) async throws -> [BenchmarkMeasurement] {
         let id = "mlx\(height)"
         let title = "MLX-DLSS video \(height)p 30 → 60 fps"
         guard let helper = Bundle.main.executableURL?.deletingLastPathComponent()
             .appendingPathComponent("mlxdlss-benchmark"),
               FileManager.default.isExecutableFile(atPath: helper.path) else {
-            return .unavailable(id, title, detail: "The optional MLX-DLSS helper is absent from this build.",
-                                budgetMS: budgetMS)
+            return [.unavailable(id, title, detail: "The optional MLX-DLSS helper is absent from this build.",
+                                 budgetMS: budgetMS)]
         }
-        let rgb = try makeRGBFrames(frames, width: width, height: height)
+        let context = CIContext(options: [.cacheIntermediates: false])
         let child = BenchmarkChild(helper: helper, weightsURL: weightsURL, width: width, height: height)
         let values = try await withTaskCancellationHandler {
-            try child.run(frames: rgb)
+            try child.run(frameCount: frames.count) { index in
+                try makeRGBFrame(frames[index], width: width, height: height, context: context)
+            }
         } onCancel: {
             child.terminate()
         }
-        return .measured(id, title,
-            detail: "55 adjacent moving-frame pairs after five warmups. Decode and RGB preparation are outside timing; each sample includes helper input/output transfer and MLX generation. Research video path, not live XFrame playback.",
-            timing: "Helper round-trip wall", values: values, budgetMS: budgetMS)
+        return [
+            .measured(id, title,
+                detail: "55 adjacent moving-frame pairs after five warmups. Excludes decode and RGB preparation; includes helper input/output transfer and MLX generation. Diagnostic only; capacity uses the preparation-inclusive row.",
+                timing: "Helper round-trip wall", values: values.helper, budgetMS: budgetMS),
+            .measured("mlxEndToEnd\(height)", "\(title) + RGB preparation",
+                detail: "Includes fixture resize, CPU bitmap output, RGB packing, helper transfer and generation. Excludes decode, display and startup. RGB is prepared one frame at a time, not cached for all 61 frames. Research path, not live playback.",
+                timing: "Preparation + helper wall", values: values.endToEnd, budgetMS: budgetMS)
+        ]
     }
 
-    private static func makeRGBFrames(_ frames: [CVPixelBuffer], width: Int, height: Int) throws -> [Data] {
-        let context = CIContext(options: [.cacheIntermediates: false])
+    private static func makeRGBFrame(_ buffer: CVPixelBuffer, width: Int, height: Int,
+                                     context: CIContext) throws -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bounds = CGRect(x: 0, y: 0, width: width, height: height)
-        return try frames.map { buffer in
+        return try autoreleasepool {
             try Task.checkCancellation()
             let source = CIImage(cvPixelBuffer: buffer)
             let image = source.transformed(by: CGAffineTransform(
@@ -68,6 +75,35 @@ enum MLXFrameGenerationBenchmark {
     }
 }
 
+// Keep only one prepared RGB frame alive. Both distributions use the same pairs
+// and completion timestamp; the seed and first five generated pairs are warmup.
+struct MLXBenchmarkSamples {
+    var helper: [Double] = []
+    var endToEnd: [Double] = []
+
+    static func collect(frameCount: Int, prepare: (Int) throws -> Data,
+                        clock: () -> Double = CACurrentMediaTime,
+                        exchange: (Data, Bool) throws -> Void) throws -> Self {
+        var samples = Self()
+        for index in 0..<frameCount {
+            try Task.checkCancellation()
+            try autoreleasepool {
+                let start = clock()
+                let frame = try prepare(index)
+                try Task.checkCancellation()
+                let prepared = clock()
+                try exchange(frame, index == 0)
+                let finished = clock()
+                if index > 5 {
+                    samples.helper.append((finished - prepared) * 1000)
+                    samples.endToEnd.append((finished - start) * 1000)
+                }
+            }
+        }
+        return samples
+    }
+}
+
 private final class BenchmarkChild: @unchecked Sendable {
     private let process = Process()
     private let input = Pipe(), output = Pipe(), errors = Pipe()
@@ -92,8 +128,8 @@ private final class BenchmarkChild: @unchecked Sendable {
         }
     }
 
-    func run(frames: [Data]) throws -> [Double] {
-        guard frames.count == 61 else { throw RenderError.unavailable("MLX-DLSS needs 61 video frames.") }
+    func run(frameCount: Int, prepare: (Int) throws -> Data) throws -> MLXBenchmarkSamples {
+        guard frameCount == 61 else { throw RenderError.unavailable("MLX-DLSS needs 61 video frames.") }
         try Task.checkCancellation()
         _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
         try lock.withLock {
@@ -106,14 +142,9 @@ private final class BenchmarkChild: @unchecked Sendable {
             if process.isRunning { process.terminate() }
             process.waitUntilExit()
         }
-        try input.fileHandleForWriting.write(contentsOf: frames[0])
-        var values: [Double] = []
-        for index in 1..<frames.count {
-            try Task.checkCancellation()
-            let started = CACurrentMediaTime()
-            try input.fileHandleForWriting.write(contentsOf: frames[index])
-            try readExactly(frames[index].count, from: output.fileHandleForReading)
-            if index > 5 { values.append((CACurrentMediaTime() - started) * 1000) }
+        let values = try MLXBenchmarkSamples.collect(frameCount: frameCount, prepare: prepare) { frame, seed in
+            try input.fileHandleForWriting.write(contentsOf: frame)
+            if !seed { try readExactly(frame.count, from: output.fileHandleForReading) }
         }
         try input.fileHandleForWriting.close()
         process.waitUntilExit()

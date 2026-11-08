@@ -81,11 +81,11 @@ struct PostProcessingBenchmarkReport: Codable, Sendable {
         }
         let mlxText: String
         if let best = measurements.reversed().first(where: {
-            $0.id.hasPrefix("mlx") && $0.grade == .headroom
+            $0.id.hasPrefix("mlxEndToEnd") && $0.grade == .headroom
         }) {
             mlxText = "; \(best.title) has research-path headroom"
         } else if measurements.contains(where: { $0.id.hasPrefix("mlx") }) {
-            mlxText = "; no tested MLX-DLSS video tier has 30 → 60 fps headroom"
+            mlxText = "; no tested MLX-DLSS video tier has measured preparation-inclusive 30 → 60 fps headroom"
         } else {
             mlxText = ""
         }
@@ -155,7 +155,7 @@ enum PostProcessingBenchmark {
                     let id = "mlx\(height)", title = "MLX-DLSS video \(height)p 30 → 60 fps"
                     progress("Testing \(title)…")
                     do {
-                        measurements.append(try await MLXFrameGenerationBenchmark.measure(
+                        measurements.append(contentsOf: try await MLXFrameGenerationBenchmark.measure(
                             frames: frames.map(\.buffer), width: width, height: height, weightsURL: weightsURL))
                     } catch is CancellationError { throw CancellationError() }
                     catch { measurements.append(.failed(id, title, error: error, budgetMS: interpolationBudgetMS)) }
@@ -168,7 +168,7 @@ enum PostProcessingBenchmark {
                         budgetMS: interpolationBudgetMS))
                 }
             }
-            notes.append("MLX-DLSS is a separate video research port with no game motion vectors or depth. Its helper round-trip wall time includes RGB transfer, not decoder or display latency; it is not a live XFrame backend.")
+            notes.append("MLX-DLSS is a separate video research port with no game motion vectors or depth. Helper round-trip excludes RGB preparation; the preparation-inclusive row includes resize, bitmap output and RGB packing and is used for capacity hints. Neither includes decoder or display latency; it is not a live XFrame backend.")
         } else {
             notes.append("MLX-DLSS was not selected. Its proprietary weights are not bundled; choose a local model file to run its optional research-path benchmark.")
         }
