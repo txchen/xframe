@@ -15,10 +15,22 @@ struct XboxAccountView: View {
                 Text(account.status).font(.headline)
             }
             if let code = account.userCode, let url = account.verificationURL {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Enter this code on Microsoft's sign-in page:")
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("1. Copy this sign-in code").font(.headline)
                     Text(code).font(.system(size: 30, weight: .semibold, design: .monospaced)).textSelection(.enabled)
-                    Link("Open Microsoft Sign-In", destination: url)
+                    Text("2. Open Microsoft's website and enter the code").font(.headline)
+                    Link(destination: url) {
+                        Label("Open Microsoft Sign-In", systemImage: "arrow.up.right.square")
+                            .font(.headline)
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(LibraryStyle.accent, in: RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens your browser to complete Microsoft sign-in")
+                    Text("After signing in, return here. XFrame will continue automatically.")
+                        .font(.callout).foregroundStyle(.secondary)
                     if let expires = account.codeExpires {
                         Text("Code expires at \(expires.formatted(date: .omitted, time: .standard)).").font(.caption)
                     }
@@ -46,7 +58,10 @@ struct XboxAccountView: View {
             HStack {
                 if account.isBusy { Button("Cancel") { account.cancel() } }
                 else {
-                    if !account.hasSavedSignIn { Button("Sign In with Microsoft") { account.signIn() } }
+                    if !account.hasSavedSignIn {
+                        Button("Sign In with Microsoft") { account.signIn() }
+                            .buttonStyle(.borderedProminent).tint(LibraryStyle.accent)
+                    }
                     if account.hasSavedSignIn { Button("Check Access Again") { account.restore() } }
                     if account.hasSavedSignIn && !account.hasXboxSignIn { Button("Sign In Again") { account.signIn() } }
                 }

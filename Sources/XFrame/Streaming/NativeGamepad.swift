@@ -17,7 +17,7 @@ final class NativeGamepad {
             systemGestures.restore()
             return
         }
-        systemGestures.capture([pad.buttonMenu, pad.buttonOptions].compactMap { $0 })
+        systemGestures.capture([pad.buttonMenu, pad.buttonOptions, pad.buttonHome].compactMap { $0 })
     }
     var changed: ((GamepadSnapshot) -> Void)?
     var replaced: (() -> Void)?
