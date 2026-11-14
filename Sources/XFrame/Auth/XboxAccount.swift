@@ -36,30 +36,111 @@ final class XboxAccount {
     let library = CloudLibrary()
 
     func cloudService() throws -> CloudService {
-        guard let cloudCredential, let accessExpires, accessExpires > Date(), !isBusy else { throw CloudError.expired }
+        guard let cloudCredential, let accessExpires, !isBusy else { throw CloudError.expired }
+        let run = generation
         return try CloudService(credential: cloudCredential, expires: accessExpires,
                                 regionName: selectedRegion.isEmpty ? nil : selectedRegion,
-                                session: catalogSession, transferToken: { [weak self] in
+                                session: catalogSession, tokenProvider: { [weak self] rejected in
             guard let self else { throw CloudError.expired }
-            return try await self.consoleTransferToken()
+            return try await self.streamingToken(source: .cloud, rejected: rejected, run: run)
+        }, transferToken: { [weak self] in
+            guard let self else { throw CloudError.expired }
+            return try await self.consoleTransferToken(run: run)
         })
     }
 
     func homeService() throws -> HomeService {
         guard let webToken, let webUserHash, !isBusy else { throw CloudError.expired }
-        let validHome = (homeExpires ?? .distantPast) > Date() ? homeCredential : nil
-        return try HomeService(credential: validHome, expires: homeExpires ?? .distantPast,
-            webToken: webToken, userHash: webUserHash, transferToken: { [weak self] in
+        let run = generation
+        return try HomeService(credential: homeCredential, expires: homeExpires ?? .distantPast,
+            webToken: webToken, userHash: webUserHash, session: catalogSession,
+            tokenProvider: { [weak self] rejected in
                 guard let self else { throw CloudError.expired }
-                return try await self.consoleTransferToken()
+                return try await self.streamingToken(source: .home, rejected: rejected, run: run)
+            }, webTokenProvider: { [weak self] rejected in
+                guard let self else { throw CloudError.expired }
+                return try await self.webAuthorization(rejected: rejected, run: run)
+            }, transferToken: { [weak self] in
+                guard let self else { throw CloudError.expired }
+                return try await self.consoleTransferToken(run: run)
             })
     }
 
-    private func consoleTransferToken() async throws -> String {
-        guard let saved = try store.load() else { throw CloudError.expired }
-        let token = try await service.consoleTransferToken(refreshToken: saved)
-        if let rotated = token.refresh_token, !rotated.isEmpty { try store.save(rotated) }
-        return token.access_token
+    private func streamingToken(source: CloudService.Source, rejected: String?, run: Int) async throws -> String {
+        try check(run)
+        let credential = source == .cloud ? cloudCredential : homeCredential
+        let expires = source == .cloud ? accessExpires : homeExpires
+        if credential == nil || (expires ?? .distantPast) <= Date() || rejected == credential?.gsToken {
+            try await refreshAccess(run: run)
+        }
+        try check(run)
+        guard let token = source == .cloud ? cloudCredential?.gsToken : homeCredential?.gsToken else {
+            throw CloudError.expired
+        }
+        return token
+    }
+
+    private func webAuthorization(rejected: String?, run: Int) async throws -> String {
+        try check(run)
+        let current = webToken.flatMap { token in webUserHash.map { "XBL3.0 x=\($0);\(token)" } }
+        if current == nil || rejected == current { try await refreshAccess(run: run) }
+        try check(run)
+        guard let webToken, let webUserHash else { throw CloudError.expired }
+        return "XBL3.0 x=\(webUserHash);\(webToken)"
+    }
+
+    private func refreshAccess(run: Int) async throws {
+        try check(run)
+        if let refreshTask { try await refreshTask.value; try check(run); return }
+        // Capture preceding credential work before publishing this task to avoid dependency cycles.
+        let pendingTransfer = transferTask
+        let work = Task { @MainActor in
+            if let pendingTransfer { _ = try await pendingTransfer.value }
+            try check(run)
+            guard let saved = try store.load() else { throw CloudError.expired }
+            let token = try await service.refresh(saved)
+            try check(run)
+            // Rotation must be durable before another Xbox request can consume it.
+            try save(token, fallback: saved)
+            cloudCredential = nil; accessExpires = nil; offering = nil
+            homeCredential = nil; homeExpires = nil
+            webToken = nil; webUserHash = nil
+            try await verifyCloud(token.access_token, run: run)
+            try check(run)
+        }
+        refreshTask = work
+        defer { if run == generation { refreshTask = nil } }
+        do {
+            try await work.value
+            try check(run)
+            errorMessage = nil
+        } catch {
+            if run == generation && !(error is CancellationError) {
+                status = "Xbox access refresh failed"
+                errorMessage = (error as? AuthError)?.localizedDescription ?? "Xbox access could not be refreshed. Please try again."
+            }
+            throw error
+        }
+    }
+
+    private func consoleTransferToken(run: Int) async throws -> String {
+        try check(run)
+        if let transferTask { let token = try await transferTask.value; try check(run); return token }
+        let pendingRefresh = refreshTask
+        let work = Task { @MainActor in
+            if let pendingRefresh { try await pendingRefresh.value }
+            try check(run)
+            guard let saved = try store.load() else { throw CloudError.expired }
+            let token = try await service.consoleTransferToken(refreshToken: saved)
+            try check(run)
+            if let rotated = token.refresh_token, !rotated.isEmpty { try store.save(rotated) }
+            return token.access_token
+        }
+        transferTask = work
+        defer { if run == generation { transferTask = nil } }
+        let token = try await work.value
+        try check(run)
+        return token
     }
     // Tokens never enter observable view state or diagnostics.
     @ObservationIgnored private var cloudCredential: CloudToken?
@@ -71,6 +152,8 @@ final class XboxAccount {
     @ObservationIgnored private let store: any CredentialStore
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var refreshTask: Task<Void, Error>?
+    @ObservationIgnored private var transferTask: Task<String, Error>?
 
     init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore(),
          catalogSession: URLSession? = nil) {
@@ -134,6 +217,8 @@ final class XboxAccount {
 
     func cancel() {
         generation += 1
+        refreshTask?.cancel(); refreshTask = nil
+        transferTask?.cancel(); transferTask = nil
         task?.cancel()
         task = nil
         isBusy = false
@@ -161,6 +246,8 @@ final class XboxAccount {
 
     private func begin(status: String) {
         generation += 1
+        refreshTask?.cancel(); refreshTask = nil
+        transferTask?.cancel(); transferTask = nil
         isBusy = true
         errorMessage = nil
         self.status = status

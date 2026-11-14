@@ -20,15 +20,19 @@ struct HomeService: HomeServing {
     let stream: CloudService?
     private let webToken: String
     private let userHash: String
+    private let webTokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)?
     private let session: URLSession
 
     init(credential: CloudToken?, expires: Date, webToken: String, userHash: String,
          session: URLSession? = nil,
+         tokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)? = nil,
+         webTokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)? = nil,
          transferToken: @escaping @Sendable () async throws -> String = { throw CloudError.expired }) throws {
         stream = try credential.map {
             try CloudService(credential: $0, expires: expires, source: .home,
-                             session: session, transferToken: transferToken)
+                             session: session, tokenProvider: tokenProvider, transferToken: transferToken)
         }
+        self.webTokenProvider = webTokenProvider
         self.webToken = webToken
         self.userHash = userHash
         let config = URLSessionConfiguration.ephemeral
@@ -113,7 +117,9 @@ struct HomeService: HomeServing {
         var request = URLRequest(url: url, timeoutInterval: 20)
         request.httpMethod = method
         request.httpBody = body
-        request.setValue("XBL3.0 x=\(userHash);\(webToken)", forHTTPHeaderField: "Authorization")
+        let authorization = try await webTokenProvider?(nil) ?? "XBL3.0 x=\(userHash);\(webToken)"
+        try Task.checkCancellation()
+        request.setValue(authorization, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(contractVersion, forHTTPHeaderField: "x-xbl-contract-version")
         request.setValue("XboxApp", forHTTPHeaderField: "x-xbl-client-name")
@@ -121,12 +127,18 @@ struct HomeService: HomeServing {
         request.setValue("39.39.22001.0", forHTTPHeaderField: "x-xbl-client-version")
         request.setValue("RemoteManagement", forHTTPHeaderField: "skillplatform")
         do {
-            let (data, response) = try await session.data(for: request)
+            var (data, response) = try await session.data(for: request)
+            if (response as? HTTPURLResponse)?.statusCode == 401, let webTokenProvider {
+                request.setValue(try await webTokenProvider(authorization), forHTTPHeaderField: "Authorization")
+                try Task.checkCancellation()
+                (data, response) = try await session.data(for: request)
+            }
             guard let response = response as? HTTPURLResponse else { throw CloudError.response }
             guard (200..<300).contains(response.statusCode) else { throw CloudError.http(response.statusCode) }
             return data
-        } catch let error as CloudError { throw error }
-        catch { throw CloudError.network }
+        } catch let error as AuthError { throw error }
+        catch let error as CloudError { throw error }
+        catch { if Task.isCancelled || error is CancellationError { throw CancellationError() }; throw CloudError.network }
     }
 
     func create(title: String, preferences: CloudStreamPreferences) async throws -> URL {

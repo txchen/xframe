@@ -59,24 +59,28 @@ final class CloudVideoConnection {
     var playbackFocused = false { didSet { updateControllerCapture(); if !playbackFocused { releaseInput(); gamepad.stopRumble() } } }
     private var keyboard = KeyboardGamepad()
     private var ownership = InputOwnership()
+    private var controllerBarrier = ControllerReleaseBarrier()
     private var inputEnabled: Bool { keyboardEnabled || controllerEnabled }
     private var inputConnected: Bool { keyboardEnabled || (controllerEnabled && gamepad.connected) }
     private func releaseInput() {
         keyboard.release(); input.release(); settingsShortcut.reset()
-        ownership.reset(controller: gamepad.sample())
+        controllerBarrier.pause(gamepad.sample())
+        ownership.reset()
     }
     private func handoffInput() {
         keyboard.release(); input.release(); settingsShortcut.reset()
         input.update(GamepadSnapshot(), ownsInput: ownsController)
     }
     private func controllerEvent(_ state: GamepadSnapshot) {
+        let gameState = controllerBarrier.filter(state,
+            accepting: controllerEnabled && ownsController && !playbackSettingsVisible)
         if playbackSettingsVisible {
             input.update(GamepadSnapshot(), ownsInput: false)
             if controllerEnabled && playbackFocused && !closed { settingsGamepad?(state) }
             return
         }
-        if ownership.observeController(state, enabled: controllerEnabled && ownsController) { handoffInput() }
-        if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) { processGamepad(state) }
+        if ownership.observeController(gameState, enabled: controllerEnabled && ownsController) { handoffInput() }
+        if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) { processGamepad(gameState) }
     }
     @discardableResult
     func keyboardEvent(code: UInt16, down: Bool, repeatKey: Bool, shortcut: Bool) -> Bool {
@@ -184,7 +188,8 @@ final class CloudVideoConnection {
         gamepad.replaced = { [weak self] in
             guard let self else { return }
             if self.ownership.active == .keyboard {
-                self.ownership.reset(controller: self.gamepad.sample())
+                self.controllerBarrier.pause(self.gamepad.sample())
+                self.ownership.reset()
                 _ = self.ownership.claimKeyboard()
                 return
             }

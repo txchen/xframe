@@ -8,6 +8,7 @@ struct VideoFrame: @unchecked Sendable {
     let time: Double
     let id: Int
     var sourceRTP: UInt32? = nil
+    var presentationDeadline: Double? = nil
     let arrivedAt = CACurrentMediaTime()
 }
 

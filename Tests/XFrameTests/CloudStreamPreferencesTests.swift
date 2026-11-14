@@ -22,9 +22,11 @@ import Testing
     let defaults = try #require(UserDefaults(suiteName: suite))
     defer { defaults.removePersistentDomain(forName: suite) }
     let store = CloudStreamPreferencesStore(defaults: defaults)
-    let chosen = CloudStreamPreferences(quality: .hq, language: .japanese, framePacing: .lowLatency)
-    store.save(chosen)
-    #expect(store.load() == chosen)
+    for mode in FramePacingMode.allCases {
+        let chosen = CloudStreamPreferences(quality: .hq, language: .japanese, framePacing: mode)
+        store.save(chosen)
+        #expect(store.load() == chosen)
+    }
     defaults.set("future-mode", forKey: "XFrame.FramePacing")
     #expect(store.load() == CloudStreamPreferences(quality: .hq, language: .japanese))
 }

@@ -5,21 +5,27 @@ import Testing
 private struct Reply: Sendable {
     let status: Int
     let json: String
-    init(_ status: Int, _ json: String) { self.status = status; self.json = json }
+    let delay: TimeInterval
+    init(_ status: Int, _ json: String, delay: TimeInterval = 0) { self.status = status; self.json = json; self.delay = delay }
     init(_ json: String) { self.init(200, json) }
 }
 
 private final class AuthScript: @unchecked Sendable {
     private let lock = NSLock()
     private var replies: [Reply]
+    private var responder: (@Sendable (URLRequest) -> Reply)?
+    func respond(using responder: @escaping @Sendable (URLRequest) -> Reply) { lock.withLock { self.responder = responder } }
     private(set) var paths: [String] = []
     private var intervals: [Int] = []
+    private var authorizationHeaders: [String?] = []
+    var authorizations: [String?] { lock.withLock { authorizationHeaders } }
     private var launches: [(Data, String?)] = []
     var launchRequests: [(Data, String?)] { lock.withLock { launches } }
     init(_ replies: [Reply]) { self.replies = replies }
     func reply(for request: URLRequest) -> Reply {
         lock.withLock {
             paths.append(request.url!.absoluteString)
+            authorizationHeaders.append(request.value(forHTTPHeaderField: "Authorization"))
             if request.url?.path == "/v5/sessions/cloud/play" || request.url?.path == "/v5/sessions/home/play" {
                 var body = request.httpBody ?? Data()
                 if body.isEmpty, let stream = request.httpBodyStream {
@@ -40,6 +46,7 @@ private final class AuthScript: @unchecked Sendable {
                       request.value(forHTTPHeaderField: "calling-app-version") != nil,
                       request.value(forHTTPHeaderField: "Authorization") == nil else { return Reply(400, "{}") }
             }
+            if let responder { return responder(request) }
             return replies.isEmpty ? Reply(500, "{}") : replies.removeFirst()
         }
     }
@@ -60,17 +67,26 @@ private final class StubAuthProtocol: URLProtocol, @unchecked Sendable {
     static let router = AuthRouter()
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    private var work: Task<Void, Never>?
     override func startLoading() {
         let id = request.value(forHTTPHeaderField: "X-Test-ID") ?? ""
         guard let script = Self.router.get(id) else { client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse)); return }
         let reply = script.reply(for: request)
+        if reply.delay > 0 {
+            work = Task { @Sendable [self] in
+                do { try await Task.sleep(for: .seconds(reply.delay)) } catch { return }
+                complete(reply)
+            }
+        } else { complete(reply) }
+    }
+    private func complete(_ reply: Reply) {
         let response = HTTPURLResponse(url: request.url!, statusCode: reply.status, httpVersion: nil,
                                        headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(reply.json.utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
-    override func stopLoading() {}
+    override func stopLoading() { work?.cancel() }
 }
 
 private final class AuthHarness {
@@ -293,9 +309,13 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
 @MainActor
 private final class MemoryCredentials: CredentialStore {
     var token: String?
+    var failSave = false
     init(_ token: String? = nil) { self.token = token }
     func load() throws -> String? { token }
-    func save(_ refreshToken: String) throws { token = refreshToken }
+    func save(_ refreshToken: String) throws {
+        if failSave { throw AuthError.invalidResponse("Saving sign-in") }
+        token = refreshToken
+    }
     func delete() throws { token = nil }
 }
 
@@ -411,4 +431,161 @@ private func waitForIdle(_ account: XboxAccount) async throws {
         #expect(dimensions["widthInPixels"] == (hq ? 4096 : 1920))
         #expect(dimensions["heightInPixels"] == (hq ? 2160 : 1080))
     }
+}
+
+
+private actor TokenRefreshProbe {
+    private(set) var rejected: [String?] = []
+    func token(rejected: String?) -> String {
+        self.rejected.append(rejected)
+        return rejected == nil ? "initial" : "replacement"
+    }
+    var refreshes: Int { rejected.compactMap { $0 }.count }
+}
+
+@Test func rejectedStreamingTokenRefreshesOnceAndRetriesWithReplacement() async throws {
+    let harness = AuthHarness([Reply(401, "{}"), Reply(#"{"results":[]}"#)])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let probe = TokenRefreshProbe()
+    let service = try CloudService(credential: credential, expires: .distantPast,
+        session: harness.session, tokenProvider: { await probe.token(rejected: $0) })
+    #expect(try await service.games().isEmpty)
+    #expect(harness.script.authorizations == ["Bearer initial", "Bearer replacement"])
+    #expect(await probe.refreshes == 1)
+}
+
+@Test func secondStreamingRejectionStopsAfterOneRefresh() async throws {
+    let harness = AuthHarness([Reply(401, "{}"), Reply(401, "{}")])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let probe = TokenRefreshProbe()
+    let service = try CloudService(credential: credential, expires: .distantPast,
+        session: harness.session, tokenProvider: { await probe.token(rejected: $0) })
+    do { _ = try await service.games(); Issue.record("Rejected request succeeded") }
+    catch CloudError.http(let status) { #expect(status == 401) }
+    #expect(harness.script.requests.count == 2)
+    #expect(await probe.refreshes == 1)
+}
+
+@Test(arguments: [403, 503]) func cloudCreationDoesNotRetryPolicyOrAmbiguousFailure(status: Int) async throws {
+    let harness = AuthHarness([Reply(status, "{}")])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let probe = TokenRefreshProbe()
+    let service = try CloudService(credential: credential, expires: .distantPast,
+        session: harness.session, tokenProvider: { await probe.token(rejected: $0) })
+    do { _ = try await service.create(title: "TEST"); Issue.record("Failed creation succeeded") }
+    catch CloudError.http(let code) { #expect(code == status) }
+    #expect(harness.script.requests.count == 1)
+    #expect(await probe.refreshes == 0)
+}
+
+@Test func rejectedXCCSTokenRefreshesWithFullAuthorizationHeader() async throws {
+    let harness = AuthHarness([Reply(401, "{}"), Reply(#"{"result":[]}"#)])
+    let probe = TokenRefreshProbe()
+    let service = try HomeService(credential: nil, expires: .distantPast, webToken: "old", userHash: "hash",
+        session: harness.session, webTokenProvider: { rejected in
+            let token = await probe.token(rejected: rejected)
+            return "XBL3.0 x=hash;" + token
+        })
+    #expect(try await service.consoles().isEmpty)
+    #expect(harness.script.authorizations == ["XBL3.0 x=hash;initial", "XBL3.0 x=hash;replacement"])
+    #expect(await probe.refreshes == 1)
+}
+
+@Test func untrustedURLCannotInvokeTokenProvider() async throws {
+    let harness = AuthHarness([])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let probe = TokenRefreshProbe()
+    let service = try CloudService(credential: credential, expires: .distantPast,
+        session: harness.session, tokenProvider: { await probe.token(rejected: $0) })
+    do { _ = try await service.request(URL(string: "https://evil.invalid/state")!); Issue.record("Untrusted request succeeded") }
+    catch CloudError.response {}
+    #expect(await probe.rejected.isEmpty)
+    #expect(harness.script.requests.isEmpty)
+}
+
+@Test func providerFailureDoesNotPreventCleanupDeletion() async throws {
+    let harness = AuthHarness([Reply(204, "")])
+    let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
+    let service = try CloudService(credential: credential, expires: .distantPast,
+        session: harness.session, tokenProvider: { _ in throw CloudError.expired })
+    try await service.end(at: URL(string: "https://test.gssv-play-prod.xboxlive.com/v5/sessions/cloud/test")!)
+    #expect(harness.script.authorizations == ["Bearer test-cloud"])
+}
+
+
+@MainActor
+private func restoredRefreshAccount() async throws -> (AuthHarness, MemoryCredentials, XboxAccount) {
+    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON),
+        Reply(cloudJSON), Reply(cloudJSON), Reply(#"{"results":[]}"#)])
+    let store = MemoryCredentials("saved")
+    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session)
+    account.restore()
+    try await waitForIdle(account)
+    let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+    while account.library.loading && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(5)) }
+    #expect(account.library.catalogLoaded)
+    harness.script.respond { request in
+        if request.url?.host == "login.microsoftonline.com" { return Reply(200, tokenJSON, delay: 0.1) }
+        if request.url?.path == "/v2/titles" {
+            return request.value(forHTTPHeaderField: "Authorization") == "Bearer test-cloud"
+                ? Reply(401, "{}") : Reply(#"{"results":[]}"#)
+        }
+        if request.url?.host == "xccs.xboxlive.com" {
+            return request.value(forHTTPHeaderField: "Authorization") == "XBL3.0 x=test-hash;test-xbox"
+                ? Reply(401, "{}") : Reply(#"{"result":[]}"#)
+        }
+        if request.url?.path == "/v6/servers/home" { return Reply(#"{"results":[]}"#) }
+        if request.url?.path == "/v2/login/user" {
+            return Reply(cloudJSON.replacingOccurrences(of: "test-cloud", with: "refreshed-cloud"))
+        }
+        return Reply(xboxJSON.replacingOccurrences(of: "test-xbox", with: "refreshed-xbox"))
+    }
+    return (harness, store, account)
+}
+
+@Test @MainActor func simultaneousCloudAndHomeRejectionsShareAccountRefresh() async throws {
+    let (harness, _, account) = try await restoredRefreshAccount()
+    let cloud = try account.cloudService()
+    let home = try account.homeService()
+    async let first = cloud.games()
+    async let second = home.consoles()
+    let (games, consoles) = try await (first, second)
+    #expect(games.isEmpty && consoles.isEmpty)
+    #expect(harness.script.requests.filter { $0 == "https://login.microsoftonline.com/consumers/oauth2/v2.0/token" }.count == 2)
+    #expect(harness.script.authorizations.contains("Bearer refreshed-cloud"))
+    #expect(harness.script.authorizations.contains("XBL3.0 x=test-hash;refreshed-xbox"))
+}
+
+@Test @MainActor func refreshPersistenceFailurePreventsXboxCallsAndRetry() async throws {
+    let (harness, store, account) = try await restoredRefreshAccount()
+    let cloud = try account.cloudService()
+    let before = harness.script.requests.count
+    store.failSave = true
+    do { _ = try await cloud.games(); Issue.record("Refresh succeeded without durable rotation") }
+    catch is AuthError {}
+    let requests = Array(harness.script.requests.dropFirst(before))
+    #expect(requests.count == 2)
+    #expect(requests[0].contains("/v2/titles"))
+    #expect(requests[1] == "https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
+    #expect(account.status == "Xbox access refresh failed")
+    #expect(account.errorMessage != nil)
+}
+
+@Test @MainActor func signOutDuringRefreshCannotRestoreCredentials() async throws {
+    let (harness, store, account) = try await restoredRefreshAccount()
+    let cloud = try account.cloudService()
+    let request = Task { try await cloud.games() }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+    while harness.script.requests.filter({ $0 == "https://login.microsoftonline.com/consumers/oauth2/v2.0/token" }).count < 2,
+          ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(2)) }
+    account.signOut()
+    do { _ = try await request.value; Issue.record("Signed-out refresh succeeded") }
+    catch is CancellationError {}
+    #expect(store.token == nil)
+    #expect(account.gamertag == nil)
+    #expect(!account.hasCloudAccess)
+    let count = harness.script.requests.count
+    do { _ = try await cloud.games(); Issue.record("Old service survived sign-out") }
+    catch is CancellationError {}
+    #expect(harness.script.requests.count == count)
 }

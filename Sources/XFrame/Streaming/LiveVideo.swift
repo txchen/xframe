@@ -23,6 +23,7 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     static let maximumFrameAge = 0.050
     static let catchUpAge = 1.5 / 60.0
     private var frames: [VideoFrame] = []
+    private var pacer = RTPFramePacer()
     private var stats = PlaybackStats()
     private var bitrateMeter = VideoBitrateMeter()
     private var decodedRate = SlidingFrameRate()
@@ -103,7 +104,10 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: now)
             }
-            frames.append(VideoFrame(buffer: native.pixelBuffer, time: Double(frame.timeStampNs) / 1e9, id: stats.decoded, sourceRTP: UInt32(bitPattern: frame.timeStamp)))
+            let rtp = UInt32(bitPattern: frame.timeStamp)
+            let deadline = stats.framePacing == .adaptive ? pacer.deadline(rtp: rtp, arrival: now) : nil
+            frames.append(VideoFrame(buffer: native.pixelBuffer, time: Double(frame.timeStampNs) / 1e9,
+                id: stats.decoded, sourceRTP: rtp, presentationDeadline: deadline))
             stats.peakQueue = max(stats.peakQueue, frames.count)
         }
     }
@@ -213,11 +217,14 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             // an older head only after 1.5 intervals when a fresher frame is ready;
             // a one-interval cutoff caused avoidable skips in live 60 Hz tests.
             // A lone frame still uses the 50 ms stall bound.
-            while frames.count > 1, let first = frames.first, hostTime - first.arrivedAt > Self.catchUpAge {
+            while frames.count > 1, let first = frames.first,
+                  hostTime - (first.presentationDeadline ?? first.arrivedAt) > Self.catchUpAge,
+                  (frames[1].presentationDeadline ?? 0) <= hostTime {
                 frames.removeFirst()
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: hostTime)
             }
+            if let deadline = frames.first?.presentationDeadline, deadline > hostTime { return nil }
             return frames.isEmpty ? nil : frames.removeFirst()
         }
     }

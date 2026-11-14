@@ -55,16 +55,19 @@ extension CloudService: CloudSignaling {
         return min(60, max(1, value))
     }
     private func exchangeResponse<T: Decodable>(at url: URL) async throws -> T {
-        for _ in 0..<30 {
+        let clock = ContinuousClock()
+        let start = clock.now
+        let deadline = start + .seconds(30)
+        while clock.now < deadline {
             try Task.checkCancellation()
             let data = try await request(url)
-            if !data.isEmpty, let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let response = object["exchangeResponse"] as? String, !response.isEmpty {
-                guard let decoded = try? JSONDecoder().decode(T.self, from: Data(response.utf8)) else { throw CloudError.response }
-                return decoded
-            }
-            try await Task.sleep(for: .seconds(1))
+            try Task.checkCancellation()
+            guard clock.now < deadline else { break }
+            if let result: T = try SignalingResponse.decode(data) { return result }
+            let remaining = clock.now.duration(to: deadline)
+            guard remaining > .zero else { break }
+            try await Task.sleep(for: min(SignalingPolling.delay(after: start.duration(to: clock.now)), remaining))
         }
-        throw CloudError.timeout
+        throw SignalingFailure.timedOut
     }
 }

@@ -81,10 +81,12 @@ struct CloudService: CloudServing {
     private let expires: Date
     private let market: String
     private let session: URLSession
+    private let tokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)?
     private let transferToken: @Sendable () async throws -> String
 
     init(credential: CloudToken, expires: Date, regionName: String? = nil, source: Source = .cloud,
          session: URLSession? = nil,
+         tokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)? = nil,
          transferToken: @escaping @Sendable () async throws -> String = { throw CloudError.expired }) throws {
         let regions = credential.offeringSettings.regions
         let selected = regionName.map { name in regions.first(where: { $0.name == name }) }
@@ -97,6 +99,7 @@ struct CloudService: CloudServing {
         token = credential.gsToken
         market = credential.market ?? "US"
         self.expires = expires
+        self.tokenProvider = tokenProvider
         self.transferToken = transferToken
         let config = URLSessionConfiguration.ephemeral
         config.urlCache = nil
@@ -238,19 +241,35 @@ struct CloudService: CloudServing {
             if consoleList { trustedURL = URL(string: String(url.absoluteString.split(separator: "?")[0]))! }
             guard Self.trusted(trustedURL), url.query == nil || consoleList else { throw CloudError.response }
             // Always attempt cleanup, even near credential expiry.
-            guard method == "DELETE" || Date() < expires else { throw CloudError.expired }
+            guard tokenProvider != nil || method == "DELETE" || Date() < expires else { throw CloudError.expired }
         }
+        // Cleanup retains its last credential if refresh fails, so expiry cannot prevent deletion.
+        let bearer: String
+        if authenticated, let tokenProvider {
+            if method == "DELETE" { bearer = (try? await tokenProvider(nil)) ?? token }
+            else { bearer = try await tokenProvider(nil) }
+        } else { bearer = token }
+        try Task.checkCancellation()
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
-        if authenticated { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
+        if authenticated { request.setValue("Bearer " + bearer, forHTTPHeaderField: "Authorization") }
         for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
-        let result: (Data, URLResponse)
+        var result: (Data, URLResponse)
         do { result = try await session.data(for: request) }
         catch { if Task.isCancelled { throw CancellationError() }; throw CloudError.network }
+        // Only an explicit authentication rejection proves a POST was not accepted.
+        // A generic 403 can mean entitlement or policy denial and must not trigger refresh.
+        if authenticated, (result.1 as? HTTPURLResponse)?.statusCode == 401, let tokenProvider {
+            let replacement = try await tokenProvider(bearer)
+            try Task.checkCancellation()
+            request.setValue("Bearer " + replacement, forHTTPHeaderField: "Authorization")
+            do { result = try await session.data(for: request) }
+            catch { if Task.isCancelled { throw CancellationError() }; throw CloudError.network }
+        }
         guard let response = result.1 as? HTTPURLResponse else { throw CloudError.response }
         guard (200..<300).contains(response.statusCode) else {
             if method == "POST", url.path.hasSuffix("/sessions/cloud/play"),

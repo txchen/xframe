@@ -19,10 +19,16 @@ struct GamepadInput {
             return
         }
         self.ownsInput = true
+        var state = state
         if !armed {
             // Do not carry a held button across focus/device/session boundaries.
-            guard state == GamepadSnapshot() else { return }
+            let threshold = ControllerReleaseBarrier.releaseThreshold
+            guard state.buttons.isEmpty,
+                  hypot(state.leftX, state.leftY) <= threshold,
+                  hypot(state.rightX, state.rightY) <= threshold,
+                  state.leftTrigger <= threshold, state.rightTrigger <= threshold else { return }
             armed = true
+            state = GamepadSnapshot()
         }
         guard state != latest else { return }
         latest = state
