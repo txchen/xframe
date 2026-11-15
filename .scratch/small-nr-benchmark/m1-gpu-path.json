@@ -1,0 +1,145 @@
+{
+  "date" : "2026-11-15T23:40:04Z",
+  "device" : "Apple M1",
+  "fixture" : "Big Buck Bunny, silent 1920×1080 H.264, 30 fps, SHA-256 5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "macOS" : "Version 27.2.1 (Build 26B131)",
+  "measurements" : [
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial1440",
+      "medianMS" : 1.7097500094678253,
+      "p95MS" : 1.927375007653609,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 1440p"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4k",
+      "medianMS" : 3.641125003923662,
+      "p95MS" : 3.6554583202814683,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K"
+    },
+    {
+      "budgetMS" : 16.666666666666668,
+      "detail" : "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+      "grade" : "headroom",
+      "id" : "spatial4kSharpen",
+      "medianMS" : 3.9795416669221595,
+      "p95MS" : 3.983749993494712,
+      "samples" : 60,
+      "timing" : "GPU command",
+      "title" : "MetalFX 1080p → 4K + High sharpening"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "headroom",
+      "id" : "vt720",
+      "medianMS" : 5.58366667246446,
+      "p95MS" : 6.1930833326186985,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "overBudget",
+      "id" : "vt1080",
+      "medianMS" : 89.807500000461,
+      "p95MS" : 93.30554166808724,
+      "samples" : 55,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 1080p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "This device supports at most 2073600 pixels for interpolation.",
+      "grade" : "unavailable",
+      "id" : "vt1440",
+      "samples" : 0,
+      "timing" : "none",
+      "title" : "VideoToolbox 1440p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
+      "grade" : "overBudget",
+      "id" : "nrSmall720",
+      "medianMS" : 208.20074999937788,
+      "p95MS" : 211.615708321915,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "Small NR 720p · independent frames"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "Includes resize, RGB packing, guide transfer, GPU preprocessing, inference, composition and RGB8 readback. Excludes decode, startup and display. Budget is 30 source frames\/s; independent-frame research test, not live temporal NR.",
+      "grade" : "overBudget",
+      "id" : "nrSmallEndToEnd720",
+      "medianMS" : 210.74241666065063,
+      "p95MS" : 214.5533750008326,
+      "samples" : 55,
+      "timing" : "Preparation + helper wall",
+      "title" : "Small NR 720p · independent frames + RGB preparation"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
+      "grade" : "overBudget",
+      "id" : "nrSmall1080",
+      "medianMS" : 414.67670832935255,
+      "p95MS" : 418.94370832596906,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "Small NR 1080p · independent frames"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "Includes resize, RGB packing, guide transfer, GPU preprocessing, inference, composition and RGB8 readback. Excludes decode, startup and display. Budget is 30 source frames\/s; independent-frame research test, not live temporal NR.",
+      "grade" : "overBudget",
+      "id" : "nrSmallEndToEnd1080",
+      "medianMS" : 418.4205416677287,
+      "p95MS" : 422.2576250031125,
+      "samples" : 55,
+      "timing" : "Preparation + helper wall",
+      "title" : "Small NR 1080p · independent frames + RGB preparation"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "55 moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
+      "grade" : "overBudget",
+      "id" : "nrSmall1440",
+      "medianMS" : 694.8180000035791,
+      "p95MS" : 700.360583330621,
+      "samples" : 55,
+      "timing" : "Helper round-trip wall",
+      "title" : "Small NR 1440p · independent frames"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "Includes resize, RGB packing, guide transfer, GPU preprocessing, inference, composition and RGB8 readback. Excludes decode, startup and display. Budget is 30 source frames\/s; independent-frame research test, not live temporal NR.",
+      "grade" : "overBudget",
+      "id" : "nrSmallEndToEnd1440",
+      "medianMS" : 698.9839166635647,
+      "p95MS" : 704.4742083235178,
+      "samples" : 55,
+      "timing" : "Preparation + helper wall",
+      "title" : "Small NR 1440p · independent frames + RGB preparation"
+    }
+  ],
+  "notes" : [
+    "Headroom uses at most 70% of the relevant frame interval; Tight uses up to 100%. Frame-generation grades apply to a native stream at the tested input size; resizing the fixture is outside timing. These are offline capacity hints, not an in-game FPS or latency guarantee.",
+    "MetalFX timings are GPU command intervals on a decoded NV12 video still, including color conversion. VideoToolbox timings are processor completion wall time over consecutive real video frames resized before timing where needed; its internal GPU time is not exposed.",
+    "MLX-DLSS frame generation was not selected. Import framegen.safetensors to run its separate optional benchmark.",
+    "Small NR helper upstream: 7870371e8bf6c03967213f1a5d40db6c5a3bee38. Independent-frame FP16, GPU pre\/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.",
+    "Small NR weights SHA-256: c496209573133d430cc510c0ae424ba67a73fb1c957d96191e0227c42832607b."
+  ]
+}

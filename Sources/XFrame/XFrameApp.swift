@@ -7,6 +7,31 @@ import SwiftUI
 @MainActor
 enum XFrameApp {
     static func main() {
+        if CommandLine.arguments.dropFirst().first == "--benchmark-small-nr" {
+            guard CommandLine.arguments.count == 4 else {
+                fputs("Usage: XFrame --benchmark-small-nr MODEL.dlssmodel REPORT.json\n", stderr)
+                exit(64)
+            }
+            let modelURL = URL(fileURLWithPath: CommandLine.arguments[2])
+            let reportURL = URL(fileURLWithPath: CommandLine.arguments[3])
+            Task.detached {
+                do {
+                    _ = try SmallNRModelCache.validate(modelURL)
+                    let report = try await PostProcessingBenchmark.run(smallNRURL: modelURL) {
+                        print($0)
+                    }
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                    encoder.dateEncodingStrategy = .iso8601
+                    try encoder.encode(report).write(to: reportURL, options: .atomic)
+                    exit(report.measurements.contains { $0.grade == .failed } ? 1 : 0)
+                } catch {
+                    print("Benchmark failed: \(error.localizedDescription)")
+                    exit(1)
+                }
+            }
+            dispatchMain()
+        }
         let app = NSApplication.shared
         if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
            let icon = NSImage(contentsOf: iconURL) {

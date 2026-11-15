@@ -44,7 +44,7 @@ import Testing
 
 @Test func bundledBenchmarkExecutesItsAvailableBackends() async throws {
     let report = try await PostProcessingBenchmark.run(progress: { _ in })
-    #expect(report.measurements.map(\.id) == ["spatial1440", "spatial4k", "spatial4kSharpen", "vt720", "vt1080", "vt1440"])
+    #expect(report.measurements.map(\.id) == ["spatial1440", "spatial4k", "spatial4kSharpen", "vt720", "vt1080", "vt1440", "nrSmall"])
     for measurement in report.measurements where measurement.grade != .unavailable {
         #expect(measurement.grade != .failed, "\(measurement.title): \(measurement.detail)")
         #expect(measurement.samples >= 55)

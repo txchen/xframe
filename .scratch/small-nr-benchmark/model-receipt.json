@@ -1,0 +1,9 @@
+{
+  "source": "https://github.com/RankFTW/rhi-repo/releases/download/dlssnr-310.9.16/nvngx_dlssnr_310.9.16.zip",
+  "provenance": "community mirror; DLL not executed; does not match upstream signed-DLL hash",
+  "upstream_commit": "7870371e8bf6c03967213f1a5d40db6c5a3bee38",
+  "dll_sha256": "cdfa6c1ec784867182164c7836f324f087b5c9f374d0c9fe46f54999feabf3ed",
+  "resource": "WEIGHTS_CC_SMALL_FP8",
+  "resource_sha256": "f743e8eb320f42bc9bdc992ee2bf51f7bb7c8688ced4ecf5ce6807ec4eef7962",
+  "weights_sha256": "c496209573133d430cc510c0ae424ba67a73fb1c957d96191e0227c42832607b"
+}

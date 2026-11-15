@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-pin="0ca2deab092fe6f3e331bf4f616271dbc64521d0"
+pin="7870371e8bf6c03967213f1a5d40db6c5a3bee38"
 source_dir="${XFRAME_MLX_SOURCE:-$PWD/.build/benchmark-mlx-dlss/source}"
 output_dir="${1:?Expected app Contents/MacOS path}"
 if [[ ! -d "$source_dir/.git" ]]; then
@@ -13,6 +13,10 @@ if [[ "$(git -C "$source_dir" rev-parse HEAD)" != "$pin" ]]; then
     git -C "$source_dir" fetch origin "$pin"
     git -C "$source_dir" checkout --detach "$pin"
 fi
+[[ -z "$(git -C "$source_dir" status --porcelain --untracked-files=no)" ]] || {
+    echo "MLX-DLSS source has tracked changes; refusing to package an unpinned helper" >&2
+    exit 1
+}
 swift build --package-path "$source_dir" --build-system native -c release --product mlxdlss
 cp "$source_dir/.build/release/mlxdlss" "$output_dir/mlxdlss-benchmark"
 

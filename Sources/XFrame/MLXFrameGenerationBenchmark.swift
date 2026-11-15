@@ -43,7 +43,7 @@ enum MLXFrameGenerationBenchmark {
         ]
     }
 
-    private static func makeRGBFrame(_ buffer: CVPixelBuffer, width: Int, height: Int,
+    static func makeRGBFrame(_ buffer: CVPixelBuffer, width: Int, height: Int,
                                      context: CIContext) throws -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bounds = CGRect(x: 0, y: 0, width: width, height: height)
@@ -104,21 +104,31 @@ struct MLXBenchmarkSamples {
     }
 }
 
-private final class BenchmarkChild: @unchecked Sendable {
+final class BenchmarkChild: @unchecked Sendable {
     private let process = Process()
-    private let input = Pipe(), output = Pipe(), errors = Pipe()
+    private let input = Pipe(), output = Pipe()
     private let lock = NSLock()
     private var started = false
+    private let neuralRendering: Bool
+    private let zeroMotion: Data?
     private var cancelled = false
 
-    init(helper: URL, weightsURL: URL, width: Int, height: Int) {
+    init(helper: URL, weightsURL: URL, width: Int, height: Int, neuralRendering: Bool = false) {
+        self.neuralRendering = neuralRendering
+        self.zeroMotion = neuralRendering ? Data(count: width * height * 2 * MemoryLayout<Float>.size) : nil
         process.executableURL = helper
         process.arguments = ["framegen-stream", "--weights", weightsURL.path,
             "--width", String(width), "--height", String(height),
             "--factor", "2", "--batch", "1", "--format", "u8"]
+        if neuralRendering {
+            process.arguments = ["stream", weightsURL.path, "--width", String(width), "--height", String(height),
+                "--mode", "temporal", "--protocol-version", "4", "--output-format", "u8", "--execution", "metal-fused",
+                "--precision", "float16", "--profile", "standard", "--processing-scale", "1",
+                "--network-geometry", "vendor-aligned"]
+        }
         process.standardInput = input
         process.standardOutput = output
-        process.standardError = errors
+        process.standardError = FileHandle.nullDevice
     }
 
     func terminate() {
@@ -143,8 +153,14 @@ private final class BenchmarkChild: @unchecked Sendable {
             process.waitUntilExit()
         }
         let values = try MLXBenchmarkSamples.collect(frameCount: frameCount, prepare: prepare) { frame, seed in
+            // Protocol 4: reset history (1), constant-one depth (4), packed RGB8 (8).
+            // Reset every frame: the zero-motion plane never reprojects prior content.
+            if neuralRendering { try input.fileHandleForWriting.write(contentsOf: Data([13, 0, 0, 0])) }
             try input.fileHandleForWriting.write(contentsOf: frame)
-            if !seed { try readExactly(frame.count, from: output.fileHandleForReading) }
+            if let zeroMotion { try input.fileHandleForWriting.write(contentsOf: zeroMotion) }
+            if neuralRendering || !seed {
+                try readExactly(frame.count, from: output.fileHandleForReading)
+            }
         }
         try input.fileHandleForWriting.close()
         process.waitUntilExit()
@@ -164,5 +180,6 @@ private final class BenchmarkChild: @unchecked Sendable {
             }
             remaining -= data.count
         }
+
     }
 }

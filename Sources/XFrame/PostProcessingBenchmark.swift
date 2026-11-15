@@ -105,7 +105,7 @@ enum PostProcessingBenchmark {
     static let spatialBudgetMS = 1000.0 / 60.0
     static let interpolationBudgetMS = 1000.0 / 30.0
 
-    static func run(weightsURL: URL? = nil,
+    static func run(weightsURL: URL? = nil, smallNRURL: URL? = nil,
                     progress: @Sendable (String) -> Void) async throws -> PostProcessingBenchmarkReport {
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw RenderError.unavailable("No Metal device is available.")
@@ -170,7 +170,24 @@ enum PostProcessingBenchmark {
             }
             notes.append("MLX-DLSS is a separate video research port with no game motion vectors or depth. Helper round-trip excludes RGB preparation; the preparation-inclusive row includes resize, bitmap output and RGB packing and is used for capacity hints. Neither includes decoder or display latency; it is not a live XFrame backend.")
         } else {
-            notes.append("MLX-DLSS was not selected. Its proprietary weights are not bundled; choose a local model file to run its optional research-path benchmark.")
+            notes.append("MLX-DLSS frame generation was not selected. Import framegen.safetensors to run its separate optional benchmark.")
+        }
+        notes.append("Small NR helper upstream: \(SmallNRBenchmark.upstream). Independent-frame FP16, GPU pre/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.")
+        if let smallNRURL {
+            let digest = try SmallNRModelCache.validate(smallNRURL)
+            notes.append("Small NR weights SHA-256: \(digest).")
+            for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
+                try Task.checkCancellation()
+                progress("Testing Small NR \(height)p… This can take several minutes.")
+                do {
+                    measurements.append(contentsOf: try await SmallNRBenchmark.measure(
+                        frames: frames.map(\.buffer), width: width, height: height, modelURL: smallNRURL))
+                } catch is CancellationError { throw CancellationError() }
+                catch { measurements.append(.failed("nrSmall\(height)", "Small NR \(height)p",
+                    error: error, budgetMS: SmallNRBenchmark.budgetMS)) }
+            }
+        } else {
+            measurements.append(.unavailable("nrSmall", "Small NR", detail: "Import NeuralRendering-Small.dlssmodel to enable the 720p, 1080p and 1440p tests.", budgetMS: SmallNRBenchmark.budgetMS))
         }
         return PostProcessingBenchmarkReport(date: Date(), device: device.name,
             macOS: ProcessInfo.processInfo.operatingSystemVersionString,

@@ -21,9 +21,12 @@ printf original > "$sandbox/release/submission.zip"
 printf wrong > "$sandbox/release/submission.sha256"
 expect_failure 'Submission archive changed' bash scripts/release-app.sh notarize "$sandbox/release"
 [[ ! -e "$sandbox/release/notarize.lock" ]]
-touch "$sandbox/release/XFrame-0.1.0-1-macos27-arm64.zip"
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
+build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Resources/Info.plist)"
+final="$sandbox/release/XFrame-$version-$build-macos27-arm64.zip"
+touch "$final"
 expect_failure 'Final ZIP already exists' bash scripts/release-app.sh notarize "$sandbox/release"
-rm "$sandbox/release/XFrame-0.1.0-1-macos27-arm64.zip"
+rm "$final"
 mkdir "$sandbox/release/notarize.lock"
 expect_failure 'Notarization already running' bash scripts/release-app.sh notarize "$sandbox/release"
 rmdir "$sandbox/release/notarize.lock"
@@ -42,5 +45,5 @@ esac
 SH
 chmod +x "$sandbox/bin/xcrun"
 expect_failure 'Notary log archive checksum mismatch' env PATH="$sandbox/bin:$PATH" bash scripts/release-app.sh notarize "$sandbox/release"
-[[ ! -e "$sandbox/release/XFrame-0.1.0-1-macos27-arm64.zip" ]]
+[[ ! -e "$final" ]]
 echo 'Release boundary contract checks passed'

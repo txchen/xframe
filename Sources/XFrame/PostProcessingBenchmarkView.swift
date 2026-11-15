@@ -9,6 +9,8 @@ final class PostProcessingBenchmarkModel: ObservableObject {
     @Published var running = false
     @Published var weightsURL: URL?
     @Published var modelBusy = false
+    @Published var smallNRURL: URL?
+    private let smallNRCache = SmallNRModelCache()
     @Published var showDownloadURL = false
     @Published var downloadURLString = ""
     private var worker: Task<PostProcessingBenchmarkReport, Error>?
@@ -17,9 +19,11 @@ final class PostProcessingBenchmarkModel: ObservableObject {
 
     init(sessionActive: @escaping () -> Bool) {
         self.sessionActive = sessionActive
+        do { smallNRURL = try smallNRCache.cachedModel() }
+        catch { status = "Small NR cache needs replacement: \(error.localizedDescription)" }
         do {
             weightsURL = try modelCache.cachedModel()
-            if weightsURL != nil { status = "Cached MLX-DLSS model ready. Run to include all nine workloads." }
+            if weightsURL != nil { status = "Cached MLX-DLSS model ready. Run to include frame-generation workloads." }
         } catch {
             status = "Cached MLX-DLSS model needs replacement: \(error.localizedDescription)"
         }
@@ -36,10 +40,11 @@ final class PostProcessingBenchmarkModel: ObservableObject {
         status = "Starting…"
         let model = self
         let selectedWeights = weightsURL
+        let selectedNR = smallNRURL
         let worker = Task.detached(priority: .userInitiated) {
             let access = selectedWeights?.startAccessingSecurityScopedResource() ?? false
             defer { if access { selectedWeights?.stopAccessingSecurityScopedResource() } }
-            return try await PostProcessingBenchmark.run(weightsURL: selectedWeights) { message in
+            return try await PostProcessingBenchmark.run(weightsURL: selectedWeights, smallNRURL: selectedNR) { message in
                 Task { @MainActor in model.status = message }
             }
         }
@@ -83,6 +88,33 @@ final class PostProcessingBenchmarkModel: ObservableObject {
                 } catch {
                     self?.status = "Model import failed: \(error.localizedDescription)"
                 }
+                self?.modelBusy = false
+            }
+        }
+    }
+
+    func chooseSmallNR() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.treatsFilePackagesAsDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Select the extracted NeuralRendering-Small.dlssmodel folder from DLSS NR 310.9.16.0."
+        panel.begin { [weak self] response in
+            guard response == .OK, let source = panel.url, let self else { return }
+            self.modelBusy = true
+            self.status = "Verifying and caching Small NR…"
+            let cache = self.smallNRCache
+            Task { [weak self] in
+                do {
+                    let url = try await Task.detached {
+                        let access = source.startAccessingSecurityScopedResource()
+                        defer { if access { source.stopAccessingSecurityScopedResource() } }
+                        return try cache.importModel(from: source)
+                    }.value
+                    self?.smallNRURL = url
+                    self?.status = "Small NR cached. Run Benchmark to test all three resolutions."
+                } catch { self?.status = "Small NR import failed: \(error.localizedDescription)" }
                 self?.modelBusy = false
             }
         }
@@ -161,15 +193,23 @@ struct PostProcessingBenchmarkView: View {
                         .buttonStyle(.borderedProminent).disabled(model.modelBusy)
                 }
             }
+            HStack {
+                Button("Import Small NR…") { model.chooseSmallNR() }
+                    .disabled(model.running || model.modelBusy)
+                Text(model.smallNRURL == nil ? "Small NR · no model cached" : "Small NR model cached")
+                    .foregroundStyle(.secondary)
+            }
+            Text("Small NR tests independent frames at 720p / 1080p / 1440p. Model: NeuralRendering-Small.dlssmodel (310.9.16.0).")
+                .font(.caption).foregroundStyle(.secondary)
             Text(model.status).font(.subheadline)
                 .foregroundStyle(model.status.hasPrefix("Benchmark failed") ? .red : .secondary)
             HStack(spacing: 8) {
-                Button("Import Local Model…") { model.chooseWeights() }
+                Button("Import Frame-Generation Model…") { model.chooseWeights() }
                     .disabled(model.running || model.modelBusy)
                 Button("Download from URL…") { model.showDownloadURL.toggle() }
                     .disabled(model.running || model.modelBusy)
                 if model.weightsURL != nil {
-                    Text("MLX-DLSS model cached").foregroundStyle(.secondary)
+                    Text("Frame-generation model cached").foregroundStyle(.secondary)
                     Button("Remove Cache") { model.removeCachedModel() }
                         .disabled(model.running || model.modelBusy)
                 } else {

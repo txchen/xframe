@@ -107,3 +107,9 @@ MetalFX Spatial) was measured separately in the [M1 pipeline probe](vt720-spatia
 Its full-chain p95 was 19.5–19.8 ms per 30 fps source pair, with a calculated
 minimum of about 36.5 ms added buffering for evenly spaced 60 Hz presentation.
 The probe omits live decode, display, and generated-frame quality assessment.
+
+## Small NR in 0.1.2
+
+Small NR is a separate optional benchmark using the 310.9.16.0 Small package.
+It uses GPU pre/postprocessing, FP16 fused inference, and RGB8 readback.
+See [the measurement contract and M1 investigation](../small-nr-benchmark/validation.md).

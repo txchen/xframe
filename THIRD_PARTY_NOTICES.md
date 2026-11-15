@@ -14,7 +14,7 @@ SHA-256 is `5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633`.
 
 The release app builds the video-only frame-generation helper from
 [iamwavecut/MLX-DLSS](https://github.com/iamwavecut/MLX-DLSS) at commit
-`0ca2deab092fe6f3e331bf4f616271dbc64521d0` (Apache 2.0), with
+`7870371e8bf6c03967213f1a5d40db6c5a3bee38` (Apache 2.0), with
 [mlx-swift](https://github.com/ml-explore/mlx-swift) 0.31.6 and matching MLX
 Metal 0.31.1 kernels (MIT). Their full license and notice files are included
 under `Resources/Licenses/`. Model weights are supplied by the user at runtime
