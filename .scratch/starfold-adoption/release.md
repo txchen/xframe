@@ -1,14 +1,14 @@
 # XFrame 0.1.1 (build 2)
 
-Status: notarized; publishing
+Status: published
 
 Prepared directory: `.build/releases/xframe-F2VbrUJf`.
 Signed with `Developer ID Application: Double Jump Academy (24HJJ8KB69)`.
 Preparation and signed bundle verification passed, including hardened runtime and secure timestamps.
 Notary profile: `xframe-notary`.
 Apple agreement blocker resolved. Submission 89adf86a-117d-405b-9526-8b99a1659134 accepted; staple and Gatekeeper verification passed.
-Final notarized ZIP prepared for GitHub and Homebrew publication.
-Existing Homebrew version remains 0.1.0,1.
+Published GitHub v0.1.1; Homebrew tap commit 2398f4a. brew fetch verified the public archive and checksum.
+Homebrew version is 0.1.1,2.
 
 After Account Holder resolves Apple agreement, resume:
 
