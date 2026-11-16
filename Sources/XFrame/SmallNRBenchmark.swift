@@ -84,7 +84,7 @@ enum SmallNRBenchmark {
             }
         } onCancel: { child.terminate() }
         return [
-            .measured(id, title, detail: "55 moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
+            .measured(id, title, detail: "\(values.helper.count) moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
                       timing: "Helper round-trip wall", values: values.helper, budgetMS: budgetMS),
             .measured("nrSmallEndToEnd\(height)", title + " + RGB preparation",
                       detail: "Includes resize, RGB packing, guide transfer, GPU preprocessing, inference, composition and RGB8 readback. Excludes decode, startup and display. Budget is 30 source frames/s; independent-frame research test, not live temporal NR.",

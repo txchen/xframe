@@ -383,3 +383,19 @@ private actor FakeCloud: CloudServing {
     #expect(transitions.last == .ended)
     #expect(await fake.deletes == 2)
 }
+
+@Test @MainActor func launchShowsPlayerBeforeCreationReturnsAndCancelCleansUp() async throws {
+    let service = FakeCloud()
+    let library = CloudLibrary()
+    library.load(using: service)
+    try await eventually { !library.loading }
+    var shown = false
+    library.launchBegan = { shown = true }
+    library.start(cloudGame)
+    #expect(shown)
+    #expect(library.ownsSession && !library.ready)
+    library.end()
+    try await eventually { !library.ownsSession }
+    #expect(await service.creates == 1)
+    #expect(await service.deletes == 1)
+}

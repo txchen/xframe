@@ -19,6 +19,7 @@ final class CloudLibrary {
         didSet { if oldValue != termination { terminationChanged?(termination) } }
     }
     @ObservationIgnored var terminationChanged: ((Termination) -> Void)?
+    @ObservationIgnored var launchBegan: (() -> Void)?
     @ObservationIgnored var requestEndSession: (() -> Void)?
     @ObservationIgnored var audioChanged: (() -> Void)?
     var query = GameLibraryQuery() { didSet { if oldValue != query { rebuildPage() } } }
@@ -361,6 +362,7 @@ final class CloudLibrary {
         lastVideoDiagnostics = nil
         lastStreamReport = nil
         status = source == .home ? "Connecting to \(name)…" : "Starting \(name)…"
+        launchBegan?()
         task = Task { [self] in
             do {
                 // Do not cancel a creation POST: retain the returned handle so it can be deleted.

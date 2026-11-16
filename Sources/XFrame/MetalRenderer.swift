@@ -34,6 +34,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var hudPreset: PerformanceHUDPreset = .compact { didSet { restartHUD() } }
     private var work = RenderWorkState()
     var report: ((HUDDocument) -> Void)?
+    var firstFrameReady: (() -> Void)?
+    private var presentationGeneration = UUID()
+    private var awaitingFirstFrame = false
 
     private func restartHUD() {
         hudSampler.stop()
@@ -92,6 +95,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func play(_ source: (any VideoSource)?, in view: MTKView) {
         self.source = source
+        presentationGeneration = UUID()
+        awaitingFirstFrame = source != nil
         restartHUD()
         currentVideo = nil
         spatial = nil
@@ -130,6 +135,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                 return
             }
         }
+        if source != nil && currentVideo == nil { return }
         guard work.needsDraw(hasSource: source != nil, resized: invalidated || lastDrawableSize != view.drawableSize) else { return }
         // Acquire scarce drawables only after determining that work is necessary.
         let drawableStarted = CACurrentMediaTime()
@@ -218,7 +224,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if work.pendingFrame, let source, let frame = currentVideo?.frame {
             sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(), sourceRTP: frame.sourceRTP, frameID: frame.id)
         } else { sample = nil }
-        command.addCompletedHandler { command in
+        let generation = presentationGeneration
+        command.addCompletedHandler { [weak self] command in
             withExtendedLifetime(retainedVideo) {}
             if let counter {
                 if command.status == .completed, let seconds = SpatialUpscaler.scalerSeconds(counter), let scalingRevision {
@@ -232,6 +239,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             }
             if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
                 sample?.gpuCompleted(start: command.gpuStartTime, end: command.gpuEndTime)
+            }
+            if command.status == .completed, sample != nil {
+                Task { @MainActor [weak self] in
+                    guard let self, self.presentationGeneration == generation, self.awaitingFirstFrame else { return }
+                    self.awaitingFirstFrame = false
+                    self.invalidated = true
+                    self.firstFrameReady?()
+                }
             }
             permit.signal()
         }

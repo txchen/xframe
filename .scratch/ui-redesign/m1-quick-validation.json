@@ -1,0 +1,72 @@
+{
+  "date" : "2026-11-16T02:16:56Z",
+  "device" : "Apple M1",
+  "fixture" : "Big Buck Bunny, silent 1920×1080 H.264, 30 fps, SHA-256 5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633",
+  "macOS" : "Version 27.2.1 (Build 26B131)",
+  "measurements" : [
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "15 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+      "grade" : "headroom",
+      "id" : "vt720",
+      "medianMS" : 5.770083327661268,
+      "p95MS" : 6.503541677375324,
+      "samples" : 15,
+      "timing" : "Processor wall",
+      "title" : "VideoToolbox 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "15 adjacent moving-frame pairs after five warmups. Excludes decode and RGB preparation; includes helper input\/output transfer and MLX generation. Diagnostic only; capacity uses the preparation-inclusive row.",
+      "grade" : "overBudget",
+      "id" : "mlx720",
+      "medianMS" : 32.72137501335237,
+      "p95MS" : 34.43124999466818,
+      "samples" : 15,
+      "timing" : "Helper round-trip wall",
+      "title" : "MLX-DLSS video 720p 30 → 60 fps"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "Includes fixture resize, CPU bitmap output, RGB packing, helper transfer and generation. Excludes decode, display and startup. RGB is prepared one frame at a time, not cached for all 61 frames. Research path, not live playback.",
+      "grade" : "overBudget",
+      "id" : "mlxEndToEnd720",
+      "medianMS" : 35.434374993201345,
+      "p95MS" : 37.16020833235234,
+      "samples" : 15,
+      "timing" : "Preparation + helper wall",
+      "title" : "MLX-DLSS video 720p 30 → 60 fps + RGB preparation"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "15 moving frames after six warmups. Small 31-block network, FP16, Metal fused, standard profile, scale 1. GPU preprocessing and composition, packed RGB8 readback. Includes IPC and inference; excludes RGB preparation. History resets each frame; zero motion and constant depth are placeholders.",
+      "grade" : "overBudget",
+      "id" : "nrSmall720",
+      "medianMS" : 208.20066667511128,
+      "p95MS" : 212.86004166177008,
+      "samples" : 15,
+      "timing" : "Helper round-trip wall",
+      "title" : "Small NR 720p · independent frames"
+    },
+    {
+      "budgetMS" : 33.333333333333336,
+      "detail" : "Includes resize, RGB packing, guide transfer, GPU preprocessing, inference, composition and RGB8 readback. Excludes decode, startup and display. Budget is 30 source frames\/s; independent-frame research test, not live temporal NR.",
+      "grade" : "overBudget",
+      "id" : "nrSmallEndToEnd720",
+      "medianMS" : 210.9902083320776,
+      "p95MS" : 215.73337499285117,
+      "samples" : 15,
+      "timing" : "Preparation + helper wall",
+      "title" : "Small NR 720p · independent frames + RGB preparation"
+    }
+  ],
+  "notes" : [
+    "Headroom uses at most 70% of the relevant frame interval; Tight uses up to 100%. Frame-generation grades apply to a native stream at the tested input size; resizing the fixture is outside timing. These are offline capacity hints, not an in-game FPS or latency guarantee.",
+    "MetalFX timings are GPU command intervals on a decoded NV12 video still, including color conversion. VideoToolbox timings are processor completion wall time over consecutive real video frames resized before timing where needed; its internal GPU time is not exposed.",
+    "Selected MLX-DLSS model SHA-256: 21faede75312631273f930a6fc1aed17f1eb5ac4a476a485551afc6d7ced2958. The cached model remains local and is not included in the app bundle or report.",
+    "MLX-DLSS is a separate video research port with no game motion vectors or depth. Helper round-trip excludes RGB preparation; the preparation-inclusive row includes resize, bitmap output and RGB packing and is used for capacity hints. Neither includes decoder or display latency; it is not a live XFrame backend.",
+    "Small NR helper upstream: 7870371e8bf6c03967213f1a5d40db6c5a3bee38. Independent-frame FP16, GPU pre\/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.",
+    "Small NR weights SHA-256: c496209573133d430cc510c0ae424ba67a73fb1c957d96191e0227c42832607b.",
+    "Selected workloads: mlx720, nrSmall720, vt720; 15 measured samples per available workload. Quick runs are screening only; confirm conclusions with Standard runs."
+  ]
+}

@@ -66,7 +66,7 @@ struct PostProcessingBenchmarkReport: Codable, Sendable {
             $0.id.hasPrefix("spatial") && $0.grade == .headroom
         }
         let spatialText = spatial.map { "\($0.title) has measured headroom" }
-            ?? "No tested MetalFX tier has clear 60 Hz headroom"
+            ?? (measurements.contains { $0.id.hasPrefix("spatial") } ? "No tested MetalFX tier has clear 60 Hz headroom" : "MetalFX not tested")
         let frameText: String
         if let best = measurements.reversed().first(where: {
             $0.id.hasPrefix("vt") && $0.grade == .headroom
@@ -76,6 +76,8 @@ struct PostProcessingBenchmarkReport: Codable, Sendable {
             $0.id.hasPrefix("vt") && $0.grade == .tight
         }) {
             frameText = "\(tight.title) is close to its time budget"
+        } else if !measurements.contains(where: { $0.id.hasPrefix("vt") }) {
+            frameText = "VideoToolbox not tested"
         } else {
             frameText = "No tested frame-generation tier has clear time-budget headroom"
         }
@@ -105,8 +107,11 @@ enum PostProcessingBenchmark {
     static let spatialBudgetMS = 1000.0 / 60.0
     static let interpolationBudgetMS = 1000.0 / 30.0
 
-    static func run(weightsURL: URL? = nil, smallNRURL: URL? = nil,
+    static func run(selection: BenchmarkSelection = BenchmarkSelection(), weightsURL: URL? = nil, smallNRURL: URL? = nil,
                     progress: @Sendable (String) -> Void) async throws -> PostProcessingBenchmarkReport {
+        guard !selection.workloads.isEmpty else { throw RenderError.unavailable("Select at least one test.") }
+        if selection.needsFG && weightsURL == nil { throw RenderError.unavailable("Selected MLX FG tests require weights.") }
+        if selection.needsNR && smallNRURL == nil { throw RenderError.unavailable("Selected Small NR tests require weights.") }
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw RenderError.unavailable("No Metal device is available.")
         }
@@ -126,19 +131,21 @@ enum PostProcessingBenchmark {
             ("spatial4k", "MetalFX 1080p → 4K", 3840, 2160, false),
             ("spatial4kSharpen", "MetalFX 1080p → 4K + High sharpening", 3840, 2160, true)
         ] {
+            guard selection.contains(id) else { continue }
             try Task.checkCancellation()
             progress("Testing \(title)…")
             do {
                 measurements.append(try measureSpatial(device: device, source: source, id: id,
-                    title: title, output: ScalingExtent(width: width, height: height), sharpen: sharpen))
+                    title: title, output: ScalingExtent(width: width, height: height), sharpen: sharpen, sampleCount: selection.length.samples))
             } catch is CancellationError { throw CancellationError() }
             catch { measurements.append(.failed(id, title, error: error, budgetMS: spatialBudgetMS)) }
         }
         for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
             try Task.checkCancellation()
             let id = "vt\(height)", title = "VideoToolbox \(height)p 30 → 60 fps"
+            guard selection.contains(id) else { continue }
             progress("Testing \(title)…")
-            do { measurements.append(try await measureInterpolation(frames: frames, width: width, height: height)) }
+            do { measurements.append(try await measureInterpolation(frames: Array(frames.prefix(selection.length.samples + 6)), width: width, height: height)) }
             catch is CancellationError { throw CancellationError() }
             catch { measurements.append(.failed(id, title, error: error, budgetMS: interpolationBudgetMS)) }
         }
@@ -146,23 +153,24 @@ enum PostProcessingBenchmark {
             "Headroom uses at most 70% of the relevant frame interval; Tight uses up to 100%. Frame-generation grades apply to a native stream at the tested input size; resizing the fixture is outside timing. These are offline capacity hints, not an in-game FPS or latency guarantee.",
             "MetalFX timings are GPU command intervals on a decoded NV12 video still, including color conversion. VideoToolbox timings are processor completion wall time over consecutive real video frames resized before timing where needed; its internal GPU time is not exposed."
         ]
-        if let weightsURL {
+        if selection.needsFG, let weightsURL {
             do {
                 let digest = try MLXFrameGenerationBenchmark.modelDigest(weightsURL)
                 notes.append("Selected MLX-DLSS model SHA-256: \(digest). The cached model remains local and is not included in the app bundle or report.")
                 for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
                     try Task.checkCancellation()
                     let id = "mlx\(height)", title = "MLX-DLSS video \(height)p 30 → 60 fps"
+                    guard selection.contains(id) else { continue }
                     progress("Testing \(title)…")
                     do {
                         measurements.append(contentsOf: try await MLXFrameGenerationBenchmark.measure(
-                            frames: frames.map(\.buffer), width: width, height: height, weightsURL: weightsURL))
+                            frames: Array(frames.prefix(selection.length.samples + 6)).map(\.buffer), width: width, height: height, weightsURL: weightsURL))
                     } catch is CancellationError { throw CancellationError() }
                     catch { measurements.append(.failed(id, title, error: error, budgetMS: interpolationBudgetMS)) }
                 }
             } catch is CancellationError { throw CancellationError() }
             catch {
-                for height in [720, 1080, 1440] {
+                for height in [720, 1080, 1440] where selection.contains("mlx\(height)") {
                     measurements.append(.failed("mlx\(height)", "MLX-DLSS video \(height)p 30 → 60 fps",
                         error: RenderError.unavailable("Cannot read the selected model file."),
                         budgetMS: interpolationBudgetMS))
@@ -172,23 +180,23 @@ enum PostProcessingBenchmark {
         } else {
             notes.append("MLX-DLSS frame generation was not selected. Import framegen.safetensors to run its separate optional benchmark.")
         }
-        notes.append("Small NR helper upstream: \(SmallNRBenchmark.upstream). Independent-frame FP16, GPU pre/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.")
-        if let smallNRURL {
+        if selection.needsNR { notes.append("Small NR helper upstream: \(SmallNRBenchmark.upstream). Independent-frame FP16, GPU pre/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.") }
+        if selection.needsNR, let smallNRURL {
             let digest = try SmallNRModelCache.validate(smallNRURL)
             notes.append("Small NR weights SHA-256: \(digest).")
             for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
                 try Task.checkCancellation()
-                progress("Testing Small NR \(height)p… This can take several minutes.")
+                guard selection.contains("nrSmall\(height)") else { continue }
+                progress("Testing Small NR \(height)p… This model is compute-intensive.")
                 do {
                     measurements.append(contentsOf: try await SmallNRBenchmark.measure(
-                        frames: frames.map(\.buffer), width: width, height: height, modelURL: smallNRURL))
+                        frames: Array(frames.prefix(selection.length.samples + 6)).map(\.buffer), width: width, height: height, modelURL: smallNRURL))
                 } catch is CancellationError { throw CancellationError() }
                 catch { measurements.append(.failed("nrSmall\(height)", "Small NR \(height)p",
                     error: error, budgetMS: SmallNRBenchmark.budgetMS)) }
             }
-        } else {
-            measurements.append(.unavailable("nrSmall", "Small NR", detail: "Import NeuralRendering-Small.dlssmodel to enable the 720p, 1080p and 1440p tests.", budgetMS: SmallNRBenchmark.budgetMS))
         }
+        notes.append("Selected workloads: \(selection.workloads.map(\.rawValue).sorted().joined(separator: ", ")); \(selection.length.samples) measured samples per available workload. Quick runs are screening only; confirm conclusions with Standard runs.")
         return PostProcessingBenchmarkReport(date: Date(), device: device.name,
             macOS: ProcessInfo.processInfo.operatingSystemVersionString,
             fixture: "Big Buck Bunny, silent 1920×1080 H.264, 30 fps, SHA-256 \(fixtureSHA256)",
@@ -241,7 +249,7 @@ enum PostProcessingBenchmark {
 
     private static func measureSpatial(device: any MTLDevice, source: VideoTextures,
                                        id: String, title: String, output: ScalingExtent,
-                                       sharpen: Bool) throws -> BenchmarkMeasurement {
+                                       sharpen: Bool, sampleCount: Int) throws -> BenchmarkMeasurement {
         guard MTLFXSpatialScalerDescriptor.supportsDevice(device),
               let queue = device.makeCommandQueue() else {
             return .unavailable(id, title, detail: "MetalFX Spatial is unavailable on this GPU.",
@@ -270,7 +278,7 @@ enum PostProcessingBenchmark {
             throw RenderError.unavailable("Cannot allocate the \(title) output texture.")
         }
         var gpu: [Double] = [], wall: [Double] = []
-        for iteration in 0..<65 {
+        for iteration in 0..<(sampleCount + 5) {
             try Task.checkCancellation()
             guard let command = queue.makeCommandBuffer() else {
                 throw RenderError.unavailable("Cannot create a Metal command buffer.")
@@ -318,9 +326,9 @@ enum PostProcessingBenchmark {
                 }
             }
         }
-        let values = gpu.count == 60 ? gpu : wall
-        return .measured(id, title, detail: "60 offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
-                         timing: gpu.count == 60 ? "GPU command" : "GPU completion wall (fallback)",
+        let values = gpu.count == sampleCount ? gpu : wall
+        return .measured(id, title, detail: "\(sampleCount) offscreen submissions after five warmups; includes input conversion, MetalFX and final composition.",
+                         timing: gpu.count == sampleCount ? "GPU command" : "GPU completion wall (fallback)",
                          values: values, budgetMS: spatialBudgetMS)
     }
 
@@ -380,7 +388,7 @@ enum PostProcessingBenchmark {
             throw RenderError.unavailable("VideoToolbox did not specify an output pixel format.")
         }
         var times: [Double] = []
-        for index in 1..<61 {
+        for index in 1..<frames.count {
             try Task.checkCancellation()
             var destination: CVPixelBuffer?
             let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height, format,
@@ -405,7 +413,7 @@ enum PostProcessingBenchmark {
             }
             if index > 5 { times.append((CACurrentMediaTime() - started) * 1000) }
         }
-        return .measured(id, title, detail: "55 consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
+        return .measured(id, title, detail: "\(times.count) consecutive video-frame pairs after five warmups; native-size stream assumed; fixture resizing is outside timing; processor wall time, not GPU kernel time.",
                          timing: "Processor wall", values: times, budgetMS: interpolationBudgetMS)
     }
 }

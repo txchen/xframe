@@ -36,6 +36,12 @@ struct CloudStreamSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Divider()
+            Text("Game input · applies immediately").font(.headline)
+            Toggle("Enable controller", isOn: $library.controllerEnabled)
+            Toggle("Enable keyboard controls", isOn: $library.keyboardEnabled)
+            Text("Game input is active only while the player has focus. Open Keyboard Controls in the View menu for key mappings.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Divider()
             if let active = library.activeStreamPreferences {
                 Text("Current session: \(active.summary)").font(.callout)
             }

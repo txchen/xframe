@@ -147,15 +147,15 @@ struct CloudLibraryView: View {
                 Text("XFRAME").font(.system(size: 15, weight: .heavy, design: .rounded)).tracking(1.5)
             }.padding(.top, 10)
             VStack(alignment: .leading, spacing: 8) {
-                Text("YOUR LIBRARY").font(.system(size: 10, weight: .semibold)).tracking(1.5)
+                Text("YOUR LIBRARY").font(.system(size: 14, weight: .semibold)).tracking(1.5)
                     .foregroundStyle(LibraryStyle.secondary).padding(.bottom, 6)
-                collectionButton("Games", icon: "square.grid.2x2", favorites: false)
+                collectionButton("Cloud games", icon: "square.grid.2x2", favorites: false)
                 collectionButton("Favorites", icon: "star", favorites: true)
                 Button {
                     library.showingConsoles = true
                 } label: {
                     Label("Consoles", systemImage: "gamecontroller")
-                        .font(.system(size: 13, weight: library.showingConsoles ? .semibold : .medium))
+                        .font(.system(size: 17, weight: library.showingConsoles ? .semibold : .medium))
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .foregroundStyle(library.showingConsoles ? LibraryStyle.accent : LibraryStyle.secondary)
                 }.buttonStyle(.plain).disabled(!account.hasXboxSignIn)
@@ -164,9 +164,9 @@ struct CloudLibraryView: View {
             Button {
                 library.showingStreamSettings = true
             } label: {
-                Label("Streaming Settings", systemImage: "slider.horizontal.3")
-                    .font(.system(size: 12, weight: .medium))
-            }.buttonStyle(.plain).accessibilityLabel("Streaming Settings")
+                Label("Settings", systemImage: "slider.horizontal.3")
+                    .font(.system(size: 16, weight: .medium))
+            }.buttonStyle(.plain).accessibilityLabel("Settings")
             Button {
                 account.showingAccount = account.hasXboxSignIn
             } label: {
@@ -174,20 +174,14 @@ struct CloudLibraryView: View {
                     Image(systemName: "person.crop.circle.fill").font(.system(size: 24))
                         .foregroundStyle(LibraryStyle.accent)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(account.gamertag ?? "Xbox account").font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                        Text(account.gamertag ?? "Xbox account").font(.system(size: 16, weight: .semibold)).lineLimit(1)
                         Text(account.isBusy ? "Connecting…" : account.hasXboxSignIn ? "Manage account" : "Sign in")
-                            .font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
+                            .font(.system(size: 14)).foregroundStyle(LibraryStyle.secondary)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(.plain).accessibilityLabel("Xbox Account")
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Xbox Streaming", systemImage: "gamecontroller").font(.system(size: 12, weight: .medium))
-                Text("Cloud and local console.\nNative video on your Mac.").font(.system(size: 12)).lineSpacing(4)
-                    .foregroundStyle(LibraryStyle.secondary)
-                Text("DEVELOPMENT PREVIEW").font(.system(size: 8, weight: .semibold)).tracking(1)
-                    .foregroundStyle(LibraryStyle.secondary).padding(.top, 12)
-            }
-        }.padding(18).frame(width: 164).frame(maxHeight: .infinity)
+
+        }.padding(18).frame(width: 200).frame(maxHeight: .infinity)
             .background(LibraryStyle.sidebar)
             .overlay(alignment: .trailing) { Rectangle().fill(LibraryStyle.border).frame(width: 1) }
     }
@@ -200,7 +194,7 @@ struct CloudLibraryView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: selected ? icon + ".fill" : icon).frame(width: 16)
-                Text(title).font(.system(size: 13, weight: selected ? .semibold : .medium))
+                Text(title).font(.system(size: 17, weight: selected ? .semibold : .medium))
                 Spacer(minLength: 0)
             }.padding(.horizontal, 12).padding(.vertical, 12)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -213,10 +207,9 @@ struct CloudLibraryView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(library.query.favoritesOnly ? "Favorites" : "Cloud library")
+                Text(library.query.favoritesOnly ? "Favorites" : "Cloud games")
                     .font(.system(size: 30, weight: .bold, design: .rounded))
-                Text(library.catalogLoaded ? "\(library.games.count.formatted()) games. Find your next adventure." : "Great games. A little closer.")
-                    .font(.system(size: 13)).foregroundStyle(LibraryStyle.secondary)
+
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 6) {
@@ -226,7 +219,7 @@ struct CloudLibraryView: View {
                 }.frame(width: 230).tint(.white)
                     .disabled(account.isBusy || library.loading || library.ownsSession || account.regionNames.isEmpty)
                 Text("\(account.requestedRegion ?? "No region") · Requested region")
-                    .font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
+                    .font(.system(size: 14)).foregroundStyle(LibraryStyle.secondary)
                     .help("The service may redirect the session. Changing region clears the catalog.")
             }
         }
@@ -236,8 +229,8 @@ struct CloudLibraryView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(library.activeGame ?? library.selectedGame?.name ?? "Select a game to begin").font(.headline).lineLimit(1)
-                    Text(library.selectedGame.map { $0.access.label + " · " + library.status } ?? library.status).font(.caption).foregroundStyle(LibraryStyle.secondary)
+                    Text(library.activeGame ?? library.selectedGame?.name ?? "Select a game to begin").font(.system(size: 22, weight: .semibold)).lineLimit(1)
+                    Text(library.ownsSession ? library.status : library.selectedGame?.access.playable == true ? "Ready to play" : library.status).font(.system(size: 16)).foregroundStyle(LibraryStyle.secondary)
                 }
                 Spacer()
                 if library.ending { ProgressView().controlSize(.small) }
@@ -250,7 +243,7 @@ struct CloudLibraryView: View {
                     Button {
                         if let game = library.selectedGame { library.start(game) }
                     } label: {
-                        Label("Play game", systemImage: "play.fill").font(.system(size: 13, weight: .bold))
+                        Label("Play game", systemImage: "play.fill").font(.system(size: 17, weight: .bold))
                             .foregroundStyle(LibraryStyle.canvas).padding(.horizontal, 22).padding(.vertical, 12)
                             .background(LibraryStyle.accent, in: RoundedRectangle(cornerRadius: 8))
                     }.buttonStyle(.plain).accessibilityLabel("Start Selected Game")
@@ -258,38 +251,20 @@ struct CloudLibraryView: View {
                         .disabled(library.selectedGame?.access.playable != true || library.loading || account.isBusy)
                 }
             }
-            Text(library.activeStreamPreferences.map { "Session: \($0.summary)" }
-                 ?? "Next session: \(library.streamPreferences.summary)")
-                .font(.caption).foregroundStyle(LibraryStyle.secondary)
-            HStack {
-                Toggle("Mute game audio", isOn: Binding(get: { library.audioMuted }, set: {
-                    library.setAudio(muted: $0, volume: library.audioVolume)
-                }))
-                Slider(value: Binding(get: { library.audioVolume }, set: {
-                    library.setAudio(muted: library.audioMuted, volume: $0)
-                }), in: 0...1) { Text("Game volume") }.frame(width: 130)
-                Text("\(Int(library.audioVolume * 100))%").monospacedDigit().frame(width: 42)
-                Spacer()
-                Text(library.keyboardEnabled && library.controllerEnabled ? "Keyboard + Controller · automatic switching" : library.keyboardEnabled ? "Keyboard enabled · View > Keyboard Controls" : library.controllerEnabled ? "Controller enabled · Microphone off" : "Input: enable in View menu · Microphone off").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary)
-            }
+            InlineStreamSettings(library: library)
             if let error = library.viewError ?? library.errorMessage { Text(error).foregroundStyle(.red).textSelection(.enabled) }
-            Button("Export frame timing sample…") { library.exportFrameTimingSample() }
-            if let diagnostics = library.lastVideoDiagnostics, !diagnostics.isEmpty {
-                DisclosureGroup("Last stream diagnostics") {
-                    ScrollView {
-                        Text(diagnostics).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }.frame(height: 100)
-                    if let report = library.lastStreamReport {
-                        Button("Export JSON…") {
-                            do {
-                                library.diagnosticDocument = try StreamDiagnosticDocument(report: report)
-                                library.exportingDiagnostics = true
-                            } catch { library.viewError = "Could not prepare stream diagnostics." }
-                        }
+            DisclosureGroup("Diagnostics") {
+                Button("Export frame timing sample…") { library.exportFrameTimingSample() }
+                if let report = library.lastStreamReport {
+                    Button("Export last session JSON…") {
+                        do {
+                            library.diagnosticDocument = try StreamDiagnosticDocument(report: report)
+                            library.exportingDiagnostics = true
+                        } catch { library.viewError = "Could not prepare stream diagnostics." }
                     }
                 }
-            }
+            }.font(.system(size: 14)).foregroundStyle(LibraryStyle.secondary)
+
         }
     }
 }

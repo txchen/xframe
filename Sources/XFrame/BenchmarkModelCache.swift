@@ -70,6 +70,7 @@ struct BenchmarkModelCache: Sendable {
         do {
             downloaded = try await session.download(for: request)
         } catch {
+            try Task.checkCancellation()
             throw BenchmarkModelCacheError.downloadFailed
         }
         let (temporary, response) = downloaded
@@ -128,7 +129,7 @@ struct BenchmarkModelCache: Sendable {
     }
 }
 
-private final class HTTPSModelRedirects: NSObject, URLSessionTaskDelegate {
+final class HTTPSModelRedirects: NSObject, URLSessionTaskDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask,
                     willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
                     completionHandler: @escaping (URLRequest?) -> Void) {

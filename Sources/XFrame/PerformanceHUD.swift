@@ -29,11 +29,11 @@ enum PerformanceHUDText {
         }
         let volume = stats.audioVolume.isFinite ? Int(min(1, max(0, stats.audioVolume)) * 100) : 0
         let timing = stats.timings
-        let stages = [timing.decode, timing.frameWait, timing.gpu, timing.presentation]
+        let stages = [timing.decode, timing.frameWait, timing.gpuQueue, timing.gpu, timing.displayWait, timing.presentation]
             .map { decimal($0?.p95MS) }.joined(separator: " / ")
         var lines = [stats.state, rate + " · Game FPS not measured", video,
             "FRAMES skipped total \(stats.dropped) · queue \(stats.queued)/\(stats.capacity) · errors \(stats.decodeErrors)",
-            "P95 ms decode / wait / GPU / present  \(stages)"]
+            "P95 ms decode / wait / GPU queue / GPU / display wait / present  \(stages)"]
         lines += ["MEAN ms queue / GPU queue / GPU / display  " + [timing.frameWait, timing.gpuQueue, timing.gpu, timing.displayWait].map { decimal($0?.meanMS) }.joined(separator: " / "),
             "LOCAL present mean \(decimal(timing.presentation?.meanMS)) ms · p95 \(decimal(timing.presentation?.p95MS)) ms"]
         if !stats.isLive { lines += ["TOTAL in \(stats.decoded) · out \(stats.presented)"] }
@@ -84,7 +84,7 @@ final class PerformanceHUDView: NSView {
     required init?(coder: NSCoder) { fatalError("Storyboard initialization is unsupported.") }
     override var isFlipped: Bool { true }
     override var intrinsicContentSize: NSSize {
-        NSSize(width: 310, height: preset == .detailed ? 566 : 282)
+        NSSize(width: 310, height: preset == .detailed ? 604 : 282)
     }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 

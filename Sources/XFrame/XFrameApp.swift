@@ -7,6 +7,40 @@ import SwiftUI
 @MainActor
 enum XFrameApp {
     static func main() {
+        if CommandLine.arguments.dropFirst().first == "--benchmark-selected" {
+            guard CommandLine.arguments.count == 5,
+                  let length = BenchmarkLength(rawValue: CommandLine.arguments[3]) else {
+                fputs("Usage: XFrame --benchmark-selected vt720,mlx720 quick|standard REPORT.json\n", stderr)
+                exit(64)
+            }
+            let names = CommandLine.arguments[2].split(separator: ",").map(String.init)
+            let items = names.compactMap(BenchmarkWorkload.init(rawValue:))
+            guard !items.isEmpty, items.count == names.count else { exit(64) }
+            let selection = BenchmarkSelection(workloads: Set(items), length: length)
+            let destination = URL(fileURLWithPath: CommandLine.arguments[4])
+            Task.detached {
+                do {
+                    var fg: URL?, nr: URL?
+                    if selection.needsFG {
+                        let cache = BenchmarkModelCache()
+                        if let cached = try cache.cachedModel() { fg = cached }
+                        else { fg = try await cache.download(from: BenchmarkReleaseModels.fgURL) }
+                    }
+                    if selection.needsNR {
+                        let cache = SmallNRModelCache()
+                        if let cached = try cache.cachedModel() { nr = cached }
+                        else { nr = try await BenchmarkReleaseModels.downloadNR(cache: cache) }
+                    }
+                    let report = try await PostProcessingBenchmark.run(selection: selection, weightsURL: fg, smallNRURL: nr) { print($0) }
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                    encoder.dateEncodingStrategy = .iso8601
+                    try encoder.encode(report).write(to: destination, options: .atomic)
+                    exit(report.measurements.contains { $0.grade == .failed } ? 1 : 0)
+                } catch { print("Benchmark failed: \(error.localizedDescription)"); exit(1) }
+            }
+            dispatchMain()
+        }
         if CommandLine.arguments.dropFirst().first == "--benchmark-small-nr" {
             guard CommandLine.arguments.count == 4 else {
                 fputs("Usage: XFrame --benchmark-small-nr MODEL.dlssmodel REPORT.json\n", stderr)
@@ -17,7 +51,7 @@ enum XFrameApp {
             Task.detached {
                 do {
                     _ = try SmallNRModelCache.validate(modelURL)
-                    let report = try await PostProcessingBenchmark.run(smallNRURL: modelURL) {
+                    let report = try await PostProcessingBenchmark.run(selection: BenchmarkSelection(workloads: [.nrSmall720, .nrSmall1080, .nrSmall1440], length: .standard), smallNRURL: modelURL) {
                         print($0)
                     }
                     let encoder = JSONEncoder()
@@ -59,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var benchmarkLifecycle: BenchmarkWindowLifecycle?
     private let playbackSettings = PlaybackSettingsView()
     private let panelInput = PlaybackPanelInput()
+    private var connectingView: NSView?
     private let diagnostics = PerformanceHUDView()
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
     private var sharpening = SharpeningPreset.load()
@@ -143,6 +178,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             content.addSubview(view)
             diagnostics.preset = hudPreset
             content.addSubview(diagnostics)
+            let connecting = NSHostingView(rootView: StreamConnectingView(library: account.library, dismiss: { [weak self] in self?.hidePlaybackWindow(); self?.showCloudLibrary() }))
+            connecting.translatesAutoresizingMaskIntoConstraints = false
+            connecting.isHidden = true
+            content.addSubview(connecting)
+            NSLayoutConstraint.activate([
+                connecting.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+                connecting.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+                connecting.topAnchor.constraint(equalTo: content.topAnchor),
+                connecting.bottomAnchor.constraint(equalTo: content.bottomAnchor)
+            ])
+            self.connectingView = connecting
+            renderer.firstFrameReady = { [weak self] in self?.connectingView?.isHidden = true }
             content.addSubview(playbackSettings)
             NSLayoutConstraint.activate([
                 playbackSettings.centerXAnchor.constraint(equalTo: content.centerXAnchor),
@@ -169,6 +216,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             playbackPresentation = PlaybackWindowPresentation(surface: window)
             view.updateBackingSize()
             NSApp.activate(ignoringOtherApps: true)
+            account.library.launchBegan = { [weak self] in
+                guard let self else { return }
+                self.hidePlaybackSettings(force: true)
+                self.connectingView?.isHidden = false
+                self.window?.title = "XFrame — " + (self.account.library.activeGame ?? "Connecting")
+                self.playbackPresentation?.showWindowed()
+            }
             account.library.displayVideo = { [weak self] source in
                 guard let self, let view = self.videoView, let renderer = self.renderer else { return }
                 self.hidePlaybackSettings(force: true)
@@ -263,7 +317,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.isReleasedWhenClosed = false
             let lifecycle = BenchmarkWindowLifecycle(model: model)
             window.delegate = lifecycle
-            window.setContentSize(NSSize(width: 780, height: 580))
+            window.setContentSize(NSSize(width: 860, height: 820))
+            window.contentMinSize = NSSize(width: 780, height: 720)
+            WindowPlacement.keepVisible(window)
             window.center()
             benchmarkModel = model
             benchmarkLifecycle = lifecycle
@@ -317,6 +373,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func hidePlaybackWindow() {
+        connectingView?.isHidden = true
         hidePlaybackSettings(force: true)
         playbackPresentation?.hide()
         showCloudLibrary()
@@ -524,7 +581,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         switch state {
         case .idle: return
         case .ended, .unconfirmed:
-            hidePlaybackWindow()
+            if account.library.errorMessage != nil, connectingView?.isHidden == false {
+                hidePlaybackSettings(force: true)
+            } else { hidePlaybackWindow() }
         case .ending, .failed:
             account.library.playbackSettingsVisible = true
             if case .failed(let message) = state {

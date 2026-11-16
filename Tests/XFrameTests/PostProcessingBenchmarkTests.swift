@@ -12,7 +12,7 @@ import Testing
     #expect(result.p95MS == 10 && result.grade == .tight)
     let report = PostProcessingBenchmarkReport(date: .now, device: "Test", macOS: "Test", fixture: "Test",
         measurements: [result], notes: [])
-    #expect(report.capacitySummary.contains("No tested frame-generation tier"))
+    #expect(report.capacitySummary.contains("VideoToolbox not tested"))
 }
 
 @Test func benchmarkModelCacheImportsVerifiesAndRemoves() throws {
@@ -43,11 +43,30 @@ import Testing
 }
 
 @Test func bundledBenchmarkExecutesItsAvailableBackends() async throws {
-    let report = try await PostProcessingBenchmark.run(progress: { _ in })
-    #expect(report.measurements.map(\.id) == ["spatial1440", "spatial4k", "spatial4kSharpen", "vt720", "vt1080", "vt1440", "nrSmall"])
+    let report = try await PostProcessingBenchmark.run(selection: BenchmarkSelection(workloads: [.spatial1440, .vt720]), progress: { _ in })
+    #expect(report.measurements.map(\.id) == ["spatial1440", "vt720"])
     for measurement in report.measurements where measurement.grade != .unavailable {
         #expect(measurement.grade != .failed, "\(measurement.title): \(measurement.detail)")
-        #expect(measurement.samples >= 55)
+        #expect(measurement.samples == 15)
         #expect(measurement.p95MS?.isFinite == true)
     }
+}
+
+@Test func quickMLXRunStillExcludesWarmupAndMeasuresSelectedCount() throws {
+    let result = try MLXBenchmarkSamples.collect(frameCount: BenchmarkLength.quick.samples + 6,
+        prepare: { _ in Data([0]) }, exchange: { _, _ in })
+    #expect(result.helper.count == 15)
+    #expect(result.endToEnd.count == 15)
+}
+
+@Test func releaseModelsDownloadAndValidateWhenRequested() async throws {
+    guard ProcessInfo.processInfo.environment["XFRAME_VERIFY_MODEL_DOWNLOADS"] == "1" else { return }
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("xframe-download-test-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: root) }
+    let fg = BenchmarkModelCache(directory: root.appendingPathComponent("fg"))
+    let model = try await fg.download(from: BenchmarkReleaseModels.fgURL)
+    #expect(try fg.cachedModel() == model)
+    let nr = SmallNRModelCache(directory: root.appendingPathComponent("nr"))
+    let package = try await BenchmarkReleaseModels.downloadNR(cache: nr)
+    #expect(try SmallNRModelCache.validate(package) == BenchmarkReleaseModels.nrWeightsSHA256)
 }

@@ -2,14 +2,10 @@ import SwiftUI
 
 struct GameBrowserView: View {
     let library: CloudLibrary
+    @AppStorage("XFrame.LargeLibrary") private var large = false
 
     var body: some View {
         VStack(spacing: 18) {
-            Picker("Access", selection: Binding(get: { library.query.access }, set: { value in
-                library.updateQuery { $0.access = value }
-            })) {
-                ForEach(GameLibraryQuery.Access.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }.frame(maxWidth: .infinity, alignment: .leading)
             filters
             catalog
                 .onMoveCommand { direction in
@@ -24,7 +20,17 @@ struct GameBrowserView: View {
     }
 
     private var filters: some View {
-        HStack {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) { filterOptions; Spacer(); displayOptions }
+            VStack(alignment: .leading, spacing: 12) { filterOptions; displayOptions }
+        }.font(.system(size: large ? 17 : 15)).controlSize(.large)
+    }
+
+    private var filterOptions: some View {
+        HStack(spacing: 12) {
+            Picker("Access", selection: Binding(get: { library.query.access }, set: { value in library.updateQuery { $0.access = value } })) {
+                ForEach(GameLibraryQuery.Access.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }.labelsHidden().frame(width: 180)
             Picker("Category", selection: Binding(get: { library.query.category }, set: { value in
                 library.updateQuery { $0.category = value }
             })) {
@@ -36,11 +42,17 @@ struct GameBrowserView: View {
             })) {
                 ForEach(GameLibraryQuery.Sort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }.frame(width: 115)
-            Spacer()
+        }
+    }
+
+    private var displayOptions: some View {
+        HStack(spacing: 12) {
+            Picker("Size", selection: $large) { Text("Standard").tag(false); Text("Large").tag(true) }
+                .pickerStyle(.segmented).frame(width: 220)
             Picker("View", selection: Binding(get: { library.query.layout }, set: { library.query.layout = $0 })) {
                 ForEach(GameLibraryQuery.Layout.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }.pickerStyle(.segmented).labelsHidden().frame(width: 105)
-        }.tint(.white).font(.system(size: 12))
+        }.tint(.white)
     }
 
     @ViewBuilder private var catalog: some View {
@@ -62,9 +74,9 @@ struct GameBrowserView: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if library.query.layout == .grid {
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 210), spacing: 20)], spacing: 22) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: large ? 235 : 190, maximum: large ? 300 : 250), spacing: 20)], spacing: 22) {
                     ForEach(library.page.games) { game in
-                        GameLibraryCard(game: game, selected: library.selection == game.id,
+                        GameLibraryCard(game: game, large: large, selected: library.selection == game.id,
                             favorite: library.favorites.contains(game.id), select: { library.selection = game.id },
                             toggleFavorite: { library.toggleFavorite(game) },
                             artworkRevision: library.artworkRevisions[game.id, default: 0])
@@ -80,9 +92,9 @@ struct GameBrowserView: View {
                 ForEach(library.page.games) { game in
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(game.name).font(.headline)
-                            Text(game.access.label).font(.caption).foregroundStyle(game.access.playable ? LibraryStyle.accent : .orange)
-                            Text(game.categories.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+                            Text(game.name).font(.system(size: large ? 21 : 18, weight: .semibold))
+                            Text(game.access.label).font(.system(size: 14)).foregroundStyle(game.access.playable ? LibraryStyle.accent : .orange)
+                            Text(game.categories.joined(separator: " · ")).font(.system(size: 14)).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Text(game.publisher ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -107,7 +119,7 @@ struct GameBrowserView: View {
     private var pagination: some View {
         let page = library.page
         return HStack {
-            Text("\(page.first)–\(page.last) of \(page.total.formatted()) games").font(.system(size: 11)).foregroundStyle(LibraryStyle.secondary)
+            Text("\(page.first)–\(page.last) of \(page.total.formatted()) games").font(.system(size: 14)).foregroundStyle(LibraryStyle.secondary)
             Spacer()
             Picker("Per page", selection: Binding(get: { library.query.pageSize }, set: { value in
                 library.updateQuery { $0.pageSize = value }
@@ -117,12 +129,13 @@ struct GameBrowserView: View {
             Text("\(page.index + 1) / \(page.count)").monospacedDigit().frame(minWidth: 64)
             Button("Next", systemImage: "chevron.right") { library.goToPage(page.index + 1) }
                 .disabled(page.index + 1 >= page.count || library.loading)
-        }.font(.system(size: 11)).tint(.white).controlSize(.small)
+        }.font(.system(size: 14)).tint(.white).controlSize(.regular)
     }
 }
 
 private struct GameLibraryCard: View {
     let game: CloudGame
+    let large: Bool
     let selected, favorite: Bool
     let select, toggleFavorite: () -> Void
     let artworkRevision: Int
@@ -143,20 +156,22 @@ private struct GameLibraryCard: View {
                     }.id(artworkRevision).frame(width: geometry.size.width, height: geometry.size.height).clipped().accessibilityHidden(true)
                     }.aspectRatio(2.0 / 3.0, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
-                    Text(game.name).font(.system(size: 13, weight: .semibold)).lineLimit(2).frame(height: 34, alignment: .topLeading)
+                    Text(game.name).font(.system(size: large ? 21 : 18, weight: .semibold)).lineLimit(2).frame(height: large ? 54 : 48, alignment: .topLeading)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).padding(.top, 3)
                 }.contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel("Select \(game.name)")
                 .accessibilityAddTraits(selected ? .isSelected : [])
-            Text(game.access.label).font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(game.access.playable ? LibraryStyle.accent : .orange)
-                .padding(.horizontal, 10).padding(.top, 8)
-            HStack {
-                Text(game.categories.first ?? "Cloud game").font(.system(size: 10)).foregroundStyle(LibraryStyle.secondary).lineLimit(1)
-                Spacer(minLength: 4)
-                Button(action: toggleFavorite) { Image(systemName: favorite ? "star.fill" : "star") }
-                    .buttonStyle(.borderless).accessibilityLabel("\(favorite ? "Remove" : "Add") \(game.name) \(favorite ? "from" : "to") favorites")
-            }.padding(10)
+            if !game.access.playable {
+                Text(game.access.label).font(.system(size: 14)).foregroundStyle(.orange)
+                    .lineLimit(1).padding(.horizontal, 10).padding(.bottom, 10)
+            }
+
+
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: toggleFavorite) { Image(systemName: favorite ? "star.fill" : "star").font(.system(size: 19))
+                .padding(8).background(.black.opacity(0.65), in: Circle()) }
+                .buttonStyle(.plain).padding(8).accessibilityLabel("Toggle favorite for \(game.name)")
         }
         .background(selected ? LibraryStyle.surface : Color.clear, in: RoundedRectangle(cornerRadius: 10))
         .clipShape(RoundedRectangle(cornerRadius: 10))

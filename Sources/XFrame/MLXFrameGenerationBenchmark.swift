@@ -35,7 +35,7 @@ enum MLXFrameGenerationBenchmark {
         }
         return [
             .measured(id, title,
-                detail: "55 adjacent moving-frame pairs after five warmups. Excludes decode and RGB preparation; includes helper input/output transfer and MLX generation. Diagnostic only; capacity uses the preparation-inclusive row.",
+                detail: "\(values.helper.count) adjacent moving-frame pairs after five warmups. Excludes decode and RGB preparation; includes helper input/output transfer and MLX generation. Diagnostic only; capacity uses the preparation-inclusive row.",
                 timing: "Helper round-trip wall", values: values.helper, budgetMS: budgetMS),
             .measured("mlxEndToEnd\(height)", "\(title) + RGB preparation",
                 detail: "Includes fixture resize, CPU bitmap output, RGB packing, helper transfer and generation. Excludes decode, display and startup. RGB is prepared one frame at a time, not cached for all 61 frames. Research path, not live playback.",
@@ -139,7 +139,7 @@ final class BenchmarkChild: @unchecked Sendable {
     }
 
     func run(frameCount: Int, prepare: (Int) throws -> Data) throws -> MLXBenchmarkSamples {
-        guard frameCount == 61 else { throw RenderError.unavailable("MLX-DLSS needs 61 video frames.") }
+        guard frameCount > 6 && frameCount <= 61 else { throw RenderError.unavailable("MLX-DLSS needs 7–61 video frames.") }
         try Task.checkCancellation()
         _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
         try lock.withLock {

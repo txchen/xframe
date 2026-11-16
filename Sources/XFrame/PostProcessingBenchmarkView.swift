@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 @MainActor
 final class PostProcessingBenchmarkModel: ObservableObject {
+    @Published var selection = BenchmarkSelection()
     @Published var report: PostProcessingBenchmarkReport?
     @Published var status = "Ready. The test uses a bundled video and leaves playback settings unchanged."
     @Published var running = false
@@ -11,8 +12,6 @@ final class PostProcessingBenchmarkModel: ObservableObject {
     @Published var modelBusy = false
     @Published var smallNRURL: URL?
     private let smallNRCache = SmallNRModelCache()
-    @Published var showDownloadURL = false
-    @Published var downloadURLString = ""
     private var worker: Task<PostProcessingBenchmarkReport, Error>?
     private let sessionActive: () -> Bool
     private let modelCache = BenchmarkModelCache()
@@ -23,7 +22,7 @@ final class PostProcessingBenchmarkModel: ObservableObject {
         catch { status = "Small NR cache needs replacement: \(error.localizedDescription)" }
         do {
             weightsURL = try modelCache.cachedModel()
-            if weightsURL != nil { status = "Cached MLX-DLSS model ready. Run to include frame-generation workloads." }
+            if weightsURL != nil { status = "Ready. Choose the tests to run; cached weights are available." }
         } catch {
             status = "Cached MLX-DLSS model needs replacement: \(error.localizedDescription)"
         }
@@ -35,16 +34,34 @@ final class PostProcessingBenchmarkModel: ObservableObject {
             status = "End the active streaming session before benchmarking so its GPU work does not distort the result."
             return
         }
+        guard !selection.workloads.isEmpty else { status = "Select at least one test."; return }
         running = true
         report = nil
         status = "Starting…"
         let model = self
-        let selectedWeights = weightsURL
-        let selectedNR = smallNRURL
+        let options = selection
+        let cachedFG = weightsURL
+        let cachedNR = smallNRURL
+        let fgCache = modelCache
+        let nrCache = smallNRCache
         let worker = Task.detached(priority: .userInitiated) {
-            let access = selectedWeights?.startAccessingSecurityScopedResource() ?? false
-            defer { if access { selectedWeights?.stopAccessingSecurityScopedResource() } }
-            return try await PostProcessingBenchmark.run(weightsURL: selectedWeights, smallNRURL: selectedNR) { message in
+            var selectedWeights = options.needsFG ? cachedFG : nil
+            var selectedNR = options.needsNR ? cachedNR : nil
+            if options.needsFG && selectedWeights == nil {
+                await MainActor.run { model.status = "Downloading MLX FG weights from GitHub Release (2.9 MB)…" }
+                selectedWeights = try await fgCache.download(from: BenchmarkReleaseModels.fgURL)
+                let downloaded = selectedWeights
+                await MainActor.run { model.weightsURL = downloaded }
+            }
+            try Task.checkCancellation()
+            if options.needsNR && selectedNR == nil {
+                await MainActor.run { model.status = "Downloading Small NR from GitHub Release (about 97 MB), then verifying…" }
+                selectedNR = try await BenchmarkReleaseModels.downloadNR(cache: nrCache)
+                let downloaded = selectedNR
+                await MainActor.run { model.smallNRURL = downloaded }
+            }
+            try Task.checkCancellation()
+            return try await PostProcessingBenchmark.run(selection: options, weightsURL: selectedWeights, smallNRURL: selectedNR) { message in
                 Task { @MainActor in model.status = message }
             }
         }
@@ -57,7 +74,7 @@ final class PostProcessingBenchmarkModel: ObservableObject {
             } catch is CancellationError {
                 self?.status = "Benchmark cancelled."
             } catch {
-                self?.status = "Benchmark failed: \(error.localizedDescription)"
+                self?.status = worker.isCancelled ? "Benchmark cancelled." : "Benchmark failed: \(error.localizedDescription)"
             }
             self?.running = false
             self?.worker = nil
@@ -84,7 +101,7 @@ final class PostProcessingBenchmarkModel: ObservableObject {
                         return try cache.importModel(from: source)
                     }.value
                     self?.weightsURL = url
-                    self?.status = "Model cached. Future runs will include MLX-DLSS automatically."
+                    self?.status = "Model cached. Select MLX frame-generation tests to include them."
                 } catch {
                     self?.status = "Model import failed: \(error.localizedDescription)"
                 }
@@ -113,43 +130,10 @@ final class PostProcessingBenchmarkModel: ObservableObject {
                         return try cache.importModel(from: source)
                     }.value
                     self?.smallNRURL = url
-                    self?.status = "Small NR cached. Run Benchmark to test all three resolutions."
+                    self?.status = "Small NR cached. Select the Small NR resolutions you want to test."
                 } catch { self?.status = "Small NR import failed: \(error.localizedDescription)" }
                 self?.modelBusy = false
             }
-        }
-    }
-
-    func downloadModel() {
-        let input = downloadURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let remote = URL(string: input) else {
-            status = BenchmarkModelCacheError.invalidURL.localizedDescription
-            return
-        }
-        modelBusy = true
-        status = "Downloading and verifying model…"
-        let cache = modelCache
-        Task { [weak self] in
-            do {
-                let url = try await cache.download(from: remote)
-                self?.weightsURL = url
-                self?.downloadURLString = ""
-                self?.showDownloadURL = false
-                self?.status = "Model cached. Future runs will include MLX-DLSS automatically."
-            } catch {
-                self?.status = "Model download failed: \(error.localizedDescription)"
-            }
-            self?.modelBusy = false
-        }
-    }
-
-    func removeCachedModel() {
-        do {
-            try modelCache.remove()
-            weightsURL = nil
-            status = "Cached MLX-DLSS model removed. The original source was not changed."
-        } catch {
-            status = "Cannot remove cached model: \(error.localizedDescription)"
         }
     }
 
@@ -190,43 +174,55 @@ struct PostProcessingBenchmarkView: View {
                     Button("Cancel") { model.cancel() }
                 } else {
                     Button("Run Benchmark") { model.start() }
-                        .buttonStyle(.borderedProminent).disabled(model.modelBusy)
+                        .buttonStyle(.borderedProminent).disabled(model.modelBusy || model.selection.workloads.isEmpty)
                 }
             }
-            HStack {
-                Button("Import Small NR…") { model.chooseSmallNR() }
-                    .disabled(model.running || model.modelBusy)
-                Text(model.smallNRURL == nil ? "Small NR · no model cached" : "Small NR model cached")
-                    .foregroundStyle(.secondary)
-            }
-            Text("Small NR tests independent frames at 720p / 1080p / 1440p. Model: NeuralRendering-Small.dlssmodel (310.9.16.0).")
-                .font(.caption).foregroundStyle(.secondary)
-            Text(model.status).font(.subheadline)
-                .foregroundStyle(model.status.hasPrefix("Benchmark failed") ? .red : .secondary)
-            HStack(spacing: 8) {
-                Button("Import Frame-Generation Model…") { model.chooseWeights() }
-                    .disabled(model.running || model.modelBusy)
-                Button("Download from URL…") { model.showDownloadURL.toggle() }
-                    .disabled(model.running || model.modelBusy)
-                if model.weightsURL != nil {
-                    Text("Frame-generation model cached").foregroundStyle(.secondary)
-                    Button("Remove Cache") { model.removeCachedModel() }
-                        .disabled(model.running || model.modelBusy)
-                } else {
-                    Text("Optional · no model cached").foregroundStyle(.secondary)
-                }
-            }
-            .font(.subheadline)
-            if model.showDownloadURL {
-                HStack(spacing: 8) {
-                    TextField("Authorized HTTPS URL for framegen.safetensors", text: $model.downloadURLString)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Download & Cache") { model.downloadModel() }
-                        .disabled(model.running || model.modelBusy || model.downloadURLString.isEmpty)
-                }
-                Text("Only the supported DLSS 310.7.0 model is accepted. Its SHA-256 is checked before caching; the URL is not saved.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Text("Choose tests").font(.title3.bold())
+                        Spacer()
+                        Button("Recommended") { model.selection.workloads = BenchmarkSelection().workloads }
+                        Button("All") { model.selection.workloads = Set(BenchmarkWorkload.allCases) }
+                        Button("None") { model.selection.workloads = [] }
+                    }
+                    ForEach(["MetalFX scaling", "VideoToolbox interpolation", "MLX frame generation", "Small NR · research"], id: \.self) { group in
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(group).font(.system(size: 17, weight: .semibold))
+                            HStack(spacing: 22) {
+                                ForEach(BenchmarkWorkload.allCases.filter { $0.group == group }) { item in
+                                    Toggle(item.title, isOn: Binding(get: { model.selection.workloads.contains(item) }, set: { selected in
+                                        if selected { model.selection.workloads.insert(item) }
+                                        else { model.selection.workloads.remove(item) }
+                                    }))
+                                }
+                            }
+                            if group == "MLX frame generation" {
+                                HStack {
+                                    Text(model.weightsURL == nil ? "2.9 MB · downloads automatically when selected" : "Weights ready on this Mac")
+                                    Spacer()
+                                    Button("Import…") { model.chooseWeights() }
+                                }.font(.system(size: 14)).foregroundStyle(.secondary)
+                            }
+                            if group == "Small NR · research" {
+                                HStack {
+                                    Text(model.smallNRURL == nil ? "97 MB download · slow on lightweight Macs" : "Weights ready · slow on lightweight Macs")
+                                    Spacer()
+                                    Button("Import…") { model.chooseSmallNR() }
+                                }.font(.system(size: 14)).foregroundStyle(.secondary)
+                            }
+                        }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(LibraryStyle.surface, in: RoundedRectangle(cornerRadius: 10))
+                    }
+
+                }.disabled(model.running || model.modelBusy)
+            }.frame(minHeight: 270, maxHeight: 420)
+                    Picker("Test length", selection: $model.selection.length) {
+                        ForEach(BenchmarkLength.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }.pickerStyle(.segmented).disabled(model.running || model.modelBusy)
+                    Text("\(model.selection.workloads.count) tests selected. Quick is for screening; use Standard for more reliable P95 results. Warmups are excluded. Missing selected weights download from XFrame’s GitHub Release and are verified before use.")
+                        .font(.system(size: 14)).foregroundStyle(.secondary)
+            Text(model.status).font(.system(size: 15)).textSelection(.enabled)
             if model.running || model.modelBusy { ProgressView().progressViewStyle(.linear) }
             Divider()
             if let report = model.report {
@@ -249,24 +245,27 @@ struct PostProcessingBenchmarkView: View {
                 Text("Optional MLX-DLSS measures a separate video research path. Its model stays on your Mac; this test does not enable live game frame generation.")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
-                Text("Tests MetalFX at 1440p and 4K, 4K with High sharpening, and VideoToolbox 720p / 1080p / 1440p 30 → 60 fps. A cached model automatically adds MLX-DLSS video generation at those three input sizes. Import once or download from your authorized HTTPS source. Each workload runs offscreen, away from a game session.")
-                    .font(.body).foregroundStyle(.secondary)
+                Text("Only selected tests run. These offline measurements do not enable live frame generation or measure controller latency.")
+                    .font(.system(size: 15)).foregroundStyle(.secondary)
                 Spacer()
             }
             Text("Video excerpt: Big Buck Bunny © Blender Foundation, CC BY 3.0 · modified to silent 1080p30")
                 .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(22)
-        .frame(minWidth: 660, minHeight: 475)
+        .frame(minWidth: 780, minHeight: 720)
+        .background(LibraryStyle.canvas).foregroundStyle(.white).tint(LibraryStyle.accent).preferredColorScheme(.dark)
     }
 
     private func measurementRow(_ item: BenchmarkMeasurement) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title).font(.headline)
-                Text(item.detail).font(.caption).foregroundStyle(.secondary)
-                Text("\(item.timing) · \(item.samples) samples · budget \(item.budgetMS, specifier: "%.2f") ms")
-                    .font(.caption2).foregroundStyle(.tertiary)
+                DisclosureGroup("Details · \(item.samples) samples") {
+                    Text(item.detail).font(.system(size: 14)).foregroundStyle(.secondary)
+                    Text("\(item.timing) · budget \(item.budgetMS, specifier: "%.2f") ms")
+                        .font(.system(size: 14)).foregroundStyle(.secondary)
+                }.font(.system(size: 14))
             }
             Spacer(minLength: 14)
             VStack(alignment: .trailing, spacing: 4) {
@@ -274,13 +273,13 @@ struct PostProcessingBenchmarkView: View {
                     .foregroundStyle(color(for: item.grade))
                 if let median = item.medianMS, let p95 = item.p95MS {
                     Text("median \(median, specifier: "%.1f") · p95 \(p95, specifier: "%.1f") ms")
-                        .font(.caption.monospacedDigit())
+                        .font(.system(size: 16, design: .monospaced))
                 }
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
+        .background(LibraryStyle.surface, in: RoundedRectangle(cornerRadius: 10))
     }
 
     private func color(for grade: BenchmarkGrade) -> Color {
