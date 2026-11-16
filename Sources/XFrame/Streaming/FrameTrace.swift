@@ -5,7 +5,10 @@ import QuartzCore
 /// 90 kHz source clock; local times share CACurrentMediaTime's monotonic clock.
 final class FrameTrace: @unchecked Sendable {
     struct Event: Codable, Sendable {
-        enum Stage: String, Codable, Sendable { case decoderInput, decoded, delivered, presented }
+        enum Stage: String, Codable, Sendable {
+            case decoderInput, decoded, delivered, submitted, gpuStarted, gpuCompleted, presented
+            case inboxOverflow, expired, catchUp, rendererReplaced, notPresented
+        }
         let stage: Stage
         let rtp: UInt32
         let seconds: Double
@@ -17,7 +20,7 @@ final class FrameTrace: @unchecked Sendable {
     private var events: [Event] = []
     private var cursor = 0
     private var stopped = false
-    init(capacity: Int = 16_384) { self.capacity = max(1, capacity) }
+    init(capacity: Int = 32_768) { self.capacity = max(1, capacity) }
     func note(_ stage: Event.Stage, rtp: UInt32, frameID: Int? = nil, at time: Double = CACurrentMediaTime()) {
         lock.withLock {
             guard !stopped, time.isFinite else { return }

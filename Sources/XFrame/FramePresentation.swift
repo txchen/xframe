@@ -21,6 +21,13 @@ final class FramePresentation: @unchecked Sendable {
         self.arrivedAt = arrivedAt
         self.submittedAt = submittedAt
         source.performance.record(.frameWait, seconds: submittedAt - arrivedAt)
+        trace(.submitted, at: submittedAt)
+    }
+
+    private func trace(_ stage: FrameTrace.Event.Stage, at time: Double) {
+        if let live = source as? LiveVideo, let sourceRTP {
+            live.frameTrace.note(stage, rtp: sourceRTP, frameID: frameID, at: time)
+        }
     }
 
     func gpuCompleted(start: Double, end: Double) {
@@ -29,6 +36,8 @@ final class FramePresentation: @unchecked Sendable {
             gpuReported = true
             guard start.isFinite, end.isFinite, start >= submittedAt, end >= start else { return }
             gpuEnd = end
+            trace(.gpuStarted, at: start)
+            trace(.gpuCompleted, at: end)
             source.performance.record(.gpuQueue, seconds: start - submittedAt)
             source.performance.record(.gpu, seconds: end - start)
             recordDisplayWait()
@@ -42,13 +51,15 @@ final class FramePresentation: @unchecked Sendable {
             // Apple reports zero when the drawable was not displayed.
             guard time.isFinite, time > 0, time >= submittedAt, time >= arrivedAt else {
                 source.didMissPresentation()
+                // Invalid presentation timestamps have no usable event time.
+                if let live = source as? LiveVideo, let sourceRTP {
+                    live.frameTrace.note(.notPresented, rtp: sourceRTP, frameID: frameID)
+                }
                 return
             }
             displayedAt = time
             source.didPresent()
-            if let live = source as? LiveVideo, let sourceRTP {
-                live.frameTrace.note(.presented, rtp: sourceRTP, frameID: frameID, at: time)
-            }
+            trace(.presented, at: time)
             source.performance.record(.presentation, seconds: time - arrivedAt)
             recordDisplayWait()
         }

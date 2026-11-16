@@ -100,7 +100,10 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             frameTrace.note(.delivered, rtp: UInt32(bitPattern: frame.timeStamp), frameID: stats.decoded, at: now)
             stats.state = "Cloud video \(frame.width)×\(frame.height) · H.264"
             if frames.count == stats.capacity {
-                frames.removeFirst()
+                let discarded = frames.removeFirst()
+                if let rtp = discarded.sourceRTP {
+                    frameTrace.note(.inboxOverflow, rtp: rtp, frameID: discarded.id, at: now)
+                }
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: now)
             }
@@ -210,6 +213,9 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
             guard !stopped else { return nil }
             while let first = frames.first, hostTime - first.arrivedAt > Self.maximumFrameAge {
                 frames.removeFirst()
+                if let rtp = first.sourceRTP {
+                    frameTrace.note(.expired, rtp: rtp, frameID: first.id, at: hostTime)
+                }
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: hostTime)
             }
@@ -221,6 +227,9 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
                   hostTime - (first.presentationDeadline ?? first.arrivedAt) > Self.catchUpAge,
                   (frames[1].presentationDeadline ?? 0) <= hostTime {
                 frames.removeFirst()
+                if let rtp = first.sourceRTP {
+                    frameTrace.note(.catchUp, rtp: rtp, frameID: first.id, at: hostTime)
+                }
                 stats.dropped += 1
                 performance.note(.inboxReplaced, at: hostTime)
             }

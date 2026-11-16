@@ -228,11 +228,13 @@ import Testing
     }
     #expect(source.snapshot().queued == 2 && source.snapshot().peakQueue == 2)
     #expect(source.snapshot().dropped == 8)
+    #expect(source.frameTrace.snapshot().filter { $0.stage == .inboxOverflow }.map(\.frameID) == Array(1...8).map { Optional($0) })
     let first = try #require(source.nextFrame(at: 0))
     #expect(first.id == 9)
     // Simulate returning after a long blocked render callback; don't replay old input.
     #expect(source.nextFrame(at: first.arrivedAt + 1) == nil)
     #expect(source.snapshot().dropped == 9 && source.snapshot().queued == 0)
+    #expect(source.frameTrace.snapshot().filter { $0.stage == .expired }.map(\.frameID) == [10])
     source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 11))
     #expect(source.nextFrame(at: 0)?.id == 11)
     source.stop()
@@ -253,6 +255,7 @@ import Testing
     #expect(source.nextFrame(at: start + 0.030)?.id == 2)
     #expect(source.snapshot().dropped == 1)
     #expect(source.nextFrame(at: start + 0.030) == nil)
+    #expect(source.frameTrace.snapshot().filter { $0.stage == .catchUp }.map(\.frameID) == [1])
 }
 
 @Test func livePlaybackKeepsOrdinaryOneFrameJitter() throws {
