@@ -1,0 +1,552 @@
+Building for debugging...
+[Pre-planning 1 / 126]
+[Planning deferred tasks]
+[18 / 81] XFrame_XFrame
+[52 / 81]
+[54 / 83] XFrame
+[63 / 181]
+[65 / 181]
+[71 / 181]
+[76 / 181]
+[78 / 181]
+[83 / 181]
+[86 / 181]
+[89 / 181]
+[95 / 181]
+[98 / 181]
+[100 / 181]
+[101 / 181]
+[113 / 181]
+[117 / 181]
+[118 / 181]
+[124 / 181]
+[129 / 181]
+[130 / 181]
+[134 / 181]
+[143 / 181] XFrame-product
+[144 / 181] XFrame
+[146 / 181] XFrame-product
+[153 / 181] XFrame
+[154 / 181] XFrame
+[155 / 181] XFrameTests-product
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:231:16: warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+229 |             kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+230 |         ])
+231 |         reader.add(output)
+    |                `- warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+232 |         guard reader.startReading() else {
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:232:22: warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+230 |         ])
+231 |         reader.add(output)
+232 |         guard reader.startReading() else {
+    |                      `- warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+234 |         }
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:236:54: warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+234 |         }
+235 |         var frames: [BenchmarkVideoFrame] = []
+236 |         while frames.count < 61, let sample = output.copyNextSampleBuffer() {
+    |                                                      `- warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+237 |             try Task.checkCancellation()
+238 |             if let buffer = CMSampleBufferGetImageBuffer(sample) {
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[156 / 181] XFrameTests-product
+[157 / 181] XFrame-product
+[159 / 181] XFrame
+[159 / 181]
+[163 / 181]
+[163 / 181] XFrame
+[163 / 181] XFrame-product
+[164 / 181] XFrame-product
+[165 / 181] XFrame
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:231:16: warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+229 |             kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+230 |         ])
+231 |         reader.add(output)
+    |                `- warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+232 |         guard reader.startReading() else {
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:232:22: warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+230 |         ])
+231 |         reader.add(output)
+232 |         guard reader.startReading() else {
+    |                      `- warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+234 |         }
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:236:54: warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+234 |         }
+235 |         var frames: [BenchmarkVideoFrame] = []
+236 |         while frames.count < 61, let sample = output.copyNextSampleBuffer() {
+    |                                                      `- warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+237 |             try Task.checkCancellation()
+238 |             if let buffer = CMSampleBufferGetImageBuffer(sample) {
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[171 / 182] XFrameTests-product
+[172 / 196]
+[176 / 196]
+[185 / 196] XFrameTests-product
+[186 / 196] XFrameTests-product
+[190 / 196] XFrameTests-product
+[192 / 196] XFrameTests-product
+[196 / 196] XFrameTests-product
+Build complete! (22.37 sec)
+Test Suite 'All tests' started at 2026-11-16 05:37:14.917.
+Test Suite 'All tests' passed at 2026-11-16 05:37:14.919.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+◇ Test run started.
+↳ Testing Library Version: 2403
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test videoBitrateReachesLiveStatsAndSanitizedExportWithoutLateMutation() started.
+◇ Test hudHistoryIsBoundedAndDoesNotInventMissingSamples() started.
+◇ Test fileCredentialsRotateRestoreAndDeleteWithPrivatePermissions() started.
+◇ Test gateIgnoresLateEvidenceAndDuplicateConnectedEvents() started.
+◇ Test gamepadFastAnalogMotionCoalescesWithoutLosingTriggerEdges() started.
+◇ Test videoBitrateRejectsMissingInvalidAndOutOfOrderSamples() started.
+◇ Test jitterBufferLatencyUsesIntervalCountersAndRejectsResets() started.
+◇ Test gamepadSettingsChordAcceptsCapturedXboxButtonStagger() started.
+◇ Test hardwareDecoderRecoversAfterDamagedAndMissingAccessUnits() started.
+◇ Test signalingAcceptsStringAndObjectAnswers() started.
+◇ Test signalingRejectsHostFailuresWithoutLeakingMessages() started.
+◇ Test quickMLXRunStillExcludesWarmupAndMeasuresSelectedCount() started.
+◇ Test associatedConsolesCanBeListedWithoutHomeAuthorization() started.
+◇ Test keyboardAxesOppositesAndDiagonals() started.
+◇ Test rejectedXCCSTokenRefreshesWithFullAuthorizationHeader() started.
+◇ Test untrustedVerificationURLIsRejected() started.
+◇ Test stoppedStreamReportRoundTripsThroughAFile() started.
+◇ Test cleanupFailureKeepsPanelRetryStateUntilRetrySucceeds() started.
+◇ Test bundledBenchmarkExecutesItsAvailableBackends() started.
+◇ Test settingsNavigationRequiresReleaseAndConsumesButtonEdges() started.
+◇ Test firstRenderedFrameDismissesStartupOverlay() started.
+◇ Test performanceWindowsAreBoundedAndRejectInvalidSamples() started.
+◇ Test adaptiveLiveVideoWaitsForRTPDeadlineBoundsBacklogAndKeepsActualPresentationStats() started.
+◇ Test presentationTraceUsesDrawableTimeAndDoesNotCountRedrawTwice() started.
+◇ Test cloudLaunchSendsSelectedLanguageAndConsistentQualityProfile() started.
+◇ Test localMediaRequiresDirectCandidatesOnSamePhysicalSubnet() started.
+◇ Test livePlaybackBoundsBacklogAndDropsStaleFramesAfterStalls() started.
+◇ Test failedFullscreenExitDoesNotHideOrLoopAndCanRetry() started.
+◇ Test cloudCreationDoesNotRetryPolicyOrAmbiguousFailure(status:) started.
+◇ Test gamepadSnapshotsReleaseAndSequenceResetsWithoutSending() started.
+◇ Test smallNRImportValidatesTopologyAndIntegrity() started.
+◇ Test damagedH264FrameDoesNotTerminateTheStream() started.
+◇ Test signalingPollingSlowsDownAsSetupWaits() started.
+◇ Test audioPreferencesRestoreMuteAndVolumeIndependently() started.
+◇ Test favoriteIDsPersistLocallyAndRemainIndependentOfCatalog() started.
+◇ Test latencyEstimateRequiresAllPartsAndUsesMeansWithoutDoubleCountingWait() started.
+◇ Test gamepadAnalogBoundsYDirectionAndPhysicalityAreExplicit() started.
+◇ Test cloudRegionSelectionUsesOnlyAuthorizedEndpoints() started.
+◇ Test refreshPersistenceFailurePreventsXboxCallsAndRetry() started.
+◇ Test connectionRecordsTypedFailureBeforeClosing() started.
+◇ Test gameAudioDisablesReplacedStoppedAndLateTracks() started.
+◇ Test keyboardQuickTapSurvivesSlowerGameSamplingAndFocusReleaseIsImmediate() started.
+◇ Test streamPreferencesPersistAndInvalidFieldsFallBackIndependently() started.
+◇ Test controllerPauseTracksMenuChangesAndRequiresIndependentAnalogRelease() started.
+◇ Test gamepadOverflowAndDeviceReplacementCannotReplayOldPresses() started.
+◇ Test hudPaintsCompactAndDetailedPreviews() started.
+◇ Test audioDiagnosticsDoNotClaimAudibilityOrAcceptLateUpdates() started.
+◇ Test formEncodingPreservesTokenCharacters() started.
+◇ Test inputOwnershipSwitchesOnlyOnFreshActivity() started.
+◇ Test videoBitrateUsesMicrosecondsAndResetsForNewSources() started.
+◇ Test iceCandidateDecodesStringAndNumericIndices() started.
+◇ Test localSDPAndTrickleApplySameAdmission() started.
+◇ Test windowPlacementPreservesVisibleFramesAndRecoversDisconnectedScreens() started.
+◇ Test heartbeatHasBoundedRetriesAndDoesNotRetryAuthorizationFailures() started.
+◇ Test hudDocumentHasHonestUnitsAndUnavailableValues() started.
+◇ Test selectedPairConsentCheckKeepsPresentationVerified() started.
+◇ Test rtpPacingFallsBackForInvalidOrderAndResetsAcrossPausesOrClockJumps() started.
+◇ Test mlxCapacityUsesPreparationInclusiveMeasurement() started.
+◇ Test rumblePreferenceDefaultsOnAndRestoresOff() started.
+◇ Test settingsVolumeRepeatHasDelayAndNeverRepeatsConfirmation() started.
+◇ Test secondStreamingRejectionStopsAfterOneRefresh() started.
+◇ Test videoSilenceHasBoundedRecoveryAndKeyframeRate() started.
+◇ Test launchShowsPlayerBeforeCreationReturnsAndCancelCleansUp() started.
+◇ Test wakeUsesDocumentedPayloadAndAcceptsResponseWithoutResult() started.
+◇ Test authorizationDeclineStopsPolling() started.
+◇ Test controllerPreferenceSurvivesLibraryRecreationWithoutRestoringFocus() started.
+◇ Test rumblePlaybackUsesTransmittedDurationAndMotorLevels() started.
+◇ Test failedDeletionRetainsOwnershipAndCanRetry() started.
+◇ Test readySessionCanEndWithoutCanceledCleanup() started.
+◇ Test gamepadRetriesPreservePressReleaseOrderAndSequence() started.
+◇ Test restoreRotatesTokenAndDistinguishesFreeToPlay() started.
+◇ Test errorsDoNotEchoCredentials() started.
+◇ Test heartbeatRetriesTransientFailuresThenRecovers() started.
+◇ Test mlxPreparationFailureStopsBeforeExchange() started.
+◇ Test catalogPreservesAccountEntitlementEvidence() started.
+◇ Test recentFPSWarmupPauseRecoveryAndFreshSource() started.
+◇ Test livePlaybackPrefersFreshFrameAfterExcessBacklog() started.
+◇ Test sharpeningChoicesApplyWithoutClosingAndSurviveScalingSwitches() started.
+◇ Test mlxPreparesAndExchangesOneFrameAtATime() started.
+◇ Test gamepadButtonsUseIndependentWireAndPhysicalityMasks() started.
+◇ Test diagnosticReportIncludesSelectedAndEffectiveScaling() started.
+◇ Test liveDiagnosticsClassifyFailuresAndIgnoreLateNetworkSamples() started.
+◇ Test cancellationReleasesFullQueue() started.
+◇ Test nativeGamepadMapsButtonsTriggersAndUpwardAxes() started.
+◇ Test untrustedURLCannotInvokeTokenProvider() started.
+◇ Test gamepadSystemGestureCaptureRestoresOriginalPreferences() started.
+◇ Test cancellationAndLateErrorsCannotTurnClosedSessionIntoFailure() started.
+◇ Test keyboardAliasesAndShortEdgesReachGamepadScheduler() started.
+◇ Test catalogRequiresHeadersWithoutLeakingBearerToken() started.
+◇ Test failureAndLatePresentationReturnTheSameReservationOnlyOnce() started.
+◇ Test handoffSendsNeutralBeforeNewDeviceAndDropsOldQueuedKeys() started.
+◇ Test libraryPaginationClampsEmptyChangedAndInvalidRequests() started.
+◇ Test wakeRetriesFailedSleepCleanupBeforeAllowingPlay() started.
+◇ Test localCandidateAdmissionUsesActualEndpointAndSide() started.
+◇ Test selectedPairMustUseSelectedLocalSubnet() started.
+◇ Test performanceHUDPresetsKeepStreamRatesDistinctFromGameFPS() started.
+◇ Test benchmarkModelCacheImportsVerifiesAndRemoves() started.
+◇ Test selectedPairConsentCheckStillRejectsInvalidEndpoints() started.
+◇ Test slowHUDCollectionDoesNotBlockMediaOrDeliverAfterStop() started.
+◇ Test resetRemovesPreviousAccountCatalog() started.
+◇ Test cloudAudioControlsClampVolumeAndPreserveMute() started.
+◇ Test signOutCancelsPendingAuthorization() started.
+◇ Test signalingServiceUsesParserAndPropagatesHostFailure() started.
+◇ Test metalFXPreservesSDRColorsAndMeasures4KCost() started.
+◇ Test fullscreenTransitionRetainsSelectionAndDisablesRepeatedActivation() started.
+◇ Test liveVideoKeepsReceivingFramesAfterRendererReattachment() started.
+◇ Test inactiveControllerDriftAndHeldAxesDoNotStealKeyboard() started.
+◇ Test catalogButtonShowsLoadingAndRetryState() started.
+◇ Test interruptionRecoversWithinBudgetAndRepeatedEventsDoNotExtendIt() started.
+◇ Test livePlaybackKeepsOrdinaryOneFrameJitter() started.
+◇ Test rendererSkipsIdleDrawablesButRetainsUnsubmittedFrames() started.
+◇ Test keyboardMapsEveryGamepadButtonInHelp() started.
+◇ Test pacingCountersDistinguishInboxAndRendererLossAndFreezeOnStop() started.
+◇ Test benchmarkModelDownloaderRejectsNonHTTPS() started.
+◇ Test simultaneousCloudAndHomeRejectionsShareAccountRefresh() started.
+◇ Test productArtworkUsesOnlyPublicMicrosoftHTTPSImages() started.
+◇ Test heartbeatAllowsBriefOutageInsteadOfFailingAfterThreeSeconds() started.
+◇ Test downstreamFailurePreservesRotatedRefreshToken() started.
+◇ Test gameAudioAppliesPreferencesBeforeAndAfterTrackArrival() started.
+◇ Test fileCredentialsRejectSymlinksAndPublicPermissions() started.
+◇ Test gamepadSettingsChordIsLocalAndOpensOnceUntilBothButtonsRelease() started.
+◇ Test inputBackpressureUsesRecoveryBudgetInsteadOfTwoSecondTeardown() started.
+◇ Test normalFullscreenEntryStaysFullscreenAndLatestRequestWins() started.
+◇ Test recoveryStatusReachesBothVisibleHUDModesAndClearsAtStop() started.
+◇ Test sharpeningDefaultsToOffAndPersistsEachPreset() started.
+◇ Test deniedAndUnknownGamesNeverCreateCloudSessions() started.
+◇ Test switchingToTheBoundedPathWaitsForOlderModePresentations() started.
+◇ Test streamingDecoderProducesHardwareNV12WithBoundedDisplaySlot() started.
+◇ Test keyboardAndControllerCanBothBeEnabled() started.
+◇ Test missingFileFailsVisibly() started.
+◇ Test controllerVibrationRowReflectsAndChangesPreference() started.
+◇ Test lowLatencyKeepsNewestWaitingFrameAndStillExpiresAfterStall() started.
+◇ Test scalingMetricsRejectRetiredConfigurations() started.
+◇ Test endingFullscreenPlaybackExitsBeforeHiding() started.
+◇ Test repeatedLocalCancellationReleasesSourceAndQueue() started.
+◇ Test benchmarkGradesUseTheMeasuredP95() started.
+◇ Test rtpPacingAbsorbsBurstJitterWithBoundedDelayAndSlowRecovery() started.
+◇ Test homeConsoleParserSeparatesPowerFromPresence() started.
+◇ Test controllerResumeDoesNotReplayAButtonWhenKeyboardAlreadyArmedTheWire() started.
+◇ Test libraryPaginationCoversEachTitleExactlyOnce() started.
+◇ Test devicePollingRespectsPendingAndSlowDown() started.
+◇ Test cancelDuringCreationDeletesReturnedSession() started.
+◇ Test pacingPreferencePersistsAndUnknownValueUsesBalanced() started.
+◇ Test discoveryResponseUsesCertificateLiveID() started.
+◇ Test selectedTransportEvidenceAllowsBootstrapAndRejectsAmbiguity() started.
+◇ Test settingsPanelKeyboardAppliesChoicesWithoutClosing() started.
+◇ Test abandoningAnUnsubmittedFrameReturnsItsReservation() started.
+◇ Test presentationQueueAllowsTwoFramesUntilOneIsPresented() started.
+◇ Test cleanupStillAttemptsDeletionAfterCredentialExpiry(status:) started.
+◇ Test h264SamplePreservesSupplementalNALUnits() started.
+◇ Test consoleAccessSurvivesCloudDenial() started.
+◇ Test localSourcesHideCloudActionsAndSmallPanelScrollsToLastRow() started.
+◇ Test terminalStreamReportIsStableAndRetainsFailureOutcome() started.
+◇ Test gamepadFocusLossPrioritizesNeutralAndRequiresRelease() started.
+◇ Test decoderParameterChangePreservesOrRebuildsReferenceChain() started.
+◇ Test failedStartOffersRetryOnlyAfterCleanupAndResetClearsIt() started.
+◇ Test controllerReplacementWhileKeyboardOwnsInputCannotClaimWithHeldControls() started.
+◇ Test libraryFiltersComposeWithoutInventingEntitlements() started.
+◇ Test closingFailedVideoPreservesFailureForWatchdogAndHUD() started.
+◇ Test cloudHTTPFlowSupportsAcceptedCreationConnectAndEmptyDeletion() started.
+◇ Test gamepadSettingsShortcutPreservesStandaloneTapHoldAndLateSecondButton() started.
+◇ Test sessionAddressesRejectUntrustedDestinations() started.
+◇ Test case passing 1 argument status → 403 to cloudCreationDoesNotRetryPolicyOrAmbiguousFailure(status:) started.
+◇ Test presentationJoinsReversedCallbacksWithoutOverlappingIntervals() started.
+◇ Test diagnosticExportBoundsEventsAndSanitizesNonFiniteNumbers() started.
+◇ Test case passing 1 argument status → 503 to cloudCreationDoesNotRetryPolicyOrAmbiguousFailure(status:) started.
+◇ Test duplicateNamesKeepStableIdentityAndLargeCatalogPagesStayBounded() started.
+◇ Test settingsReleaseDropsQueuedGameplayAndRequiresNeutralOnReturn() started.
+◇ Test streamingSignalingExchangesEnvelopesAndKeepalive() started.
+◇ Test livePlaybackPreservesTwoFramesDeliveredBetweenDisplayTicks() started.
+◇ Test endingDuringFullscreenEntryWaitsThenExitsAndHides() started.
+◇ Test scalingUsesPicturePixelsAndTemporaryBypass() started.
+◇ Test cachedLibraryInvalidatesAndKeyboardSelectionStaysOnPage() started.
+◇ Test replacedRendererFramesCountAsSkipsButLateCallbacksDoNot() started.
+◇ Test accountEvidenceControlsDefaultLibraryNotCatalogMembership() started.
+◇ Test homeServiceListsWakesCreatesAndDeletesWithoutPowerOff() started.
+◇ Test selectedPairConsentCheckStillRequiresCompleteEvidence() started.
+◇ Test controllerReleaseRegionArmsInputWithoutRequiringPerfectAnalogZero() started.
+◇ Test librarySearchClearsHiddenSelectionAndKeepsFavorites() started.
+◇ Test sleepDuringCreationRetainsHandleForCleanupAndWakeDoesNotLaunch() started.
+◇ Test unsupportedStateIsCleanedUp() started.
+◇ Test lateErrorsDoNotInvalidateANewerRecoveryKeyframe() started.
+◇ Test gateRevokesMissingEvidenceAndAllowsRepeatedRecovery() started.
+◇ Test releaseModelsDownloadAndValidateWhenRequested() started.
+◇ Test signalingPendingIsDifferentFromMalformed() started.
+◇ Test streamEventTimelineIsBoundedOrderedAndCorrelatesFailures() started.
+◇ Test consoleTransferTokenUsesMicrosoftEndpoint() started.
+◇ Test keyboardReleaseIgnoresHeldKeyRepeatAndLeavesShortcutsAlone() started.
+◇ Test rejectedStreamingTokenRefreshesOnceAndRetriesWithReplacement() started.
+◇ Test annexBParsingAndLengthPrefixes() started.
+◇ Test recentFPSForgetsLongThirtyFPSHistoryWithinTwoSeconds() started.
+◇ Test streamPreferencesAreCapturedAtStartAndChangesApplyToNextSession() started.
+◇ Test terminationRemainsPendingUntilServiceConfirmsAndSuppressesDuplicateRequests() started.
+◇ Test stoppingHeartbeatCancelsAnInFlightRequest() started.
+◇ Test zeroDrawableTimeDoesNotCountAsDisplayed() started.
+◇ Test disabledControllerAndBoundaryHeldButtonsCannotClaim() started.
+◇ Test associatedConsolesRemainVisibleWhenHomeListFails() started.
+◇ Test frameTraceRetainsOrderedBoundedTailAndFreezes() started.
+◇ Test gamepadPacketsMatchPinnedReferenceGoldenBytes() started.
+◇ Test providerFailureDoesNotPreventCleanupDeletion() started.
+◇ Test signOutDuringRefreshCannotRestoreCredentials() started.
+◇ Test sharpeningGPUKeepsFlatColorsAndStrengthensSoftEdgesWithinBounds() started.
+◇ Test missingOrLatePresentationDoesNotInventLatencyOrChangeStoppedReports() started.
+◇ Test rumbleParsesBoundsMetadataAndClamps() started.
+◇ Test diagnosticExportUsesAnExplicitAllowlist() started.
+◇ Test diagnosticSnapshotsRemainConsistentDuringConcurrentWrites() started.
+◇ Test newPlaybackDoesNotRevealRetainedFullscreenWindow() started.
+◇ Test redesignedViewsRenderAtSupportedSizes() started.
+◇ Test rtpPacingUsesMediaIntervalsAndUnwrapsTheClock() started.
+◇ Test cloudFailureCodeDoesNotExposeResponseMessages() started.
+◇ Test terminationConfirmationDefaultsToCancelAndHeldInputCannotCarryThrough() started.
+◇ Test hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall:) started.
+◇ Test metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) started.
+◇ Test settingsPanelShowsItsEntireTitleAfterLayout() started.
+◇ Test catalogHydratesOptionalArtworkCategoriesAndPublisher() started.
+✔ Test gamepadSettingsChordAcceptsCapturedXboxButtonStagger() passed after 0.021 seconds.
+✔ Test videoBitrateRejectsMissingInvalidAndOutOfOrderSamples() passed after 0.021 seconds.
+✔ Test gateIgnoresLateEvidenceAndDuplicateConnectedEvents() passed after 0.021 seconds.
+✔ Test gamepadFastAnalogMotionCoalescesWithoutLosingTriggerEdges() passed after 0.021 seconds.
+✔ Test jitterBufferLatencyUsesIntervalCountersAndRejectsResets() passed after 0.023 seconds.
+✔ Test quickMLXRunStillExcludesWarmupAndMeasuresSelectedCount() passed after 0.023 seconds.
+✔ Test videoBitrateReachesLiveStatsAndSanitizedExportWithoutLateMutation() passed after 0.026 seconds.
+✔ Test signalingRejectsHostFailuresWithoutLeakingMessages() passed after 0.028 seconds.
+✔ Test keyboardAxesOppositesAndDiagonals() passed after 0.031 seconds.
+✔ Test signalingAcceptsStringAndObjectAnswers() passed after 0.032 seconds.
+◇ Test case passing 1 argument status → 204 to cleanupStillAttemptsDeletionAfterCredentialExpiry(status:) started.
+✔ Test settingsNavigationRequiresReleaseAndConsumesButtonEdges() passed after 0.032 seconds.
+◇ Test case passing 1 argument status → 404 to cleanupStillAttemptsDeletionAfterCredentialExpiry(status:) started.
+◇ Test case passing 1 argument status → 410 to cleanupStillAttemptsDeletionAfterCredentialExpiry(status:) started.
+✔ Test stoppedStreamReportRoundTripsThroughAFile() passed after 0.033 seconds.
+✔ Test performanceWindowsAreBoundedAndRejectInvalidSamples() passed after 0.034 seconds.
+✔ Test presentationTraceUsesDrawableTimeAndDoesNotCountRedrawTwice() passed after 0.034 seconds.
+✔ Test adaptiveLiveVideoWaitsForRTPDeadlineBoundsBacklogAndKeepsActualPresentationStats() passed after 0.035 seconds.
+✔ Test localMediaRequiresDirectCandidatesOnSamePhysicalSubnet() passed after 0.035 seconds.
+✔ Test livePlaybackBoundsBacklogAndDropsStaleFramesAfterStalls() passed after 0.035 seconds.
+✔ Test gamepadSnapshotsReleaseAndSequenceResetsWithoutSending() passed after 0.035 seconds.
+✔ Test damagedH264FrameDoesNotTerminateTheStream() passed after 0.038 seconds.
+✔ Test signalingPollingSlowsDownAsSetupWaits() passed after 0.038 seconds.
+✔ Test latencyEstimateRequiresAllPartsAndUsesMeansWithoutDoubleCountingWait() passed after 0.039 seconds.
+✔ Test gamepadAnalogBoundsYDirectionAndPhysicalityAreExplicit() passed after 0.039 seconds.
+✔ Test keyboardQuickTapSurvivesSlowerGameSamplingAndFocusReleaseIsImmediate() passed after 0.041 seconds.
+✔ Test gamepadOverflowAndDeviceReplacementCannotReplayOldPresses() passed after 0.041 seconds.
+✔ Test controllerPauseTracksMenuChangesAndRequiresIndependentAnalogRelease() passed after 0.041 seconds.
+✔ Test audioDiagnosticsDoNotClaimAudibilityOrAcceptLateUpdates() passed after 0.049 seconds.
+✔ Test cloudRegionSelectionUsesOnlyAuthorizedEndpoints() passed after 0.049 seconds.
+✔ Test formEncodingPreservesTokenCharacters() passed after 0.049 seconds.
+✔ Test inputOwnershipSwitchesOnlyOnFreshActivity() passed after 0.050 seconds.
+◇ Test case passing 1 argument simulateStall → false to hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall:) started.
+◇ Test case passing 1 argument simulateStall → true to hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall:) started.
+◇ Test case passing 2 arguments use601 → false, integer → false to metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) started.
+OFFSCREEN_GPU_MS 0.03420832217670977
+SHARPEN_COMPOSITION_4K Off samples=20 mean_ms=0.6336145845125429 p95_ms=0.6724583217874169
+SHARPEN_COMPOSITION_4K High samples=20 mean_ms=1.0020645851909649 p95_ms=1.017666669213213
+✔ Test videoBitrateUsesMicrosecondsAndResetsForNewSources() passed after 1.162 seconds.
+◇ Test case passing 2 arguments use601 → false, integer → true to metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) started.
+OFFSCREEN_GPU_MS 0.0347500026691705
+✔ Test iceCandidateDecodesStringAndNumericIndices() passed after 1.166 seconds.
+◇ Test case passing 2 arguments use601 → true, integer → false to metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) started.
+OFFSCREEN_GPU_MS 0.03499999002087861
+◇ Test case passing 2 arguments use601 → true, integer → true to metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) started.
+OFFSCREEN_GPU_MS 0.03174999437760562
+✔ Test windowPlacementPreservesVisibleFramesAndRecoversDisconnectedScreens() passed after 1.172 seconds.
+✔ Test hudDocumentHasHonestUnitsAndUnavailableValues() passed after 1.172 seconds.
+✔ Test selectedPairConsentCheckKeepsPresentationVerified() passed after 1.172 seconds.
+✔ Test rtpPacingFallsBackForInvalidOrderAndResetsAcrossPausesOrClockJumps() passed after 1.172 seconds.
+✔ Test mlxCapacityUsesPreparationInclusiveMeasurement() passed after 1.173 seconds.
+✔ Test settingsVolumeRepeatHasDelayAndNeverRepeatsConfirmation() passed after 1.172 seconds.
+✔ Test localSDPAndTrickleApplySameAdmission() passed after 1.173 seconds.
+✔ Test videoSilenceHasBoundedRecoveryAndKeyframeRate() passed after 1.173 seconds.
+✔ Test rumblePlaybackUsesTransmittedDurationAndMotorLevels() passed after 1.173 seconds.
+✔ Test gamepadRetriesPreservePressReleaseOrderAndSequence() passed after 1.173 seconds.
+✔ Test mlxPreparationFailureStopsBeforeExchange() passed after 1.174 seconds.
+✔ Test livePlaybackPrefersFreshFrameAfterExcessBacklog() passed after 1.174 seconds.
+✔ Test favoriteIDsPersistLocallyAndRemainIndependentOfCatalog() passed after 1.174 seconds.
+✔ Test recentFPSWarmupPauseRecoveryAndFreshSource() passed after 1.174 seconds.
+✔ Test mlxPreparesAndExchangesOneFrameAtATime() passed after 1.174 seconds.
+✔ Test liveDiagnosticsClassifyFailuresAndIgnoreLateNetworkSamples() passed after 1.174 seconds.
+✔ Test gamepadButtonsUseIndependentWireAndPhysicalityMasks() passed after 1.174 seconds.
+✔ Test keyboardAliasesAndShortEdgesReachGamepadScheduler() passed after 1.174 seconds.
+✔ Test diagnosticReportIncludesSelectedAndEffectiveScaling() passed after 1.174 seconds.
+✔ Test untrustedURLCannotInvokeTokenProvider() passed after 1.174 seconds.
+✔ Test handoffSendsNeutralBeforeNewDeviceAndDropsOldQueuedKeys() passed after 1.174 seconds.
+✔ Test selectedPairMustUseSelectedLocalSubnet() passed after 1.174 seconds.
+✔ Test localCandidateAdmissionUsesActualEndpointAndSide() passed after 1.174 seconds.
+✔ Test selectedPairConsentCheckStillRejectsInvalidEndpoints() passed after 1.174 seconds.
+✔ Test performanceHUDPresetsKeepStreamRatesDistinctFromGameFPS() passed after 1.174 seconds.
+✔ Test libraryPaginationClampsEmptyChangedAndInvalidRequests() passed after 1.174 seconds.
+✔ Test inactiveControllerDriftAndHeldAxesDoNotStealKeyboard() passed after 1.174 seconds.
+✔ Test interruptionRecoversWithinBudgetAndRepeatedEventsDoNotExtendIt() passed after 1.174 seconds.
+✔ Test rendererSkipsIdleDrawablesButRetainsUnsubmittedFrames() passed after 1.174 seconds.
+✔ Test keyboardMapsEveryGamepadButtonInHelp() passed after 1.174 seconds.
+✔ Test livePlaybackKeepsOrdinaryOneFrameJitter() passed after 1.174 seconds.
+✔ Test pacingCountersDistinguishInboxAndRendererLossAndFreezeOnStop() passed after 1.174 seconds.
+✔ Test benchmarkModelDownloaderRejectsNonHTTPS() passed after 1.174 seconds.
+✔ Test benchmarkModelCacheImportsVerifiesAndRemoves() passed after 1.175 seconds.
+✔ Test gamepadSettingsChordIsLocalAndOpensOnceUntilBothButtonsRelease() passed after 1.174 seconds.
+✔ Test inputBackpressureUsesRecoveryBudgetInsteadOfTwoSecondTeardown() passed after 1.174 seconds.
+✔ Test recoveryStatusReachesBothVisibleHUDModesAndClearsAtStop() passed after 1.174 seconds.
+✔ Test productArtworkUsesOnlyPublicMicrosoftHTTPSImages() passed after 1.174 seconds.
+✔ Test hudHistoryIsBoundedAndDoesNotInventMissingSamples() passed after 1.176 seconds.
+✔ Test switchingToTheBoundedPathWaitsForOlderModePresentations() passed after 1.174 seconds.
+✔ Test streamPreferencesPersistAndInvalidFieldsFallBackIndependently() passed after 1.175 seconds.
+✔ Test lowLatencyKeepsNewestWaitingFrameAndStillExpiresAfterStall() passed after 1.174 seconds.
+✔ Test scalingMetricsRejectRetiredConfigurations() passed after 1.174 seconds.
+✔ Test benchmarkGradesUseTheMeasuredP95() passed after 1.174 seconds.
+✔ Test smallNRImportValidatesTopologyAndIntegrity() passed after 1.176 seconds.
+✔ Test sharpeningDefaultsToOffAndPersistsEachPreset() passed after 1.174 seconds.
+✔ Test controllerResumeDoesNotReplayAButtonWhenKeyboardAlreadyArmedTheWire() passed after 1.174 seconds.
+✔ Test homeConsoleParserSeparatesPowerFromPresence() passed after 1.174 seconds.
+✔ Test libraryPaginationCoversEachTitleExactlyOnce() passed after 1.174 seconds.
+✔ Test discoveryResponseUsesCertificateLiveID() passed after 1.174 seconds.
+✔ Test selectedTransportEvidenceAllowsBootstrapAndRejectsAmbiguity() passed after 1.174 seconds.
+✔ Test abandoningAnUnsubmittedFrameReturnsItsReservation() passed after 1.174 seconds.
+✔ Test presentationQueueAllowsTwoFramesUntilOneIsPresented() passed after 1.174 seconds.
+✔ Test h264SamplePreservesSupplementalNALUnits() passed after 1.173 seconds.
+✔ Test gamepadFocusLossPrioritizesNeutralAndRequiresRelease() passed after 1.172 seconds.
+✔ Test terminalStreamReportIsStableAndRetainsFailureOutcome() passed after 1.172 seconds.
+✔ Test controllerReplacementWhileKeyboardOwnsInputCannotClaimWithHeldControls() passed after 1.172 seconds.
+✔ Test libraryFiltersComposeWithoutInventingEntitlements() passed after 1.172 seconds.
+✔ Test fileCredentialsRotateRestoreAndDeleteWithPrivatePermissions() passed after 1.176 seconds.
+✔ Test firstRenderedFrameDismissesStartupOverlay() passed after 1.176 seconds.
+✔ Test closingFailedVideoPreservesFailureForWatchdogAndHUD() passed after 1.166 seconds.
+✔ Test gamepadSettingsShortcutPreservesStandaloneTapHoldAndLateSecondButton() passed after 1.166 seconds.
+✔ Test sessionAddressesRejectUntrustedDestinations() passed after 1.166 seconds.
+✔ Test failedFullscreenExitDoesNotHideOrLoopAndCanRetry() passed after 1.176 seconds.
+✔ Test presentationJoinsReversedCallbacksWithoutOverlappingIntervals() passed after 1.162 seconds.
+✔ Test diagnosticExportBoundsEventsAndSanitizesNonFiniteNumbers() passed after 1.162 seconds.
+✔ Test pacingPreferencePersistsAndUnknownValueUsesBalanced() passed after 1.174 seconds.
+✔ Test settingsReleaseDropsQueuedGameplayAndRequiresNeutralOnReturn() passed after 1.162 seconds.
+✔ Test livePlaybackPreservesTwoFramesDeliveredBetweenDisplayTicks() passed after 1.162 seconds.
+✔ Test scalingUsesPicturePixelsAndTemporaryBypass() passed after 1.162 seconds.
+✔ Test replacedRendererFramesCountAsSkipsButLateCallbacksDoNot() passed after 1.162 seconds.
+✔ Test accountEvidenceControlsDefaultLibraryNotCatalogMembership() passed after 1.162 seconds.
+✔ Test selectedPairConsentCheckStillRequiresCompleteEvidence() passed after 1.162 seconds.
+✔ Test controllerReleaseRegionArmsInputWithoutRequiringPerfectAnalogZero() passed after 1.162 seconds.
+✔ Test lateErrorsDoNotInvalidateANewerRecoveryKeyframe() passed after 1.161 seconds.
+✔ Test gateRevokesMissingEvidenceAndAllowsRepeatedRecovery() passed after 1.161 seconds.
+✔ Test releaseModelsDownloadAndValidateWhenRequested() passed after 1.161 seconds.
+✔ Test signalingPendingIsDifferentFromMalformed() passed after 1.161 seconds.
+✔ Test streamEventTimelineIsBoundedOrderedAndCorrelatesFailures() passed after 1.161 seconds.
+✔ Test keyboardReleaseIgnoresHeldKeyRepeatAndLeavesShortcutsAlone() passed after 1.161 seconds.
+✔ Test rtpPacingAbsorbsBurstJitterWithBoundedDelayAndSlowRecovery() passed after 1.175 seconds.
+✔ Test duplicateNamesKeepStableIdentityAndLargeCatalogPagesStayBounded() passed after 1.163 seconds.
+✔ Test annexBParsingAndLengthPrefixes() passed after 1.162 seconds.
+✔ Test recentFPSForgetsLongThirtyFPSHistoryWithinTwoSeconds() passed after 1.162 seconds.
+✔ Test zeroDrawableTimeDoesNotCountAsDisplayed() passed after 1.162 seconds.
+✔ Test disabledControllerAndBoundaryHeldButtonsCannotClaim() passed after 1.162 seconds.
+✔ Test frameTraceRetainsOrderedBoundedTailAndFreezes() passed after 1.162 seconds.
+✔ Test gamepadPacketsMatchPinnedReferenceGoldenBytes() passed after 1.162 seconds.
+✔ Test missingOrLatePresentationDoesNotInventLatencyOrChangeStoppedReports() passed after 1.162 seconds.
+✔ Test rumbleParsesBoundsMetadataAndClamps() passed after 1.162 seconds.
+✔ Test diagnosticExportUsesAnExplicitAllowlist() passed after 1.860 seconds.
+✔ Test rtpPacingUsesMediaIntervalsAndUnwrapsTheClock() passed after 1.864 seconds.
+✔ Test cloudFailureCodeDoesNotExposeResponseMessages() passed after 1.864 seconds.
+✔ Test metalImportsNV12AndConvertsVideoRangeOnTheGPU(use601:integer:) with 4 test cases passed after 1.865 seconds.
+✔ Test sharpeningGPUKeepsFlatColorsAndStrengthensSoftEdgesWithinBounds() passed after 1.865 seconds.
+✔ Test decoderParameterChangePreservesOrRebuildsReferenceChain() passed after 1.878 seconds.
+✔ Test cloudCreationDoesNotRetryPolicyOrAmbiguousFailure(status:) with 2 test cases passed after 1.881 seconds.
+✔ Test untrustedVerificationURLIsRejected() passed after 1.882 seconds.
+✔ Test associatedConsolesCanBeListedWithoutHomeAuthorization() passed after 1.882 seconds.
+✔ Test audioPreferencesRestoreMuteAndVolumeIndependently() passed after 1.882 seconds.
+✔ Test gameAudioDisablesReplacedStoppedAndLateTracks() passed after 1.882 seconds.
+✔ Test catalogPreservesAccountEntitlementEvidence() passed after 1.882 seconds.
+✔ Test errorsDoNotEchoCredentials() passed after 1.882 seconds.
+✔ Test cleanupStillAttemptsDeletionAfterCredentialExpiry(status:) with 3 test cases passed after 1.880 seconds.
+✔ Test consoleTransferTokenUsesMicrosoftEndpoint() passed after 1.868 seconds.
+✔ Test providerFailureDoesNotPreventCleanupDeletion() passed after 1.868 seconds.
+✔ Test streamingDecoderProducesHardwareNV12WithBoundedDisplaySlot() passed after 1.882 seconds.
+✔ Test hudPaintsCompactAndDetailedPreviews() passed after 1.884 seconds.
+✔ Test connectionRecordsTypedFailureBeforeClosing() passed after 1.884 seconds.
+✔ Test rumblePreferenceDefaultsOnAndRestoresOff() passed after 1.883 seconds.
+✔ Test controllerPreferenceSurvivesLibraryRecreationWithoutRestoringFocus() passed after 1.883 seconds.
+✔ Test sharpeningChoicesApplyWithoutClosingAndSurviveScalingSwitches() passed after 1.883 seconds.
+✔ Test nativeGamepadMapsButtonsTriggersAndUpwardAxes() passed after 1.883 seconds.
+✔ Test gamepadSystemGestureCaptureRestoresOriginalPreferences() passed after 1.883 seconds.
+✔ Test cancellationAndLateErrorsCannotTurnClosedSessionIntoFailure() passed after 1.883 seconds.
+✔ Test cloudAudioControlsClampVolumeAndPreserveMute() passed after 1.883 seconds.
+✔ Test fullscreenTransitionRetainsSelectionAndDisablesRepeatedActivation() passed after 1.883 seconds.
+✔ Test liveVideoKeepsReceivingFramesAfterRendererReattachment() passed after 1.883 seconds.
+✔ Test gameAudioAppliesPreferencesBeforeAndAfterTrackArrival() passed after 1.883 seconds.
+✔ Test fileCredentialsRejectSymlinksAndPublicPermissions() passed after 1.883 seconds.
+✔ Test normalFullscreenEntryStaysFullscreenAndLatestRequestWins() passed after 1.883 seconds.
+✔ Test keyboardAndControllerCanBothBeEnabled() passed after 1.882 seconds.
+✔ Test controllerVibrationRowReflectsAndChangesPreference() passed after 1.882 seconds.
+✔ Test endingFullscreenPlaybackExitsBeforeHiding() passed after 1.882 seconds.
+✔ Test settingsPanelKeyboardAppliesChoicesWithoutClosing() passed after 1.882 seconds.
+✔ Test localSourcesHideCloudActionsAndSmallPanelScrollsToLastRow() passed after 1.880 seconds.
+✔ Test endingDuringFullscreenEntryWaitsThenExitsAndHides() passed after 1.869 seconds.
+✔ Test newPlaybackDoesNotRevealRetainedFullscreenWindow() passed after 1.868 seconds.
+✔ Test terminationConfirmationDefaultsToCancelAndHeldInputCannotCarryThrough() passed after 1.868 seconds.
+✔ Test settingsPanelShowsItsEntireTitleAfterLayout() passed after 1.868 seconds.
+✔ Test rejectedXCCSTokenRefreshesWithFullAuthorizationHeader() passed after 1.884 seconds.
+✔ Test secondStreamingRejectionStopsAfterOneRefresh() passed after 1.884 seconds.
+✔ Test failureAndLatePresentationReturnTheSameReservationOnlyOnce() passed after 1.884 seconds.
+✔ Test authorizationDeclineStopsPolling() passed after 1.884 seconds.
+✔ Test missingFileFailsVisibly() passed after 1.883 seconds.
+✔ Test rejectedStreamingTokenRefreshesOnceAndRetriesWithReplacement() passed after 1.870 seconds.
+✔ Test associatedConsolesRemainVisibleWhenHomeListFails() passed after 1.870 seconds.
+✔ Test diagnosticSnapshotsRemainConsistentDuringConcurrentWrites() passed after 1.869 seconds.
+✔ Test cloudLaunchSendsSelectedLanguageAndConsistentQualityProfile() passed after 1.886 seconds.
+✔ Test catalogRequiresHeadersWithoutLeakingBearerToken() passed after 1.886 seconds.
+✔ Test wakeUsesDocumentedPayloadAndAcceptsResponseWithoutResult() passed after 1.886 seconds.
+✔ Test signalingServiceUsesParserAndPropagatesHostFailure() passed after 1.886 seconds.
+✔ Test catalogHydratesOptionalArtworkCategoriesAndPublisher() passed after 1.871 seconds.
+✔ Test devicePollingRespectsPendingAndSlowDown() passed after 1.885 seconds.
+✔ Test homeServiceListsWakesCreatesAndDeletesWithoutPowerOff() passed after 1.873 seconds.
+✔ Test cloudHTTPFlowSupportsAcceptedCreationConnectAndEmptyDeletion() passed after 1.878 seconds.
+✔ Test streamingSignalingExchangesEnvelopesAndKeepalive() passed after 1.873 seconds.
+✔ Test downstreamFailurePreservesRotatedRefreshToken() passed after 1.886 seconds.
+✔ Test cachedLibraryInvalidatesAndKeyboardSelectionStaysOnPage() passed after 1.874 seconds.
+✔ Test resetRemovesPreviousAccountCatalog() passed after 1.891 seconds.
+METALFX_OFFSCREEN device=Apple M1 1080p_to_4K samples=60 total_ms mean=3.731259028184771 p95=3.7810416688444093 scaler_span_ms mean=3.228888850000001 p95=3.253292
+✔ Test metalFXPreservesSDRColorsAndMeasures4KCost() passed after 2.053 seconds.
+✔ Test cancellationReleasesFullQueue() passed after 2.150 seconds.
+✔ Test bundledBenchmarkExecutesItsAvailableBackends() passed after 2.398 seconds.
+✔ Test catalogButtonShowsLoadingAndRetryState() passed after 2.432 seconds.
+✔ Test stoppingHeartbeatCancelsAnInFlightRequest() passed after 2.418 seconds.
+✔ Test librarySearchClearsHiddenSelectionAndKeepsFavorites() passed after 2.418 seconds.
+✔ Test signOutCancelsPendingAuthorization() passed after 2.432 seconds.
+✔ Test restoreRotatesTokenAndDistinguishesFreeToPlay() passed after 2.438 seconds.
+✔ Test consoleAccessSurvivesCloudDenial() passed after 2.435 seconds.
+✔ Test heartbeatRetriesTransientFailuresThenRecovers() passed after 2.438 seconds.
+✔ Test launchShowsPlayerBeforeCreationReturnsAndCancelCleansUp() passed after 2.438 seconds.
+✔ Test cancelDuringCreationDeletesReturnedSession() passed after 2.436 seconds.
+✔ Test heartbeatAllowsBriefOutageInsteadOfFailingAfterThreeSeconds() passed after 2.437 seconds.
+✔ Test unsupportedStateIsCleanedUp() passed after 2.423 seconds.
+✔ Test deniedAndUnknownGamesNeverCreateCloudSessions() passed after 2.437 seconds.
+✔ Test signOutDuringRefreshCannotRestoreCredentials() passed after 2.427 seconds.
+✔ Test slowHUDCollectionDoesNotBlockMediaOrDeliverAfterStop() passed after 2.443 seconds.
+✔ Test failedStartOffersRetryOnlyAfterCleanupAndResetClearsIt() passed after 2.440 seconds.
+✔ Test heartbeatHasBoundedRetriesAndDoesNotRetryAuthorizationFailures() passed after 2.449 seconds.
+✔ Test wakeRetriesFailedSleepCleanupBeforeAllowingPlay() passed after 2.449 seconds.
+✔ Test failedDeletionRetainsOwnershipAndCanRetry() passed after 2.449 seconds.
+✔ Test readySessionCanEndWithoutCanceledCleanup() passed after 2.466 seconds.
+✔ Test streamPreferencesAreCapturedAtStartAndChangesApplyToNextSession() passed after 2.458 seconds.
+✔ Test sleepDuringCreationRetainsHandleForCleanupAndWakeDoesNotLaunch() passed after 2.458 seconds.
+✔ Test refreshPersistenceFailurePreventsXboxCallsAndRetry() passed after 2.539 seconds.
+✔ Test simultaneousCloudAndHomeRejectionsShareAccountRefresh() passed after 2.540 seconds.
+✔ Test cleanupFailureKeepsPanelRetryStateUntilRetrySucceeds() passed after 2.552 seconds.
+✔ Test terminationRemainsPendingUntilServiceConfirmsAndSuppressesDuplicateRequests() passed after 2.580 seconds.
+LOCAL_CANCEL_RSS_KB [625744, 689200, 740896, 548912, 550416, 550448, 555936, 551744, 554688, 578352, 568928, 567824]
+✔ Test repeatedLocalCancellationReleasesSourceAndQueue() passed after 3.155 seconds.
+✔ Test hardwareDecoderRecoversAfterDamagedAndMissingAccessUnits() passed after 3.767 seconds.
+✔ Test redesignedViewsRenderAtSupportedSizes() passed after 3.829 seconds.
+LOCAL_DECODE_BASELINE samples=720 recent=256 mean_ms=2.5683608391773305 p95_ms=2.6145416632061824
+✔ Test hardwareDecodeReordersBFramesAndToleratesDisplayJitter(simulateStall:) with 2 test cases passed after 4.672 seconds.
+✔ Test run with 213 tests in 0 suites passed after 4.689 seconds.

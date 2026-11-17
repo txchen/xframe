@@ -1,0 +1,270 @@
+{
+  "source": "/Users/hibiki/Library/Logs/RenderPathProbe/2026-11-16T16-53-42Z-F159659F/events.json",
+  "status": "complete",
+  "device": "Apple M1",
+  "screen": "LG Ultra HD",
+  "drawable": "{3840, 2160}",
+  "pending_at_export": 0,
+  "blocks": [
+    {
+      "block": 0,
+      "mode": "continuous60",
+      "submitted": 480,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 480,
+        "mean": 4.0,
+        "p50": 4.0,
+        "p95": 4.0,
+        "p99": 4.0
+      },
+      "gpu_ms": {
+        "n": 480,
+        "mean": 0.0753,
+        "p50": 0.0843,
+        "p95": 0.0908,
+        "p99": 0.0943
+      },
+      "gpu_to_display_ms": {
+        "n": 480,
+        "mean": 63.5116,
+        "p50": 63.4263,
+        "p95": 64.3597,
+        "p99": 64.4847
+      },
+      "submit_to_display_ms": {
+        "n": 480,
+        "mean": 64.2052,
+        "p50": 64.1394,
+        "p95": 64.8434,
+        "p99": 64.9348
+      },
+      "acquire_ms": {
+        "n": 480,
+        "mean": 9.7105,
+        "p50": 9.6903,
+        "p95": 10.5115,
+        "p99": 10.7289
+      },
+      "presented_callback_lag_ms": {
+        "n": 480,
+        "mean": 0.5922,
+        "p50": 0.6011,
+        "p95": 0.6646,
+        "p99": 0.705
+      },
+      "intervals_ms": {
+        "n": 479,
+        "mean": 16.667,
+        "p50": 16.667,
+        "p95": 16.6673,
+        "p99": 16.6674
+      },
+      "long_intervals_over25ms": 0,
+      "tick_intervals_ms": {
+        "n": 479,
+        "mean": 16.666,
+        "p50": 16.6671,
+        "p95": 17.573,
+        "p99": 17.6836
+      },
+      "fps": 59.998904612951264
+    },
+    {
+      "block": 1,
+      "mode": "isolated",
+      "submitted": 16,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 16,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "gpu_ms": {
+        "n": 16,
+        "mean": 0.0819,
+        "p50": 0.0839,
+        "p95": 0.0881,
+        "p99": 0.0927
+      },
+      "gpu_to_display_ms": {
+        "n": 16,
+        "mean": 22.633,
+        "p50": 22.5879,
+        "p95": 22.8251,
+        "p99": 23.0968
+      },
+      "submit_to_display_ms": {
+        "n": 16,
+        "mean": 23.5551,
+        "p50": 23.5412,
+        "p95": 23.656,
+        "p99": 23.6905
+      },
+      "acquire_ms": {
+        "n": 16,
+        "mean": 0.2239,
+        "p50": 0.2286,
+        "p95": 0.2498,
+        "p99": 0.2523
+      },
+      "presented_callback_lag_ms": {
+        "n": 16,
+        "mean": 0.6505,
+        "p50": 0.6502,
+        "p95": 0.7127,
+        "p99": 0.7242
+      },
+      "intervals_ms": {
+        "n": 15,
+        "mean": 507.787,
+        "p50": 500.0091,
+        "p95": 516.6761,
+        "p99": 516.6761
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 479,
+        "mean": 16.667,
+        "p50": 16.6668,
+        "p95": 17.3378,
+        "p99": 17.6219
+      },
+      "fps": null
+    },
+    {
+      "block": 2,
+      "mode": "isolated",
+      "submitted": 16,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 16,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "gpu_ms": {
+        "n": 16,
+        "mean": 0.0701,
+        "p50": 0.0814,
+        "p95": 0.0882,
+        "p99": 0.0897
+      },
+      "gpu_to_display_ms": {
+        "n": 16,
+        "mean": 22.6568,
+        "p50": 22.7552,
+        "p95": 23.2763,
+        "p99": 23.404
+      },
+      "submit_to_display_ms": {
+        "n": 16,
+        "mean": 23.6635,
+        "p50": 23.5875,
+        "p95": 23.9338,
+        "p99": 24.3105
+      },
+      "acquire_ms": {
+        "n": 16,
+        "mean": 0.1885,
+        "p50": 0.196,
+        "p95": 0.2415,
+        "p99": 0.2436
+      },
+      "presented_callback_lag_ms": {
+        "n": 16,
+        "mean": 0.591,
+        "p50": 0.653,
+        "p95": 0.7023,
+        "p99": 0.7077
+      },
+      "intervals_ms": {
+        "n": 15,
+        "mean": 507.787,
+        "p50": 500.0091,
+        "p95": 516.6761,
+        "p99": 516.6762
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 479,
+        "mean": 16.6669,
+        "p50": 16.6666,
+        "p95": 17.2285,
+        "p99": 17.6451
+      },
+      "fps": null
+    },
+    {
+      "block": 3,
+      "mode": "continuous60",
+      "submitted": 479,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 479,
+        "mean": 1.0,
+        "p50": 1.0,
+        "p95": 1.0,
+        "p99": 1.0
+      },
+      "gpu_ms": {
+        "n": 479,
+        "mean": 0.0514,
+        "p50": 0.0483,
+        "p95": 0.0832,
+        "p99": 0.0911
+      },
+      "gpu_to_display_ms": {
+        "n": 479,
+        "mean": 23.4405,
+        "p50": 23.3403,
+        "p95": 24.1411,
+        "p99": 24.2627
+      },
+      "submit_to_display_ms": {
+        "n": 479,
+        "mean": 23.8343,
+        "p50": 23.7161,
+        "p95": 24.5236,
+        "p99": 24.6642
+      },
+      "acquire_ms": {
+        "n": 479,
+        "mean": 0.1135,
+        "p50": 0.1124,
+        "p95": 0.1342,
+        "p99": 0.1552
+      },
+      "presented_callback_lag_ms": {
+        "n": 479,
+        "mean": 0.5513,
+        "p50": 0.5551,
+        "p95": 0.6293,
+        "p99": 0.6833
+      },
+      "intervals_ms": {
+        "n": 478,
+        "mean": 16.667,
+        "p50": 16.667,
+        "p95": 16.6671,
+        "p99": 16.6672
+      },
+      "long_intervals_over25ms": 0,
+      "tick_intervals_ms": {
+        "n": 478,
+        "mean": 16.6678,
+        "p50": 16.6666,
+        "p95": 17.4623,
+        "p99": 17.6144
+      },
+      "fps": 59.99890953865116
+    }
+  ]
+}

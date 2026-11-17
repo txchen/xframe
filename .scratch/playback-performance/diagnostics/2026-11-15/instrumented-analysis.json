@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 10,
+  "frameIntervals": {
+    "count": 3566,
+    "meanMS": 16.70904136287237,
+    "p50MS": 16.666958341374993,
+    "p95MS": 16.667250005411915,
+    "maxMS": 66.66791667521466
+  },
+  "gapsOver25MS": 6,
+  "phases": {
+    "arrivalToSubmit": {
+      "count": 3569,
+      "meanMS": 12.346230865187943,
+      "p50MS": 12.585833334014751,
+      "p95MS": 19.759083341341466,
+      "maxMS": 24.15895833109971
+    },
+    "gpuQueue": {
+      "count": 3569,
+      "meanMS": 0.44593956001262364,
+      "p50MS": 0.4633333155652508,
+      "p95MS": 0.5747916584368795,
+      "maxMS": 1.3662499841302633
+    },
+    "gpu": {
+      "count": 3569,
+      "meanMS": 0.2649364317472125,
+      "p50MS": 0.22566666302736849,
+      "p95MS": 0.39324999670498073,
+      "maxMS": 0.7741250010440126
+    },
+    "displayWait": {
+      "count": 3567,
+      "meanMS": 23.035223671270522,
+      "p50MS": 22.96420834318269,
+      "p95MS": 23.972958340891637,
+      "maxMS": 24.615583359263837
+    },
+    "arrivalToDisplay": {
+      "count": 3567,
+      "meanMS": 36.09571071616647,
+      "p50MS": 36.26950000762008,
+      "p95MS": 43.49870834266767,
+      "maxMS": 46.45041665935423
+    }
+  },
+  "discardedInTrace": {
+    "inboxOverflow": 7,
+    "notPresented": 2,
+    "catchUp": 2
+  },
+  "peakCompletedAwaitingPresentation": 2,
+  "notes": [
+    "Bounded trace tail; endpoints and stage populations may differ.",
+    "25 ms gaps are a 60 Hz diagnostic, not a refresh-independent failure threshold.",
+    "Presentation is the drawable timestamp, not physical input-to-photon latency.",
+    "Missing stages are unavailable, not zero."
+  ]
+}

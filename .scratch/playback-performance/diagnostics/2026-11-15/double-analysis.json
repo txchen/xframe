@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 9,
+  "frameIntervals": {
+    "count": 4092,
+    "meanMS": 16.70362129357828,
+    "p50MS": 16.666958341374993,
+    "p95MS": 16.6672083287267,
+    "maxMS": 50.00070833193604
+  },
+  "gapsOver25MS": 8,
+  "phases": {
+    "arrivalToSubmit": null,
+    "gpuQueue": null,
+    "gpu": null,
+    "displayWait": null,
+    "arrivalToDisplay": {
+      "count": 4092,
+      "meanMS": 34.30216433489628,
+      "p50MS": 33.84020834346302,
+      "p95MS": 42.78308333596215,
+      "maxMS": 58.91525000333786
+    }
+  },
+  "discardedInTrace": {},
+  "peakCompletedAwaitingPresentation": null,
+  "notes": [
+    "Bounded trace tail; endpoints and stage populations may differ.",
+    "25 ms gaps are a 60 Hz diagnostic, not a refresh-independent failure threshold.",
+    "Presentation is the drawable timestamp, not physical input-to-photon latency.",
+    "Missing stages are unavailable, not zero."
+  ]
+}

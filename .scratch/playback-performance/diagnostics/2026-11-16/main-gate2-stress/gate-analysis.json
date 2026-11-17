@@ -1,0 +1,158 @@
+[
+  {
+    "block": 0,
+    "submissions": 720,
+    "max_pending": 3,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5248541565379128,
+    "redraws": 0,
+    "injections": [
+      1.015323666666518
+    ]
+  },
+  {
+    "block": 1,
+    "submissions": 713,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5929166654823348,
+    "redraws": 0,
+    "injections": [
+      1.008442666658084
+    ]
+  },
+  {
+    "block": 2,
+    "submissions": 715,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5684166681021452,
+    "redraws": 0,
+    "injections": [
+      1.0118038750078995
+    ]
+  },
+  {
+    "block": 3,
+    "submissions": 716,
+    "max_pending": 3,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5035208378103562,
+    "redraws": 0,
+    "injections": [
+      1.0301331666560145
+    ]
+  },
+  {
+    "block": 4,
+    "submissions": 714,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5538958284887485,
+    "redraws": 0,
+    "injections": [
+      1.0302474583295407
+    ]
+  },
+  {
+    "block": 5,
+    "submissions": 717,
+    "max_pending": 3,
+    "stable_max_pending": 3,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5776249890914187,
+    "redraws": 1,
+    "injections": [
+      1.0143210000096587
+    ]
+  },
+  {
+    "block": 6,
+    "submissions": 715,
+    "max_pending": 3,
+    "stable_max_pending": 3,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.532083329744637,
+    "redraws": 1,
+    "injections": [
+      1.0144280833337689
+    ]
+  },
+  {
+    "block": 7,
+    "submissions": 716,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5282083366182633,
+    "redraws": 0,
+    "injections": [
+      1.0147169999981998
+    ]
+  },
+  {
+    "block": 8,
+    "submissions": 716,
+    "max_pending": 3,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5755833262810484,
+    "redraws": 0,
+    "injections": [
+      1.0314239583240123
+    ]
+  },
+  {
+    "block": 9,
+    "submissions": 715,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5864999984623864,
+    "redraws": 0,
+    "injections": [
+      1.0293705416552257
+    ]
+  },
+  {
+    "block": 10,
+    "submissions": 715,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 2,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5232291659922339,
+    "redraws": 0,
+    "injections": [
+      1.0164138333348092
+    ]
+  },
+  {
+    "block": 11,
+    "submissions": 714,
+    "max_pending": 3,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5362291631172411,
+    "redraws": 0,
+    "injections": [
+      1.0158600416616537
+    ]
+  }
+]

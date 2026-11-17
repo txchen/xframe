@@ -1,0 +1,86 @@
+all submissions 13103 redraws 1 actual zero 35
+firstReady 113689.52248800003 [(-1.452, 0, -113689.5210360417), (14.839, 0, -113689.53732708335), (31.355, 0, 0.02389962501183618), (48.14, 0, 0.023781124997185543)]
+
+BLOCK 0 first five
+{'offset_ms': 2.54, 'gap_ms': 16.96, 'pending': 1, 'old_pending': 1, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 19.22, 'gap_ms': 16.68, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 35.86, 'gap_ms': 16.64, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 52.53, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 69.27, 'gap_ms': 16.74, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+
+BLOCK 1 first five
+{'offset_ms': 20.58, 'gap_ms': 121.72, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 37.29, 'gap_ms': 16.71, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 53.84, 'gap_ms': 16.55, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 70.52, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 86.28, 'gap_ms': 15.76, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 2 first five
+{'offset_ms': 22.97, 'gap_ms': 100.63, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 39.58, 'gap_ms': 16.6, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 55.86, 'gap_ms': 16.28, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 72.85, 'gap_ms': 16.99, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 89.52, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 3 first five
+{'offset_ms': 13.53, 'gap_ms': 95.46, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 30.88, 'gap_ms': 17.35, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 46.56, 'gap_ms': 15.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 64.21, 'gap_ms': 17.65, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 80.86, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+
+BLOCK 4 first five
+{'offset_ms': 21.34, 'gap_ms': 104.25, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 37.08, 'gap_ms': 15.74, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 54.49, 'gap_ms': 17.41, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 70.23, 'gap_ms': 15.74, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 87.81, 'gap_ms': 17.58, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 5 first five
+{'offset_ms': 14.04, 'gap_ms': 95.6, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 30.49, 'gap_ms': 16.45, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 47.13, 'gap_ms': 16.65, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 63.8, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 80.46, 'gap_ms': 16.65, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+
+BLOCK 6 first five
+{'offset_ms': 0.22, 'gap_ms': 82.67, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 0.72, 'gap_ms': 0.5, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 33.21, 'gap_ms': 32.5, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 50.57, 'gap_ms': 17.35, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 67.24, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+
+BLOCK 7 first five
+{'offset_ms': 22.09, 'gap_ms': 105.32, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 38.56, 'gap_ms': 16.46, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 55.22, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 70.9, 'gap_ms': 15.68, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 87.6, 'gap_ms': 16.7, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 8 first five
+{'offset_ms': 17.55, 'gap_ms': 95.36, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 33.27, 'gap_ms': 15.72, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 50.79, 'gap_ms': 17.52, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 66.5, 'gap_ms': 15.71, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 83.17, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+
+BLOCK 9 first five
+{'offset_ms': 21.63, 'gap_ms': 104.19, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 38.12, 'gap_ms': 16.5, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 53.96, 'gap_ms': 15.84, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 71.44, 'gap_ms': 17.48, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 88.1, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 10 first five
+{'offset_ms': 20.2, 'gap_ms': 99.74, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 37.63, 'gap_ms': 17.43, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 54.3, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 70.95, 'gap_ms': 16.65, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+{'offset_ms': 87.62, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': 16.67, 'old_last_minus_expected_ms': None}
+
+BLOCK 11 first five
+{'offset_ms': 14.14, 'gap_ms': 95.37, 'pending': 0, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 30.73, 'gap_ms': 16.59, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 48.18, 'gap_ms': 17.45, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 64.85, 'gap_ms': 16.67, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}
+{'offset_ms': 81.51, 'gap_ms': 16.66, 'pending': 1, 'old_pending': 0, 'repeat': 0, 'target_to_actual_ms': None, 'old_last_minus_expected_ms': None}

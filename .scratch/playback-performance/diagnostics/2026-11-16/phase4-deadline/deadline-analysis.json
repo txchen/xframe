@@ -1,0 +1,110 @@
+[
+  {
+    "block": 0,
+    "frames": 661,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  },
+  {
+    "block": 1,
+    "frames": 659,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": 0.5669583479175344,
+    "first_late": null
+  },
+  {
+    "block": 2,
+    "frames": 656,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 2,
+    "min_gpu_lead_ms": 0.6526666838908568,
+    "first_late": null
+  },
+  {
+    "block": 3,
+    "frames": 659,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  },
+  {
+    "block": 4,
+    "frames": 658,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 2,
+    "min_gpu_lead_ms": 1.007541679427959,
+    "first_late": null
+  },
+  {
+    "block": 5,
+    "frames": 660,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  },
+  {
+    "block": 6,
+    "frames": 658,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  },
+  {
+    "block": 7,
+    "frames": 659,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 1,
+    "min_gpu_lead_ms": 0.9361666743643582,
+    "first_late": null
+  },
+  {
+    "block": 8,
+    "frames": 660,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  },
+  {
+    "block": 9,
+    "frames": 657,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 2,
+    "min_gpu_lead_ms": 0.9614583541406319,
+    "first_late": null
+  },
+  {
+    "block": 10,
+    "frames": 659,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": 0.9524166816845536,
+    "first_late": null
+  },
+  {
+    "block": 11,
+    "frames": 659,
+    "missing": 0,
+    "late_frames": 0,
+    "missed_deadlines": 0,
+    "min_gpu_lead_ms": null,
+    "first_late": null
+  }
+]

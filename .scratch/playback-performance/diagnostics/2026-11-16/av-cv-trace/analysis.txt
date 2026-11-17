@@ -1,0 +1,25 @@
+unambiguous marker commands 8893 joined video 8801
+total_ms {'median': 34.85466667916626, 'p95': 49.73400000017136, 'min': 16.342916671419516, 'max': 64.7564583341591}
+enqueue_display_ms {'median': 23.567708340124227, 'p95': 40.218624999397434, 'min': 15.303083331673406, 'max': 49.20687500271015}
+enqueue_to_ws_ms {'median': 9.49616630035166, 'p95': 11.967582631640994, 'min': 1.6266659656682947, 'max': 26.283999964228144}
+ws_to_actual_ms {'median': 13.099250369705828, 'p95': 29.948167360743128, 'min': 4.974083705377552, 'max': 31.959541701517935}
+{'block': 0, 'mode': 'CAD-main', 'n': 657, 'submitted': 666, 'median': 26.281708327587694, 'p95': 31.212666668579914, 'fps': 59.18686851507266, 'gaps25': 9, 'gaps40': 0}
+{'block': 1, 'mode': 'CV-worker', 'n': 657, 'submitted': 657, 'median': 32.45870834507514, 'p95': 59.602541659842245, 'fps': 59.63525564042534, 'gaps25': 2, 'gaps40': 1}
+{'block': 2, 'mode': 'CAD-main', 'n': 646, 'submitted': 661, 'median': 33.52825000183657, 'p95': 43.78662499948405, 'fps': 58.546566952241385, 'gaps25': 16, 'gaps40': 0}
+{'block': 3, 'mode': 'CV-worker', 'n': 657, 'submitted': 659, 'median': 45.375208341283724, 'p95': 51.733375003095716, 'fps': 59.63525654395363, 'gaps25': 3, 'gaps40': 1}
+{'block': 4, 'mode': 'CAD-main', 'n': 648, 'submitted': 657, 'median': 35.12335416598944, 'p95': 47.485500006587245, 'fps': 58.99586148666072, 'gaps25': 11, 'gaps40': 0}
+{'block': 5, 'mode': 'CV-worker', 'n': 660, 'submitted': 660, 'median': 33.76768750604242, 'p95': 39.2873333330499, 'fps': 59.907975123117346, 'gaps25': 1, 'gaps40': 0}
+{'block': 6, 'mode': 'CAD-main', 'n': 656, 'submitted': 660, 'median': 24.182916669815313, 'p95': 34.30904167180415, 'fps': 59.54434868957054, 'gaps25': 5, 'gaps40': 0}
+{'block': 7, 'mode': 'CV-worker', 'n': 659, 'submitted': 659, 'median': 37.17412499827333, 'p95': 42.46399999829009, 'fps': 59.81706976447515, 'gaps25': 1, 'gaps40': 1}
+{'block': 8, 'mode': 'CAD-main', 'n': 657, 'submitted': 660, 'median': 37.49691665871069, 'p95': 48.790916669531725, 'fps': 59.54503395943085, 'gaps25': 5, 'gaps40': 0}
+{'block': 9, 'mode': 'CV-worker', 'n': 658, 'submitted': 658, 'median': 39.03731249010889, 'p95': 43.780500011052936, 'fps': 59.726161458711715, 'gaps25': 2, 'gaps40': 1}
+coverage 0 {'matched': 657, 'no_ws_read': 9}
+coverage 1 {'matched': 657}
+coverage 2 {'matched': 646, 'no_ws_read': 15}
+coverage 3 {'matched': 657, 'no_ws_read': 1}
+coverage 4 {'matched': 648, 'no_ws_read': 9}
+coverage 5 {'matched': 660}
+coverage 6 {'matched': 656, 'no_ws_read': 4}
+coverage 7 {'matched': 659}
+coverage 8 {'matched': 657, 'no_ws_read': 3}
+coverage 9 {'matched': 658}

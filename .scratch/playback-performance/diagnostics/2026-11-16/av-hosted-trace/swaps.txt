@@ -1,0 +1,11 @@
+joined 6561 unjoined {'ambiguous_or_overwritten': 34, 'no_read': 2}
+0 655 total 28.009541304275132 enqueue 19.262499630762875 marker delta None None
+1 653 total 29.795415968994376 enqueue 19.249124297857634 marker delta None None
+2 661 total 29.504708307165117 enqueue 19.248499300822175 marker delta None None
+3 659 total 30.910791637474233 enqueue 19.259916634737806 marker delta None None
+4 659 total 32.41958263579647 enqueue 19.262332627718592 marker delta None None
+5 655 total 33.98587496930361 enqueue 19.23187497281731 marker delta None None
+6 656 total 35.623395633827215 enqueue 19.216562469196674 marker delta None None
+7 650 total 32.84758279807676 enqueue 19.263728795841928 marker delta None None
+8 660 total 39.33166647033204 enqueue 35.84112496719172 marker delta None None
+9 653 total 35.87449996817327 enqueue 19.278790960413517 marker delta None None

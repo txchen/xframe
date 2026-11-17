@@ -1,2 +1,13 @@
 .build/
 .DS_Store
+
+# Local agent workflow state; issues cite it as local-only evidence.
+.audit/
+
+# Raw presentation traces (~1 GB). Analyses, scripts and notes stay tracked;
+# docs/research/original-render-latency records hashes of the key inputs.
+.scratch/playback-performance/diagnostics/2026-11-1[56]/**/*.json
+!.scratch/playback-performance/diagnostics/2026-11-1[56]/**/*analysis*.json
+!.scratch/playback-performance/diagnostics/2026-11-1[56]/**/results.json
+!.scratch/playback-performance/diagnostics/2026-11-1[56]/**/segments.json
+!.scratch/playback-performance/diagnostics/2026-11-1[56]/**/geometry.json

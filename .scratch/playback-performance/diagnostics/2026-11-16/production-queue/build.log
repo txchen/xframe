@@ -1,0 +1,52 @@
+Another instance of SwiftPM (PID: 14123) is already running using '/Users/hibiki/code/vibe/xframe/.build', waiting until that process has finished execution...[0/1] Planning build
+Building for production...
+[0/4] Write sources
+[1/4] Write swift-version--1AB21518FC5DEDBE.txt
+[3/5] Compiling XFrame CredentialStore.swift
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:231:16: warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+229 |             kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+230 |         ])
+231 |         reader.add(output)
+    |                `- warning: 'add' was deprecated in macOS 27.0: Use the appropriate AVAssetReader.outputProvider(for:...) overload for your output and optional adaptor instead [#DeprecatedDeclaration]
+232 |         guard reader.startReading() else {
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:232:22: warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+230 |         ])
+231 |         reader.add(output)
+232 |         guard reader.startReading() else {
+    |                      `- warning: 'startReading()' was deprecated in macOS 27.0: Use start() instead [#DeprecatedDeclaration]
+233 |             throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+234 |         }
+
+/Users/hibiki/code/vibe/xframe/Sources/XFrame/PostProcessingBenchmark.swift:236:54: warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+234 |         }
+235 |         var frames: [BenchmarkVideoFrame] = []
+236 |         while frames.count < 61, let sample = output.copyNextSampleBuffer() {
+    |                                                      `- warning: 'copyNextSampleBuffer()' was deprecated in macOS 27.0: Use AVAssetReaderOutput.Provider.next() instead [#DeprecatedDeclaration]
+237 |             try Task.checkCancellation()
+238 |             if let buffer = CMSampleBufferGetImageBuffer(sample) {
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[3/5] Write Objects.LinkFileList
+[4/5] Linking XFrame
+Build complete! (19.11s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+[0/2] Write swift-version--1AB21518FC5DEDBE.txt
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--1AB21518FC5DEDBE.txt
+Build of product 'mlxdlss' complete! (2.49s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+Collecting mlx-metal==0.31.1
+  File was already downloaded /Users/hibiki/code/vibe/xframe/.build/benchmark-mlx-dlss/wheels/mlx_metal-0.31.1-py3-none-macosx_26_0_arm64.whl
+Successfully downloaded mlx-metal
+
+[notice] A new release of pip is available: 23.3.2 -> 26.3
+[notice] To update, run: pip install --upgrade pip
+/Users/hibiki/code/vibe/xframe/.build/benchmark-mlx-dlss/wheels/mlx_metal-0.31.1-py3-none-macosx_26_0_arm64.whl: OK
+/Users/hibiki/code/vibe/xframe/.build/original-presentation-bounded/XFrame.app/Contents/Frameworks/WebRTC.framework: replacing existing signature
+/Users/hibiki/code/vibe/xframe/.build/original-presentation-bounded/XFrame.app/Contents/MacOS/mlxdlss-benchmark: replacing existing signature
+/Users/hibiki/code/vibe/xframe/.build/original-presentation-bounded/XFrame.app: replacing existing signature
+Built /Users/hibiki/code/vibe/xframe/.build/original-presentation-bounded/XFrame.app

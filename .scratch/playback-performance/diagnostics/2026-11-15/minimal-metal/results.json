@@ -1,0 +1,46 @@
+{
+  "root": {
+    "display_events": 922,
+    "direct": 0,
+    "reasons": {
+      "none": 4,
+      "MetalTimingProbe (58347):  display rejected": 918
+    },
+    "matched": 938,
+    "late_median_ms": 16.66704166666603,
+    "late_p95_ms": 16.667333333333016,
+    "one_refresh_late": 938
+  },
+  "nested": {
+    "display_events": 914,
+    "direct": 0,
+    "reasons": {
+      "none": 4,
+      "MetalTimingProbe (58347):  display rejected": 910
+    },
+    "matched": 938,
+    "late_median_ms": 16.66704166666603,
+    "late_p95_ms": 16.66724966666603,
+    "one_refresh_late": 938
+  },
+  "overlay": {
+    "display_events": 916,
+    "direct": 0,
+    "reasons": {
+      "none": 4,
+      "MetalTimingProbe (58347):  display rejected": 912
+    }
+  },
+  "bare": {
+    "display_events": 919,
+    "direct": 0,
+    "reasons": {
+      "none": 2,
+      "BareMetalProbe (62366):  display rejected": 917
+    },
+    "matched": 939,
+    "late_median_ms": 16.66708333333397,
+    "late_p95_ms": 16.66737466666603,
+    "one_refresh_late": 939
+  }
+}

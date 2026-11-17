@@ -1,0 +1,52 @@
+diff --git a/Sources/XFrame/MetalRenderer.swift b/Sources/XFrame/MetalRenderer.swift
+index 65ee9b6..8a8a01e 100644
+--- a/Sources/XFrame/MetalRenderer.swift
++++ b/Sources/XFrame/MetalRenderer.swift
+@@ -29,6 +29,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     private var currentVideo: VideoTextures?
+     private var source: (any VideoSource)?
+     private let inFlight = DispatchSemaphore(value: 3)
++    private let presentationQueue = PresentationQueue()
+     private var lastDrawableSize = CGSize.zero
+     private let hudSampler = HUDSampler()
+     var hudPreset: PerformanceHUDPreset = .compact { didSet { restartHUD() } }
+@@ -123,11 +124,21 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+         defer { if !committed { inFlight.signal() } }
+         guard view.drawableSize.width > 0, view.drawableSize.height > 0 else { return }
+ 
++        guard let presentation = presentationQueue.reserve(
++            enforcingLimit: source is LiveVideo && scalingMode == .original
++        ) else { return }
++
+         let next = source?.nextFrame(at: now)
+         if let next {
+             do {
+-                currentVideo = try VideoTextures(frame: next, cache: cache)
+-                if work.receivedFrame() { source?.didSkipFrame() }
++                let textures = try VideoTextures(frame: next, cache: cache)
++                if work.receivedFrame() {
++                    source?.didSkipFrame()
++                    if let live = source as? LiveVideo, let previous = currentVideo?.frame, let rtp = previous.sourceRTP {
++                        live.frameTrace.note(.rendererReplaced, rtp: rtp, frameID: previous.id)
++                    }
++                }
++                currentVideo = textures
+             }
+             catch {
+                 source?.fail(error.localizedDescription)
+@@ -235,6 +246,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+             }
+             withExtendedLifetime(activeSpatial) {}
+             if command.status == .error {
++                presentation.finish()
+                 activeSource?.fail("Metal rendering failed: \(command.error?.localizedDescription ?? "Unknown GPU error")")
+             }
+             if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
+@@ -253,6 +265,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+         if let sample {
+             drawable.addPresentedHandler { presented in sample.presented(at: presented.presentedTime) }
+         }
++        drawable.addPresentedHandler { _ in presentation.finish() }
+         command.present(drawable)
+         counterSubmitted = true
+         committed = true

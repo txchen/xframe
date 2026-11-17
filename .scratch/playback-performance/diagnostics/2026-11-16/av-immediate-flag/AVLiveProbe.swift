@@ -1,0 +1,99 @@
+import AVFoundation
+import MetalKit
+import IOSurface
+
+final class AVProbeLog:@unchecked Sendable {
+ static let shared=AVProbeLog();private let lock=NSLock();private var rows:[[String:Double]]=[];private var markerID=0
+ func nextMarkerID()->Int{lock.withLock{markerID-=1;return markerID}}
+ func add(_ r:[String:Double]){lock.withLock {if rows.count<100000{rows.append(r)}}}
+ func save(){let data=lock.withLock{try! JSONSerialization.data(withJSONObject:rows)};try! data.write(to:URL(fileURLWithPath:"/Users/hibiki/code/vibe/xframe/.build/av-immediate-flag-probe/events.json"),options:.atomic)}
+}
+@MainActor final class AVLiveProbe: NSObject {
+ private var displayLink: CADisplayLink?
+ private weak var metalView:MTKView?;private var hostView:NSView?
+ private let source: LiveVideo
+ let layer=AVSampleBufferDisplayLayer();let marker=CAMetalLayer();private var worker:AVProbeWorker?;private var metricsTimer:Timer?;private let epoch=CACurrentMediaTime()
+ init(view:MTKView,source:LiveVideo,delayedPhase:Bool,hosted:Bool,immediate:Bool){
+  self.source=source
+  super.init()
+  view.isPaused=true;view.releaseDrawables()
+  layer.frame=view.bounds;layer.autoresizingMask=[.layerWidthSizable,.layerHeightSizable];layer.videoGravity = .resizeAspect;layer.backgroundColor=NSColor.black.cgColor;layer.isOpaque=true
+  layer.shouldRasterize=true;layer.rasterizationScale=view.window?.backingScaleFactor ?? 2
+  marker.device=view.device;marker.pixelFormat = .bgra8Unorm;marker.frame=CGRect(x:0,y:0,width:2,height:2);marker.drawableSize=CGSize(width:4,height:4)
+  if hosted {
+   let host=NSView(frame:view.frame);host.autoresizingMask=view.autoresizingMask
+   host.layer=layer;host.wantsLayer=true
+   view.superview!.addSubview(host,positioned:.above,relativeTo:view)
+   hostView=host;metalView=view;view.isHidden=true
+  } else {view.layer!.addSublayer(layer)}
+  worker=AVProbeWorker(source:source,renderer:layer.sampleBufferRenderer,marker:marker,delayedPhase:delayedPhase,immediate:immediate,displayID:(view.window?.screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? CGMainDisplayID());worker?.start()
+  metricsTimer=Timer.scheduledTimer(withTimeInterval:1,repeats:true){[weak self] _ in MainActor.assumeIsolated{self?.collectMetrics()}}
+ }
+ @objc private func tick(_ link:CADisplayLink){
+  let now=CACurrentMediaTime();AVProbeLog.shared.add(["tick":now,"target":link.targetTimestamp])
+  if let frame=source.nextFrame(at:now){worker?.enqueue(frame)}
+ }
+ func collectMetrics(){let epoch=self.epoch;layer.sampleBufferRenderer.loadVideoPerformanceMetrics{m in guard let m else{return};AVProbeLog.shared.add(["metricEpoch":epoch,"metricTime":CACurrentMediaTime(),"total":Double(m.totalNumberOfFrames),"dropped":Double(m.numberOfDroppedFrames),"optimized":Double(m.numberOfFramesDisplayedUsingOptimizedCompositing),"delay":m.totalAccumulatedFrameDelay])}}
+ func stop(){displayLink?.invalidate();displayLink=nil;collectMetrics();metricsTimer?.invalidate();metricsTimer=nil;worker?.stop();worker=nil;layer.removeFromSuperlayer();hostView?.removeFromSuperview();hostView=nil;metalView?.isHidden=false;AVProbeLog.shared.save()}
+}
+final class AVProbeWorker:@unchecked Sendable {
+ let immediate:Bool;let delayedPhase:Bool;let displayID:CGDirectDisplayID;private var cvLink:CVDisplayLink?;private var pendingTick:(Double,Double)?
+ let source:LiveVideo;let renderer:AVSampleBufferVideoRenderer;let marker:CAMetalLayer;let queue:MTLCommandQueue
+ private let condition=NSCondition();private var stopped=false;private var notified=true;private let finished=DispatchSemaphore(value:0);private let markerFinished=DispatchSemaphore(value:0);private var markerID=0;private var anchorRTP:UInt32?;private var anchorHost=0.0;private var anchorFrame:Int?
+ init(source:LiveVideo,renderer:AVSampleBufferVideoRenderer,marker:CAMetalLayer,delayedPhase:Bool,immediate:Bool,displayID:CGDirectDisplayID){self.immediate=immediate;self.delayedPhase=delayedPhase;self.displayID=displayID;self.source=source;self.renderer=renderer;self.marker=marker;queue=marker.device!.makeCommandQueue()!}
+ func wake(now:Double,target:Double){condition.lock();pendingTick=(now,target);condition.signal();condition.unlock()}
+ func start(){
+  Thread.detachNewThread{[self] in
+   Thread.current.name="XFrame AV CV video";Thread.current.qualityOfService = .userInteractive
+   defer{finished.signal()}
+   while true {
+    condition.lock()
+    while pendingTick == nil && !stopped {condition.wait()}
+    if stopped {condition.unlock();return}
+    let tick=pendingTick!;pendingTick=nil;condition.unlock()
+    if delayedPhase {
+     let deadline=tick.1-0.018
+     if deadline>CACurrentMediaTime(){mach_wait_until(UInt64(deadline*CVGetHostClockFrequency()))}
+    }
+    autoreleasepool {
+     let now=CACurrentMediaTime();AVProbeLog.shared.add(["tick":now,"cvCallback":tick.0,"target":tick.1])
+     if let frame=source.nextFrame(at:now){enqueue(frame)}
+    }
+   }
+  }
+  let created=CVDisplayLinkCreateWithCGDisplay(displayID,&cvLink)
+  guard created==kCVReturnSuccess,let cvLink else{AVProbeLog.shared.add(["cvError":Double(created)]);return}
+  CVDisplayLinkSetOutputCallback(cvLink,{_,_,output,_,_,context in
+   let worker=Unmanaged<AVProbeWorker>.fromOpaque(context!).takeUnretainedValue()
+   worker.wake(now:CACurrentMediaTime(),target:Double(output.pointee.hostTime)/CVGetHostClockFrequency())
+   return kCVReturnSuccess
+  },Unmanaged.passUnretained(self).toOpaque())
+  let started=CVDisplayLinkStart(cvLink)
+  if started != kCVReturnSuccess {AVProbeLog.shared.add(["cvError":Double(started)])}
+ }
+ func stop(){
+  if let cvLink {CVDisplayLinkStop(cvLink)};cvLink=nil
+  condition.lock();stopped=true;condition.broadcast();condition.unlock()
+  _=finished.wait(timeout:.now()+2)
+ }
+ private var cachedFormat: CMVideoFormatDescription?
+ func enqueue(_ frame:VideoFrame){
+  if cachedFormat == nil || !CMVideoFormatDescriptionMatchesImageBuffer(cachedFormat!, imageBuffer:frame.buffer) {
+   guard CMVideoFormatDescriptionCreateForImageBuffer(allocator:kCFAllocatorDefault,imageBuffer:frame.buffer,formatDescriptionOut:&cachedFormat)==0 else{return}
+  }
+  guard let fmt=cachedFormat else{return}
+  let pts=CACurrentMediaTime()
+  var timing=CMSampleTimingInfo(duration:.invalid,presentationTimeStamp:CMClockMakeHostTimeFromSystemUnits(mach_absolute_time()),decodeTimeStamp:.invalid);var sample:CMSampleBuffer?
+  guard CMSampleBufferCreateReadyWithImageBuffer(allocator:kCFAllocatorDefault,imageBuffer:frame.buffer,formatDescription:fmt,sampleTiming:&timing,sampleBufferOut:&sample)==0,let sample else{return}
+  if immediate {let a=CMSampleBufferGetSampleAttachmentsArray(sample,createIfNecessary:true)! as NSArray;(a[0] as! NSMutableDictionary)[kCMSampleAttachmentKey_DisplayImmediately]=true}
+  let sid=IOSurfaceGetID(CVPixelBufferGetIOSurface(frame.buffer)!.takeUnretainedValue());let t=CACurrentMediaTime();renderer.enqueue(sample)
+  AVProbeLog.shared.add(["id":Double(frame.id),"videoSurface":Double(sid),"enqueue":t,"pts":pts,"arrival":frame.arrivedAt,"failed":renderer.status == .failed ? 1:0])
+ }
+ func renderMarker(){
+  let id=AVProbeLog.shared.nextMarkerID()
+  guard let d=marker.nextDrawable(),let c=queue.makeCommandBuffer() else{return}
+  let p=MTLRenderPassDescriptor();p.colorAttachments[0].texture=d.texture;p.colorAttachments[0].loadAction = .clear;p.colorAttachments[0].storeAction = .store;p.colorAttachments[0].clearColor=MTLClearColor(red:0,green:0,blue:0,alpha:1);c.makeRenderCommandEncoder(descriptor:p)?.endEncoding()
+  AVProbeLog.shared.add(["id":Double(id),"markerSurface":Double(IOSurfaceGetID(d.texture.iosurface!)),"submit":CACurrentMediaTime()])
+  d.addPresentedHandler{drawable in AVProbeLog.shared.add(["id":Double(id),"actual":drawable.presentedTime])};c.present(d);c.commit()
+ }
+}

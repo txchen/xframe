@@ -1,0 +1,16 @@
+{
+  "layerFrame" : "{{0, 0}, {1920, 1080}}",
+  "viewBounds" : "{{0, 0}, {1920, 1080}}",
+  "windowFrame" : "{{0, 0}, {1920, 1080}}",
+  "layerOpaque" : "true",
+  "active" : "true",
+  "onActiveSpace" : "true",
+  "visible" : "true",
+  "fullscreen" : "true",
+  "windowOpaque" : "true",
+  "viewFrame" : "{{0, 0}, {1920, 1080}}",
+  "drawableSize" : "{3840, 2160}",
+  "screenFrame" : "{{0, 0}, {1920, 1080}}",
+  "colorspace" : "nil",
+  "scale" : "2.0"
+}

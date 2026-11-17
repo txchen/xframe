@@ -1,0 +1,698 @@
+{
+  "source": "/Users/hibiki/Library/Logs/RenderPathProbe/2026-11-16T16-56-57Z-769D6609/events.json",
+  "status": "complete",
+  "device": "Apple M1",
+  "screen": "LG Ultra HD",
+  "drawable": "{3840, 2160}",
+  "pending_at_export": 0,
+  "blocks": [
+    {
+      "block": 0,
+      "mode": "isolated-offset-0ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 0.3459,
+        "p50": 0.3688,
+        "p95": 0.3892,
+        "p99": 0.3909
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 6.0704,
+        "p50": 5.9871,
+        "p95": 6.4246,
+        "p99": 6.5862
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 16.7218,
+        "p50": 16.7151,
+        "p95": 16.7832,
+        "p99": 16.8012
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.08,
+        "p50": 0.0848,
+        "p95": 0.0881,
+        "p99": 0.0884
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 22.7922,
+        "p50": 22.732,
+        "p95": 23.1328,
+        "p99": 23.2957
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 23.5995,
+        "p50": 23.5759,
+        "p95": 23.7392,
+        "p99": 23.801
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.1697,
+        "p50": 0.1842,
+        "p95": 0.1934,
+        "p99": 0.194
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.5431,
+        "p50": 0.5416,
+        "p95": 0.6258,
+        "p99": 0.6363
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 514.295,
+        "p50": 516.6759,
+        "p95": 516.6761,
+        "p99": 516.6761
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 514.2925,
+        "p50": 516.669,
+        "p95": 516.7047,
+        "p99": 516.7144
+      },
+      "fps": null
+    },
+    {
+      "block": 1,
+      "mode": "isolated-offset-8ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.278,
+        "p50": 1.3847,
+        "p95": 1.4746,
+        "p99": 1.4963
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 11.8425,
+        "p50": 13.6247,
+        "p95": 14.0392,
+        "p99": 14.1248
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 18.8198,
+        "p50": 16.7472,
+        "p95": 27.5655,
+        "p99": 32.2144
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.0735,
+        "p50": 0.0822,
+        "p95": 0.0851,
+        "p99": 0.0854
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 30.6623,
+        "p50": 30.4368,
+        "p95": 31.6773,
+        "p99": 32.0357
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 31.4656,
+        "p50": 31.225,
+        "p95": 32.4296,
+        "p99": 32.8843
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.1713,
+        "p50": 0.1783,
+        "p95": 0.2079,
+        "p99": 0.2128
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.5324,
+        "p50": 0.5543,
+        "p95": 0.5931,
+        "p99": 0.5961
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.676,
+        "p50": 516.676,
+        "p95": 516.6763,
+        "p99": 516.6763
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.6836,
+        "p50": 516.694,
+        "p95": 517.9433,
+        "p99": 518.3393
+      },
+      "fps": null
+    },
+    {
+      "block": 2,
+      "mode": "isolated-offset-2ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.3317,
+        "p50": 1.4302,
+        "p95": 1.4788,
+        "p99": 1.481
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 2.1675,
+        "p50": 2.9032,
+        "p95": 3.6278,
+        "p99": 3.7812
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 20.9239,
+        "p50": 16.7572,
+        "p95": 33.447,
+        "p99": 33.45
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.0755,
+        "p50": 0.085,
+        "p95": 0.0882,
+        "p99": 0.0885
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 23.0915,
+        "p50": 19.993,
+        "p95": 32.7266,
+        "p99": 32.776
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 24.8979,
+        "p50": 20.5898,
+        "p95": 37.6368,
+        "p99": 37.8572
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.1932,
+        "p50": 0.201,
+        "p95": 0.2177,
+        "p99": 0.2193
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.6164,
+        "p50": 0.643,
+        "p95": 0.6912,
+        "p99": 0.6954
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.676,
+        "p50": 516.676,
+        "p95": 528.3429,
+        "p99": 532.343
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.6723,
+        "p50": 516.6708,
+        "p95": 517.5905,
+        "p99": 517.6401
+      },
+      "fps": null
+    },
+    {
+      "block": 3,
+      "mode": "isolated-offset-10ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.3407,
+        "p50": 1.4557,
+        "p95": 1.4894,
+        "p99": 1.4969
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 11.2722,
+        "p50": 11.5046,
+        "p95": 12.3873,
+        "p99": 12.4
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 16.7548,
+        "p50": 16.7681,
+        "p95": 16.8014,
+        "p99": 16.8044
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.0845,
+        "p50": 0.0842,
+        "p95": 0.0872,
+        "p99": 0.0875
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 28.0269,
+        "p50": 28.2561,
+        "p95": 29.1613,
+        "p99": 29.165
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 29.3895,
+        "p50": 29.1661,
+        "p95": 30.1124,
+        "p99": 30.1231
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.2078,
+        "p50": 0.2055,
+        "p95": 0.2251,
+        "p99": 0.2268
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.6518,
+        "p50": 0.6475,
+        "p95": 0.6961,
+        "p99": 0.7001
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.676,
+        "p50": 516.676,
+        "p95": 516.676,
+        "p99": 516.676
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.6777,
+        "p50": 516.6842,
+        "p95": 517.6205,
+        "p99": 517.6248
+      },
+      "fps": null
+    },
+    {
+      "block": 4,
+      "mode": "isolated-offset-4ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.3765,
+        "p50": 1.474,
+        "p95": 1.5112,
+        "p99": 1.5118
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 0.9311,
+        "p50": 0.7692,
+        "p95": 1.4733,
+        "p99": 1.5124
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 16.741,
+        "p50": 16.741,
+        "p95": 16.8006,
+        "p99": 16.8035
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.0871,
+        "p50": 0.0855,
+        "p95": 0.0935,
+        "p99": 0.0961
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 17.6721,
+        "p50": 17.5,
+        "p95": 18.2163,
+        "p99": 18.279
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 18.6394,
+        "p50": 18.4825,
+        "p95": 19.1767,
+        "p99": 19.2324
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.2231,
+        "p50": 0.2243,
+        "p95": 0.2422,
+        "p99": 0.2432
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.6486,
+        "p50": 0.676,
+        "p95": 0.7354,
+        "p99": 0.7447
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.676,
+        "p50": 516.676,
+        "p95": 516.676,
+        "p99": 516.676
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.7889,
+        "p50": 516.68,
+        "p95": 517.3991,
+        "p99": 517.4375
+      },
+      "fps": null
+    },
+    {
+      "block": 5,
+      "mode": "isolated-offset-12ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.439,
+        "p50": 1.4658,
+        "p95": 1.4925,
+        "p99": 1.4965
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": 9.5247,
+        "p50": 9.4841,
+        "p95": 9.7211,
+        "p99": 9.7565
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 16.7101,
+        "p50": 16.7101,
+        "p95": 16.7433,
+        "p99": 16.7462
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.084,
+        "p50": 0.0838,
+        "p95": 0.0871,
+        "p99": 0.0875
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 26.2348,
+        "p50": 26.1912,
+        "p95": 26.4232,
+        "p99": 26.4439
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 27.1975,
+        "p50": 27.1496,
+        "p95": 27.3796,
+        "p99": 27.3912
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.2199,
+        "p50": 0.2219,
+        "p95": 0.2321,
+        "p99": 0.2337
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.6624,
+        "p50": 0.6592,
+        "p95": 0.7006,
+        "p99": 0.7031
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.6759,
+        "p50": 516.6759,
+        "p95": 516.676,
+        "p99": 516.676
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.6732,
+        "p50": 516.688,
+        "p95": 516.9066,
+        "p99": 516.9195
+      },
+      "fps": null
+    },
+    {
+      "block": 6,
+      "mode": "isolated-offset-6ms",
+      "submitted": 8,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 8,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 8,
+        "mean": 1.3871,
+        "p50": 1.4864,
+        "p95": 1.5069,
+        "p99": 1.507
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 8,
+        "mean": -1.0724,
+        "p50": -1.1416,
+        "p95": -0.6641,
+        "p99": -0.5066
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 8,
+        "mean": 33.4025,
+        "p50": 33.4024,
+        "p95": 33.4356,
+        "p99": 33.4386
+      },
+      "gpu_ms": {
+        "n": 8,
+        "mean": 0.0853,
+        "p50": 0.0849,
+        "p95": 0.0892,
+        "p99": 0.0897
+      },
+      "gpu_to_display_ms": {
+        "n": 8,
+        "mean": 32.3301,
+        "p50": 32.2662,
+        "p95": 32.7252,
+        "p99": 32.8721
+      },
+      "submit_to_display_ms": {
+        "n": 8,
+        "mean": 33.2407,
+        "p50": 33.1474,
+        "p95": 33.6572,
+        "p99": 33.8038
+      },
+      "acquire_ms": {
+        "n": 8,
+        "mean": 0.2218,
+        "p50": 0.2255,
+        "p95": 0.2369,
+        "p99": 0.2371
+      },
+      "presented_callback_lag_ms": {
+        "n": 8,
+        "mean": 0.6359,
+        "p50": 0.6663,
+        "p95": 0.7072,
+        "p99": 0.709
+      },
+      "intervals_ms": {
+        "n": 7,
+        "mean": 516.6759,
+        "p50": 516.6759,
+        "p95": 516.6761,
+        "p99": 516.6762
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 7,
+        "mean": 516.6398,
+        "p50": 516.6545,
+        "p95": 517.1906,
+        "p99": 517.3496
+      },
+      "fps": null
+    },
+    {
+      "block": 7,
+      "mode": "isolated-offset-14ms",
+      "submitted": 7,
+      "invalid": 0,
+      "fullscreen": true,
+      "pending_before": {
+        "n": 7,
+        "mean": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0
+      },
+      "requested_wake_error_ms": {
+        "n": 7,
+        "mean": 1.373,
+        "p50": 1.4276,
+        "p95": 1.4786,
+        "p99": 1.4794
+      },
+      "gpu_to_clock_target_ms": {
+        "n": 7,
+        "mean": 7.7586,
+        "p50": 7.7744,
+        "p95": 8.0843,
+        "p99": 8.1155
+      },
+      "actual_minus_clock_target_ms": {
+        "n": 7,
+        "mean": 16.7622,
+        "p50": 16.762,
+        "p95": 16.7907,
+        "p99": 16.7933
+      },
+      "gpu_ms": {
+        "n": 7,
+        "mean": 0.0643,
+        "p50": 0.0761,
+        "p95": 0.0857,
+        "p99": 0.0857
+      },
+      "gpu_to_display_ms": {
+        "n": 7,
+        "mean": 24.5207,
+        "p50": 24.5259,
+        "p95": 24.86,
+        "p99": 24.8887
+      },
+      "submit_to_display_ms": {
+        "n": 7,
+        "mean": 25.2441,
+        "p50": 25.2106,
+        "p95": 25.3971,
+        "p99": 25.4225
+      },
+      "acquire_ms": {
+        "n": 7,
+        "mean": 0.1682,
+        "p50": 0.1742,
+        "p95": 0.2334,
+        "p99": 0.2351
+      },
+      "presented_callback_lag_ms": {
+        "n": 7,
+        "mean": 0.5572,
+        "p50": 0.6077,
+        "p95": 0.6577,
+        "p99": 0.6608
+      },
+      "intervals_ms": {
+        "n": 6,
+        "mean": 516.676,
+        "p50": 516.676,
+        "p95": 516.6763,
+        "p99": 516.6764
+      },
+      "long_intervals_over25ms": null,
+      "tick_intervals_ms": {
+        "n": 6,
+        "mean": 516.6863,
+        "p50": 516.701,
+        "p95": 516.7658,
+        "p99": 516.7742
+      },
+      "fps": null
+    }
+  ]
+}

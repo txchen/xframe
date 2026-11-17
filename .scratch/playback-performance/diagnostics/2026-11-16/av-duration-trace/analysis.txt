@@ -1,0 +1,25 @@
+unambiguous marker commands 8862 joined video 8742
+total_ms {'median': 28.213437493832316, 'p95': 36.54991666553542, 'min': 16.10837499902118, 'max': 56.09941667353269}
+enqueue_display_ms {'median': 15.80166666826699, 'p95': 15.925166677334346, 'min': 15.423458331497386, 'max': 32.7474583464209}
+enqueue_to_ws_ms {'median': 2.8733329741008617, 'p95': 3.9619583024688154, 'min': 1.5633333038174158, 'max': 19.840082974724282}
+ws_to_actual_ms {'median': 12.928979525057116, 'p95': 13.914334026367214, 'min': 11.216625688810211, 'max': 17.352541696595836}
+{'block': 0, 'mode': 'fixed-duration', 'n': 658, 'submitted': 664, 'median': 24.986604177684058, 'p95': 29.827708334778436, 'fps': 59.455907183643596, 'gaps25': 6, 'gaps40': 0}
+{'block': 1, 'mode': 'invalid-duration', 'n': 651, 'submitted': 657, 'median': 26.595083327265456, 'p95': 31.438208345207386, 'fps': 59.089811229079984, 'gaps25': 8, 'gaps40': 2}
+{'block': 2, 'mode': 'fixed-duration', 'n': 654, 'submitted': 660, 'median': 27.554333340958692, 'p95': 32.766083342721686, 'fps': 59.362533659660635, 'gaps25': 6, 'gaps40': 1}
+{'block': 3, 'mode': 'invalid-duration', 'n': 651, 'submitted': 657, 'median': 29.587958328193054, 'p95': 34.2954583466053, 'fps': 59.08981010994101, 'gaps25': 7, 'gaps40': 2}
+{'block': 4, 'mode': 'fixed-duration', 'n': 648, 'submitted': 656, 'median': 31.036749998747837, 'p95': 35.64512499724515, 'fps': 58.90633939461892, 'gaps25': 10, 'gaps40': 1}
+{'block': 5, 'mode': 'invalid-duration', 'n': 647, 'submitted': 655, 'median': 32.337666663806885, 'p95': 37.29879166348837, 'fps': 58.72617917467091, 'gaps25': 11, 'gaps40': 2}
+{'block': 6, 'mode': 'fixed-duration', 'n': 652, 'submitted': 655, 'median': 28.549854170705657, 'p95': 34.78866667137481, 'fps': 59.1807152685454, 'gaps25': 6, 'gaps40': 1}
+{'block': 7, 'mode': 'invalid-duration', 'n': 647, 'submitted': 654, 'median': 30.705875004059635, 'p95': 35.871208339813165, 'fps': 58.81529494025302, 'gaps25': 8, 'gaps40': 2}
+{'block': 8, 'mode': 'fixed-duration', 'n': 651, 'submitted': 655, 'median': 31.486749998293817, 'p95': 37.19841665588319, 'fps': 59.17947521053392, 'gaps25': 5, 'gaps40': 1}
+{'block': 9, 'mode': 'invalid-duration', 'n': 645, 'submitted': 652, 'median': 32.62870832986664, 'p95': 38.73429166560527, 'fps': 58.63320313166745, 'gaps25': 8, 'gaps40': 2}
+coverage 0 {'matched': 658, 'no_ws_read': 6}
+coverage 1 {'matched': 651, 'no_ws_read': 6}
+coverage 2 {'matched': 654, 'no_ws_read': 6}
+coverage 3 {'matched': 651, 'no_ws_read': 6}
+coverage 4 {'matched': 648, 'no_ws_read': 7}
+coverage 5 {'matched': 647, 'no_ws_read': 8}
+coverage 6 {'matched': 652, 'no_ws_read': 3}
+coverage 7 {'matched': 647, 'no_ws_read': 7}
+coverage 8 {'no_ws_read': 4, 'matched': 651}
+coverage 9 {'no_ws_read': 6, 'matched': 645}

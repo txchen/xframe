@@ -1,0 +1,134 @@
+[
+  {
+    "block": 0,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5654999986290932,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 1,
+    "submissions": 718,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5856874995515682,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 2,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5365000106394291,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 3,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.522666668985039,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 4,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.571750002563931,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 5,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5789999995613471,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 6,
+    "submissions": 718,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5152500016265549,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 7,
+    "submissions": 720,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5624791665468365,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 8,
+    "submissions": 718,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5767499969806522,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 9,
+    "submissions": 719,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5434166669147089,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 10,
+    "submissions": 720,
+    "max_pending": 2,
+    "stable_max_pending": 2,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5022500045015477,
+    "redraws": 0,
+    "injections": []
+  },
+  {
+    "block": 11,
+    "submissions": 719,
+    "max_pending": 3,
+    "stable_max_pending": 3,
+    "backpressure": 0,
+    "stable_backpressure": 0,
+    "callback_delay_median_ms": 0.5707083328161389,
+    "redraws": 0,
+    "injections": []
+  }
+]
