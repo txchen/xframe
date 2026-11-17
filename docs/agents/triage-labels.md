@@ -9,6 +9,7 @@ Map canonical triage roles to the following local issue `Status:` values.
 | ready-for-agent | ready-for-agent | Fully specified and ready for an autonomous agent |
 | ready-for-human | ready-for-human | Requires human implementation |
 | wontfix | wontfix | Will not be actioned |
+| (local) resolved | resolved | Implemented and verified; kept for history |
 
 When a skill mentions a triage role, use the corresponding status value.
 Edit the status column to change this repo's vocabulary.

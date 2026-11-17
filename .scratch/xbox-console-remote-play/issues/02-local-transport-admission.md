@@ -1,6 +1,6 @@
 # Admit LAN candidates before ICE and revoke stale verification
 
-Status: ready-for-agent
+Status: resolved
 
 Console sessions configure public STUN and admit all local and remote candidates. The selected route is checked after connection. Missing selected-pair statistics preserve prior approval, and disconnect does not consistently hide or republish presentation.
 
@@ -17,3 +17,7 @@ Application candidate admission and sampled statistics are not a network firewal
 ## Resolution
 
 Implemented, independently reviewed, and exercised with the actual Series X. Video and keyboard input verified.
+
+## Comments
+
+- 2026-11-17 triage: status set to `resolved`. Implemented and verified; no further action.

@@ -1,6 +1,6 @@
 # Diagnose Series X streaming interruption
 
-Status: ready-for-agent
+Status: ready-for-human
 
 Two real LAN sessions displayed video and then stopped receiving frames. The user confirmed working sound and physical controller input before interruption. Existing logs show selected-path evidence becomes missing after the last frame, followed by the 15-second media watchdog. The initiating cause is unknown. Preserve LAN admission while adding privacy-safe diagnostics and reproduce before changing behavior.
 
@@ -17,3 +17,7 @@ The fixed application streamed from 21:47:53 through approximately 21:52:06. Con
 ## Resolution and scope
 
 The presentation-lifetime defect is fixed in c4b9ed7. The new renderer regression failed before the change and all 175 tests pass afterward. A Developer ID signed run revoked LAN verification at 21:58:26, restored it at 21:58:27, and continued displaying live video beyond the old timeout, through at least 21:59:38 (about five minutes since connection). Keep the signing/cache relationship recorded as a hypothesis; this observation is not proof that every genuine ICE loss is fixed. The accepted diagnostic app remains running for continued testing.
+
+## Comments
+
+- 2026-11-17 triage: status set to `ready-for-human`. Implementation is committed; remaining acceptance needs the physical console.

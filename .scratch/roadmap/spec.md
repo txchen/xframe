@@ -1,10 +1,21 @@
 # XFrame feature roadmap
 
-Updated: 2026-09-22. Original baseline: `1944c38`. Console implementation: `eba77e2`.
+Updated: 2026-11-17 (status section below). Original baseline: `1944c38`. Console implementation: `eba77e2`. Latest release: 0.1.4 build 5 (`0db794c`).
 
 This is the agreed implementation order, not a claim that every item is fully specified. Keep this document current as features ship; link detailed specs and validation evidence rather than marking an item complete after compilation alone. The broader product requirements remain in [Design & Requirements](../../xframe_requirement.md).
 
-## Current baseline
+## Status update — 2026-11-17
+
+Sections below dated 2026-09-22 are kept for history; this section supersedes them where they conflict.
+
+- **Releases.** 0.1.1–0.1.4 shipped as Developer ID signed, notarized ZIPs on GitHub and the `txchen/tap/xframe` Homebrew cask ([distribution](../../docs/distribution.md), [0.1.4 verification](../playback-performance/release-0.1.4-verification.md)).
+- **Credentials.** `03f999b` returns team-signed builds to Keychain with a verified one-time migration from the plaintext file. Changed-build read/update/sign-out was probed without prompts. Live migration of a real sign-in is pending human acceptance. [Issue](../keychain-access/issues/01-restore-keychain.md).
+- **Series X LAN.** Discovery, video, audio, keyboard and physical controller were verified on 2026-10-16, along with the presentation-lifetime and consent-flicker fixes. Physical wake, rumble, live acceptance of the flicker fix and extended stability remain. [Spec](../xbox-console-remote-play/spec.md).
+- **Neural rendering.** The Small NR benchmark (0.1.2) measured about 204 ms per 720p frame on M1, far above the 33.33 ms budget. This is feasibility evidence, not a shipped enhancement. [Validation](../small-nr-benchmark/validation.md).
+- **Original presentation latency.** 0.1.4 bounds the Original queue. The render-worker candidate (W) has not passed final acceptance and is not integrated. [Handoff](../../docs/research/original-render-latency/README.md).
+- **Tests.** 220 automated tests pass on master.
+
+## Current baseline (2026-09-22)
 
 - macOS 27+ on Apple Silicon; repository content and UI are English.
 - Microsoft sign-in and restoration, xCloud catalog and session lifecycle.
@@ -61,12 +72,12 @@ Implementation reference: [Veyra-NRVideo source study](../4k-post-processing/vey
 
 ### P2 — Expand capability and polish
 
-- [ ] **Xbox Console Remote Play — code complete, awaiting Series X acceptance.** Commit `eba77e2` adds account-separated xHome access, associated-console listing and LAN discovery, explicit wake then connect, shared media/input and session cleanup, LAN ICE enforcement, and controller rumble. All 154 automated tests, release app build, and signing checks pass. The checkbox remains open until live Series X video/audio/input, physical rumble, disconnect behavior, and recovery are verified. See [spec](../xbox-console-remote-play/spec.md) and [validation](../xbox-console-remote-play/validation.md).
+- [ ] **Xbox Console Remote Play — Series X LAN streaming verified 2026-10-16; wake, rumble and extended stability pending.** Earlier status: Commit `eba77e2` adds account-separated xHome access, associated-console listing and LAN discovery, explicit wake then connect, shared media/input and session cleanup, LAN ICE enforcement, and controller rumble. All 154 automated tests, release app build, and signing checks pass. The checkbox remains open until live Series X video/audio/input, physical rumble, disconnect behavior, and recovery are verified. See [spec](../xbox-console-remote-play/spec.md) and [validation](../xbox-console-remote-play/validation.md).
 - [ ] **Library completeness.** Recently played, metadata/artwork caching, automatic refresh, game details and actionable entitlement errors. Add an Owned collection only with reliable purchase evidence; do not infer ownership from a subscription grant. [Entitlement boundaries](../game-library/entitlements.md).
 
 ### Before distribution
 
-- [ ] **Security and packaging.** Formal signing and notarization, reproducible distribution build, and migration from the approved development credential file back to Keychain. Verify changed-build access and safe migration before removing the fallback file. Never broaden Keychain access to all applications. [Tracked credential work](../keychain-access/issues/01-restore-keychain.md).
+- [ ] **Security and packaging.** Formal signing and notarization are delivered (0.1.1+). Keychain migration is implemented in `03f999b`; live migration acceptance is pending. Original scope: formal signing and notarization, reproducible distribution build, and migration from the approved development credential file back to Keychain. Verify changed-build access and safe migration before removing the fallback file. Never broaden Keychain access to all applications. [Tracked credential work](../keychain-access/issues/01-restore-keychain.md).
 
 ### Later, not required for this macOS increment
 
