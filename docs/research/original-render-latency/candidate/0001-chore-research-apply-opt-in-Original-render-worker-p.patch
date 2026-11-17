@@ -1,0 +1,450 @@
+From bd6434ef1cdf01e4a075507bc98c6ff1de37d66b Mon Sep 17 00:00:00 2001
+From: Tianxiang Chen <txchendev@gmail.com>
+Date: Tue, 17 Nov 2026 12:01:20 -0800
+Subject: [PATCH 1/2] chore(research): apply opt-in Original render worker
+ patch 8d475026 for acceptance
+
+---
+ Sources/XFrame/MetalRenderer.swift            |  64 +++++++
+ Sources/XFrame/OriginalPresenter.swift        | 170 ++++++++++++++++++
+ .../XFrameTests/OriginalPresenterTests.swift  | 149 +++++++++++++++
+ 3 files changed, 383 insertions(+)
+ create mode 100644 Sources/XFrame/OriginalPresenter.swift
+ create mode 100644 Tests/XFrameTests/OriginalPresenterTests.swift
+
+diff --git a/Sources/XFrame/MetalRenderer.swift b/Sources/XFrame/MetalRenderer.swift
+index 8a8a01e..6b3847b 100644
+--- a/Sources/XFrame/MetalRenderer.swift
++++ b/Sources/XFrame/MetalRenderer.swift
+@@ -38,6 +38,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     var firstFrameReady: (() -> Void)?
+     private var presentationGeneration = UUID()
+     private var awaitingFirstFrame = false
++    // Experimental Original render worker (opt-in, default off). MTK stays the default path and the fallback owner.
++    var renderWorkerEnabled = UserDefaults.standard.bool(forKey: "XFrame.Experimental.OriginalRenderWorker")
++    private let workerSlot = RenderWorkerSlot()
++    private var workerLink: CADisplayLink?
++    private var workerOwnsDrawing = false, workerHandingBack = false
++    private weak var workerView: MTKView?
+ 
+     private func restartHUD() {
+         hudSampler.stop()
+@@ -94,8 +100,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+ 
+     func invalidate() { invalidated = true }
+ 
++    deinit { workerSlot.stop() }
++
+     func play(_ source: (any VideoSource)?, in view: MTKView) {
++        stopRenderWorker()
+         self.source = source
++        if renderWorkerEnabled, let live = source as? LiveVideo { startRenderWorker(live: live, view: view) }
+         presentationGeneration = UUID()
+         awaitingFirstFrame = source != nil
+         restartHUD()
+@@ -112,6 +122,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     }
+ 
+     func draw(in view: MTKView) {
++        // While the render worker owns Original drawing, MTK callbacks return before reserving or dequeuing.
++        if workerOwnsDrawing { return }
+         let now = CACurrentMediaTime()
+         source?.performance.note(.draw, at: now)
+         if let state = source?.playbackState, state == "Ended" || state.hasPrefix("Failed:") {
+@@ -273,6 +285,40 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+         command.commit()
+     }
+ 
++    // MARK: Render worker ownership (main thread)
++    private func startRenderWorker(live: LiveVideo, view: MTKView) {
++        guard let layer = view.layer as? CAMetalLayer, let device = view.device,
++              let worker = try? OriginalPresenter(queue: queue, pipeline: videoPipeline, inFlight: inFlight,
++                                                   presentationQueue: presentationQueue, layer: layer, device: device) else { return }
++        worker.configure(source: live); worker.start(); workerSlot.set(worker)
++        workerView = view
++        let link = view.displayLink(target: RenderWorkerTick(self), selector: #selector(RenderWorkerTick.tick(_:)))
++        link.add(to: .main, forMode: .common); workerLink = link
++    }
++    private func stopRenderWorker() {
++        workerLink?.invalidate(); workerLink = nil
++        workerSlot.stop()
++        workerOwnsDrawing = false; workerHandingBack = false; workerView = nil
++    }
++    fileprivate func renderWorkerTick(_ link: CADisplayLink) {
++        guard let worker = workerSlot.worker, let view = workerView else { return }
++        worker.lattice.update(timestamp: link.timestamp, target: link.targetTimestamp, now: CACurrentMediaTime())
++        let state = source?.playbackState ?? "Ended"
++        let wanted = source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
++            && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
++        if wanted, !workerOwnsDrawing, !workerHandingBack {
++            workerOwnsDrawing = true; worker.setActive(true)
++        } else if !wanted, workerOwnsDrawing {
++            // Hand back only after the worker has parked; MTK then waits for the next decoded frame instead of
++            // redrawing an older one it still holds.
++            if !workerHandingBack { workerHandingBack = true; worker.setActive(false) }
++            if worker.isIdle {
++                workerOwnsDrawing = false; workerHandingBack = false
++                currentVideo = nil; work = RenderWorkState(); invalidated = true
++            }
++        }
++    }
++
+     private func encodeSource(_ encoder: any MTLRenderCommandEncoder, integer: Bool) {
+         if let video = currentVideo {
+             encoder.setRenderPipelineState(integer ? integerVideoPipeline : videoPipeline)
+@@ -331,3 +377,21 @@ final class VideoTextures: @unchecked Sendable {
+         self.chroma = chroma
+     }
+ }
++
++// Holds the worker so the nonisolated deinit can stop its thread.
++final class RenderWorkerSlot: @unchecked Sendable {
++    private let lock = NSLock(); private var current: OriginalPresenter?
++    var worker: OriginalPresenter? { lock.withLock { current } }
++    func set(_ w: OriginalPresenter) { lock.withLock { current = w } }
++    func stop() { let w = lock.withLock { () -> OriginalPresenter? in let w = current; current = nil; return w }; w?.stop() }
++}
++
++// Display-link target that does not retain the renderer; invalidates itself once the renderer is gone.
++@MainActor final class RenderWorkerTick: NSObject {
++    private weak var renderer: MetalRenderer?
++    init(_ renderer: MetalRenderer) { self.renderer = renderer }
++    @objc func tick(_ link: CADisplayLink) {
++        guard let renderer else { link.invalidate(); return }
++        renderer.renderWorkerTick(link)
++    }
++}
+diff --git a/Sources/XFrame/OriginalPresenter.swift b/Sources/XFrame/OriginalPresenter.swift
+new file mode 100644
+index 0000000..7a8df8c
+--- /dev/null
++++ b/Sources/XFrame/OriginalPresenter.swift
+@@ -0,0 +1,170 @@
++import Foundation
++import QuartzCore
++import Metal
++import CoreVideo
++import Darwin
++
++// Experimental Original-mode render worker (opt-in, default off: UserDefaults "XFrame.Experimental.OriginalRenderWorker").
++// A dedicated thread with a time-constraint policy wakes `lead` before the predicted VSync, takes the newest decoded
++// frame from LiveVideo (queue rules unchanged) and submits it. The MTK path stays the default and the fallback.
++
++/// Display grid estimate fed by display-link samples (main thread), read by the render thread.
++/// This is the scheduler's estimate of the display-link grid, not hardware VSync.
++final class VsyncLattice: @unchecked Sendable {
++    private let lock = NSLock()
++    private var last = 0.0, period = 1.0 / 60, updated = 0.0
++    func update(timestamp: Double, target: Double, now: Double) {
++        lock.withLock { let p = target - timestamp; if p > 0.004 && p < 0.05 { period = p }; last = timestamp; updated = now }
++    }
++    /// First grid point strictly after `t`, the sample age at `t`, and the period. Returns v == 0 before the first sample.
++    func next(after t: Double) -> (v: Double, age: Double, period: Double) {
++        lock.withLock {
++            guard last > 0 else { return (0, .infinity, period) }
++            return (last + (floor((t - last) / period) + 1) * period, t - updated, period)
++        }
++    }
++}
++
++enum VsyncTarget {
++    /// Next target VSync. The refresh the previous submit lands on is re-derived from the *current* lattice every time,
++    /// so a single off-grid display-link sample cannot carry a phase error forward (no synthetic lastTarget + period),
++    /// and the refresh already used by the previous submit is never targeted again.
++    static func next(lattice: VsyncLattice, now: Double, lead: Double, lastSubmit: Double) -> (v: Double, age: Double) {
++        let (v0, age, period) = lattice.next(after: now + lead + 0.0003)
++        guard v0 > 0, lastSubmit > 0 else { return (v0, age) }
++        let landing = lattice.next(after: lastSubmit + 0.0005).v
++        if v0 > landing + period / 2 { return (v0, age) }
++        return (lattice.next(after: landing + period / 2).v, age)
++    }
++}
++
++final class OriginalPresenter: @unchecked Sendable {
++    static let staleLimit = 0.1                     // stop submitting when the newest display-link sample is older
++    let lattice = VsyncLattice()
++    private let lock = NSLock()
++    private var active = false, stopped = false, idle = true, drawableSize = CGSize.zero
++    private var source: LiveVideo?
++    private let queue: any MTLCommandQueue
++    private let pipeline: any MTLRenderPipelineState
++    private let inFlight: DispatchSemaphore
++    private let presentationQueue: PresentationQueue
++    private let layer: CAMetalLayer
++    private let cache: CVMetalTextureCache
++    private let lead: Double
++    private let finished = DispatchSemaphore(value: 0)
++    private var started = false
++
++    init(queue: any MTLCommandQueue, pipeline: any MTLRenderPipelineState, inFlight: DispatchSemaphore,
++         presentationQueue: PresentationQueue, layer: CAMetalLayer, device: any MTLDevice, lead: Double = 0.003) throws {
++        self.queue = queue; self.pipeline = pipeline; self.inFlight = inFlight; self.presentationQueue = presentationQueue
++        self.layer = layer; self.lead = lead
++        var c: CVMetalTextureCache?
++        guard CVMetalTextureCacheCreate(nil, nil, device, nil, &c) == kCVReturnSuccess, let c else {
++            throw RenderError.unavailable("Unable to create the render worker texture cache.")
++        }
++        cache = c
++    }
++    func configure(source: LiveVideo?) { lock.withLock { self.source = source } }
++    /// The worker only draws while active; inactive, it parks without touching the queue or drawables.
++    func setActive(_ on: Bool) { lock.withLock { active = on && !stopped } }
++    /// True once the thread has observed `active == false` (no render in progress).
++    var isIdle: Bool { lock.withLock { idle } }
++    /// Size of the last drawable rendered (diagnostic; follows CAMetalLayer.drawableSize changes).
++    var lastDrawableSize: CGSize { lock.withLock { drawableSize } }
++
++    func start() {
++        lock.withLock { guard !started else { return }; started = true }
++        let t = Thread { [self] in
++            applyTimeConstraintPolicy(periodMs: 16.667, computationMs: 2.0, constraintMs: 4.0)
++            var ticks = mach_timebase_info_data_t(); mach_timebase_info(&ticks)
++            let perSecond = 1e9 * Double(ticks.denom) / Double(ticks.numer)
++            var lastSubmit = 0.0
++            while true {
++                let (on, quit) = lock.withLock { () -> (Bool, Bool) in idle = !active; return (active, stopped) }
++                if quit { finished.signal(); return }
++                if !on { usleep(2000); lastSubmit = 0; continue }
++                let now = CACurrentMediaTime()
++                let (v, age) = VsyncTarget.next(lattice: lattice, now: now, lead: lead, lastSubmit: lastSubmit)
++                if v == 0 || age > Self.staleLimit { usleep(2000); continue }
++                let planned = v - lead
++                if planned > CACurrentMediaTime() { mach_wait_until(UInt64(planned * perSecond)) }
++                guard lock.withLock({ active && !stopped }) else { continue }
++                if autoreleasepool(invoking: { renderOne(at: CACurrentMediaTime()) }) { lastSubmit = CACurrentMediaTime() }
++            }
++        }
++        t.name = "XFrame Original render worker"; t.qualityOfService = .userInteractive; t.start()
++    }
++    /// Stops the thread and waits (bounded). Idempotent. Returns false only on timeout.
++    @discardableResult
++    func stop(timeout: Double = 1.0) -> Bool {
++        let wasStarted = lock.withLock { () -> Bool in let s = started && !stopped; stopped = true; active = false; source = nil; return s }
++        guard wasStarted else { return true }
++        return finished.wait(timeout: .now() + timeout) == .success
++    }
++
++    /// Returns true when a frame was submitted.
++    private func renderOne(at now: Double) -> Bool {
++        guard let live = lock.withLock({ source }) else { return false }
++        guard inFlight.wait(timeout: .now()) == .success else { return false }
++        guard let presentation = presentationQueue.reserve(enforcingLimit: true) else { inFlight.signal(); return false }
++        guard let frame = live.nextFrame(at: now) else { presentation.finish(); inFlight.signal(); return false }
++        let video: VideoTextures
++        do { video = try VideoTextures(frame: frame, cache: cache) } catch {
++            presentation.finish(); inFlight.signal(); live.fail(error.localizedDescription); return false
++        }
++        let drawableStarted = CACurrentMediaTime()
++        guard let drawable = layer.nextDrawable(), let command = queue.makeCommandBuffer() else {
++            live.performance.note(.drawableMiss)
++            presentation.finish(); inFlight.signal(); return false
++        }
++        live.performance.record(.drawableWait, seconds: CACurrentMediaTime() - drawableStarted)
++        lock.withLock { drawableSize = CGSize(width: drawable.texture.width, height: drawable.texture.height) }
++        let pass = MTLRenderPassDescriptor()
++        pass.colorAttachments[0].texture = drawable.texture
++        pass.colorAttachments[0].loadAction = .clear
++        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
++        pass.colorAttachments[0].storeAction = .store
++        let plan = ScalingPlan.make(mode: .original, source: ScalingExtent(width: video.luma.width, height: video.luma.height),
++                                    canvas: ScalingExtent(width: drawable.texture.width, height: drawable.texture.height),
++                                    fullscreen: false, supported: false)
++        guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { presentation.finish(); inFlight.signal(); return false }
++        encoder.setViewport(MTLViewport(originX: plan.x, originY: plan.y, width: plan.width, height: plan.height, znear: 0, zfar: 1))
++        encoder.setRenderPipelineState(pipeline)
++        encoder.setFragmentTexture(video.luma, index: 0); encoder.setFragmentTexture(video.chroma, index: 1)
++        var conversion = video.conversion
++        encoder.setFragmentBytes(&conversion, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
++        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
++        encoder.endEncoding()
++        let sample = FramePresentation(source: live, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(),
++                                       sourceRTP: frame.sourceRTP, frameID: frame.id)
++        let permit = inFlight
++        command.addCompletedHandler { command in
++            withExtendedLifetime(video) {}
++            if command.status == .error {
++                presentation.finish(); live.fail("Metal rendering failed: \(command.error?.localizedDescription ?? "Unknown GPU error")")
++            }
++            if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
++                sample.gpuCompleted(start: command.gpuStartTime, end: command.gpuEndTime)
++            }
++            permit.signal()
++        }
++        drawable.addPresentedHandler { presented in sample.presented(at: presented.presentedTime) }
++        drawable.addPresentedHandler { _ in presentation.finish() }
++        command.present(drawable)
++        command.commit()
++        return true
++    }
++}
++
++/// Applies THREAD_TIME_CONSTRAINT_POLICY to the calling thread only.
++@discardableResult
++func applyTimeConstraintPolicy(periodMs: Double, computationMs: Double, constraintMs: Double) -> Bool {
++    var tb = mach_timebase_info_data_t(); mach_timebase_info(&tb)
++    let perSecond = 1e9 * Double(tb.denom) / Double(tb.numer)
++    let count = mach_msg_type_number_t(MemoryLayout<thread_time_constraint_policy_data_t>.size / MemoryLayout<integer_t>.size)
++    let t = { (ms: Double) in UInt32(ms / 1000 * perSecond) }
++    var policy = thread_time_constraint_policy_data_t(period: t(periodMs), computation: t(computationMs), constraint: t(constraintMs), preemptible: 1)
++    let result = withUnsafeMutablePointer(to: &policy) { p in p.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
++        thread_policy_set(pthread_mach_thread_np(pthread_self()), thread_policy_flavor_t(THREAD_TIME_CONSTRAINT_POLICY), $0, count) } }
++    return result == KERN_SUCCESS
++}
+diff --git a/Tests/XFrameTests/OriginalPresenterTests.swift b/Tests/XFrameTests/OriginalPresenterTests.swift
+new file mode 100644
+index 0000000..3b8a12e
+--- /dev/null
++++ b/Tests/XFrameTests/OriginalPresenterTests.swift
+@@ -0,0 +1,149 @@
++import Foundation
++import CoreVideo
++import Metal
++import QuartzCore
++import Testing
++import WebRTC
++@testable import XFrame
++
++// MARK: VSync selection on a virtual clock (independent reference = simulated refresh grid, not the lattice itself)
++
++private struct Sim {
++    var refreshes: [Double]                       // reference refresh times
++    var sampleOffset: [Int: Double] = [:]         // refresh index -> timestamp offset of its display-link sample
++    var dropped: Set<Int> = []                    // refresh indices whose display-link sample is lost
++    let lead = 0.003
++    /// Runs the worker loop (wake at v - lead, submit 0.3 ms later). Returns (submit time, index of the reference
++    /// refresh the submit can make, target v) per submit.
++    func run(until end: Double) -> [(submit: Double, refresh: Int, v: Double)] {
++        let lattice = VsyncLattice(); var si = 0; var now = refreshes[0] + 0.0001; var lastSubmit = 0.0; var out: [(Double, Int, Double)] = []
++        func deliver(_ t: Double) {
++            while si < refreshes.count, refreshes[si] + 0.0006 <= t {
++                if !dropped.contains(si) {
++                    let ts = refreshes[si] + (sampleOffset[si] ?? 0)
++                    let p = si + 1 < refreshes.count ? refreshes[si + 1] - refreshes[si] : 1.0 / 60
++                    lattice.update(timestamp: ts, target: ts + p, now: refreshes[si] + 0.0006)
++                }
++                si += 1
++            }
++        }
++        while now < end {
++            deliver(now)
++            let (v, age) = VsyncTarget.next(lattice: lattice, now: now, lead: lead, lastSubmit: lastSubmit)
++            if v == 0 || age > OriginalPresenter.staleLimit { now += 0.002; continue }
++            let wake = max(now, v - lead); deliver(wake)
++            let submit = wake + 0.0003
++            guard let k = refreshes.firstIndex(where: { $0 >= submit + 0.0005 }) else { break }
++            out.append((submit, k, v)); lastSubmit = submit; now = submit + 0.0001
++        }
++        return out
++    }
++}
++
++private func grid(_ start: Double, _ end: Double, _ period: Double) -> [Double] {
++    var t = start, out: [Double] = []; while t < end { out.append(t); t += period }; return out
++}
++
++@Test(arguments: [-0.0035, -0.0043, 0.0065])
++func reprojectionRecoversFromOneOffGridSampleAfterACallbackGap(offset: Double) {
++    let refreshes = grid(0.1, 6, 1.0 / 60)
++    let bad = refreshes.firstIndex { $0 >= 3.0 }!
++    var sim = Sim(refreshes: refreshes)
++    sim.dropped = Set((bad - 5)..<bad)            // ~83 ms of lost display-link callbacks; hardware keeps refreshing
++    sim.sampleOffset[bad] = offset                 // first sample after the gap is off-grid (both signs observed)
++    let subs = sim.run(until: 5.8)
++    // targets strictly advance and never reuse a reference refresh
++    #expect(zip(subs, subs.dropFirst()).allSatisfy { $1.v > $0.v })
++    #expect(zip(subs, subs.dropFirst()).allSatisfy { $1.refresh > $0.refresh })
++    // no persistent phase offset: from 0.1 s after the bad sample every submit is lead - 0.3 ms before its refresh
++    let after = subs.filter { $0.submit > refreshes[bad] + 0.1 }
++    #expect(!after.isEmpty)
++    #expect(after.allSatisfy { abs((refreshes[$0.refresh] - $0.submit) - 0.0027) < 0.0005 })
++}
++
++@Test func reprojectionFollowsARealRefreshRateChange() {
++    let refreshes = grid(0.1, 3, 1.0 / 60) + grid(3.0, 6, 0.02)      // 60 Hz -> 50 Hz
++    let subs = Sim(refreshes: refreshes).run(until: 5.8)
++    #expect(zip(subs, subs.dropFirst()).allSatisfy { $1.refresh > $0.refresh })
++    let tail = subs.filter { $0.submit > 3.3 }
++    #expect(!tail.isEmpty && tail.allSatisfy { abs((refreshes[$0.refresh] - $0.submit) - 0.0027) < 0.0005 })
++}
++
++@Test func workerStopsSubmittingOnStaleDisplayLinkAndResumesAfterResync() {
++    var sim = Sim(refreshes: grid(0.1, 6, 1.0 / 60))
++    let a = sim.refreshes.firstIndex { $0 >= 2.0 }!, b = sim.refreshes.firstIndex { $0 >= 2.5 }!
++    sim.dropped = Set(a..<b)                                           // 500 ms without display-link samples
++    let subs = sim.run(until: 5.8)
++    let inside = subs.filter { $0.submit > sim.refreshes[a] + OriginalPresenter.staleLimit + 0.02 && $0.submit < sim.refreshes[b] }
++    #expect(inside.isEmpty)                                            // bounded: no projection past the stale limit
++    #expect(subs.contains { $0.submit > sim.refreshes[b] && $0.submit < sim.refreshes[b] + 0.1 })
++}
++
++// MARK: Worker lifecycle on the real Metal/CoreVideo path (offscreen layer, no window or UI)
++
++private func nv12(_ w: Int, _ h: Int) throws -> CVPixelBuffer {
++    var buffer: CVPixelBuffer?
++    let attributes: [CFString: Any] = [kCVPixelBufferMetalCompatibilityKey: true, kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]]
++    #expect(CVPixelBufferCreate(nil, w, h, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, attributes as CFDictionary, &buffer) == kCVReturnSuccess)
++    return try #require(buffer)
++}
++
++private func pipeline(_ device: any MTLDevice) throws -> any MTLRenderPipelineState {
++    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
++    let library = try device.makeLibrary(source: try String(contentsOf: root.appendingPathComponent("Sources/XFrame/Shaders.metal"), encoding: .utf8), options: nil)
++    let d = MTLRenderPipelineDescriptor()
++    d.vertexFunction = library.makeFunction(name: "patternVertex"); d.fragmentFunction = library.makeFunction(name: "videoFragment")
++    d.colorAttachments[0].pixelFormat = .bgra8Unorm
++    return try device.makeRenderPipelineState(descriptor: d)
++}
++
++private func acquirePermits(_ s: DispatchSemaphore, _ n: Int, timeout: Double) -> Int {
++    var got = 0
++    for _ in 0..<n { if s.wait(timeout: .now() + timeout) == .success { got += 1 } }
++    for _ in 0..<got { s.signal() }
++    return got
++}
++
++@Test func workerRendersFollowsResizeParksAndStopsWithoutLeakingPermits() async throws {
++    let device = try #require(MTLCreateSystemDefaultDevice())
++    let queue = try #require(device.makeCommandQueue())
++    let layer = CAMetalLayer(); layer.device = device; layer.pixelFormat = .bgra8Unorm; layer.drawableSize = CGSize(width: 64, height: 36)
++    let inFlight = DispatchSemaphore(value: 3)
++    let presentationQueue = PresentationQueue()
++    let worker = try OriginalPresenter(queue: queue, pipeline: try pipeline(device), inFlight: inFlight,
++                                       presentationQueue: presentationQueue, layer: layer, device: device)
++    let source = LiveVideo()
++    worker.configure(source: source)
++    #expect(worker.stop())                                             // stopping before start is a no-op
++    let worker2 = try OriginalPresenter(queue: queue, pipeline: try pipeline(device), inFlight: inFlight,
++                                        presentationQueue: presentationQueue, layer: layer, device: device)
++    worker2.configure(source: source); worker2.start(); worker2.start()   // second start ignored
++    let feeding = Task.detached {
++        var k = 0
++        while !Task.isCancelled {
++            let now = CACurrentMediaTime(); let ts = (now * 60).rounded(.down) / 60
++            worker2.lattice.update(timestamp: ts, target: ts + 1.0 / 60, now: now)
++            if k % 2 == 0, let buffer = try? nv12(64, 36) {
++                source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: buffer), rotation: ._0, timeStampNs: Int64(k) * 16_666_667))
++            }
++            k += 1
++            try? await Task.sleep(nanoseconds: 8_000_000)
++        }
++    }
++    worker2.setActive(true)
++    func wait(_ cond: () -> Bool, _ seconds: Double) async -> Bool {
++        let end = CACurrentMediaTime() + seconds
++        while CACurrentMediaTime() < end { if cond() { return true }; try? await Task.sleep(nanoseconds: 5_000_000) }
++        return cond()
++    }
++    #expect(await wait({ worker2.lastDrawableSize == CGSize(width: 64, height: 36) }, 2))
++    layer.drawableSize = CGSize(width: 128, height: 72)                // resize while running
++    #expect(await wait({ worker2.lastDrawableSize == CGSize(width: 128, height: 72) }, 2))
++    worker2.setActive(false)
++    #expect(await wait({ worker2.isIdle }, 0.2))                      // parks promptly (ownership hand-back precondition)
++    feeding.cancel()
++    #expect(worker2.stop())
++    #expect(worker2.stop())                                           // idempotent
++    // every GPU permit returns once submitted work completes
++    #expect(acquirePermits(inFlight, 3, timeout: 1) == 3)
++}
+-- 
+2.56.1
+

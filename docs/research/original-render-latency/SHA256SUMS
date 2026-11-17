@@ -1,0 +1,5 @@
+29f34320308a1f2f665d075db85b7cd6c3f1d11e6b4933e0b54674a6b7b59504  acceptance-preregistration.md
+be9dcd2783d3efd58ff0144091ee172316aa9a10c7abc7464517b655a83e5fb6  acceptance-status-snapshot.md
+c20cc5b1152611502ed5a52d61e75fde07da858630e226b7a2c5b594e3fad14d  candidate/0001-chore-research-apply-opt-in-Original-render-worker-p.patch
+5ca9c63dde7200b6e45a6e2d8ff6fea142ad1b44cb1d2d59ec15a6ed5a05cc01  candidate/0002-fix-render-worker-HUD-accounting-scaling-status-forw.patch
+cff42cbe178ed00d7d7ea6a4e1755a21cc66605b33d76d7b95bff4d9945de27a  diag-only/0001-chore-diag-acceptance-only-recorder-gated-by-XFRAME_.patch

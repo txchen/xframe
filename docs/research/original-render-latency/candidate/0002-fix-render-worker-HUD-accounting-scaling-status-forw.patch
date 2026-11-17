@@ -1,0 +1,193 @@
+From 7c39bdebf3c45bdf59b84916fa52231644530f8f Mon Sep 17 00:00:00 2001
+From: Tianxiang Chen <txchendev@gmail.com>
+Date: Tue, 17 Nov 2026 12:45:26 -0800
+Subject: [PATCH 2/2] fix(render): worker HUD accounting, scaling status
+ forwarding, no present after withdrawn ownership
+
+---
+ Sources/XFrame/AcceptanceRecorder.swift       | 67 +++++++++++++++++++
+ Sources/XFrame/MetalRenderer.swift            |  5 ++
+ Sources/XFrame/OriginalPresenter.swift        | 18 ++++-
+ .../XFrameTests/OriginalPresenterTests.swift  | 11 +++
+ 4 files changed, 99 insertions(+), 2 deletions(-)
+ create mode 100644 Sources/XFrame/AcceptanceRecorder.swift
+
+diff --git a/Sources/XFrame/AcceptanceRecorder.swift b/Sources/XFrame/AcceptanceRecorder.swift
+new file mode 100644
+index 0000000..d6706b3
+--- /dev/null
++++ b/Sources/XFrame/AcceptanceRecorder.swift
+@@ -0,0 +1,67 @@
++import Foundation
++import QuartzCore
++import Darwin
++
++// ACCEPTANCE DIAGNOSTICS ONLY (not part of the integration candidate). Active only when the environment variable
++// XFRAME_ACCEPT_DIR is set. Main thread only. Records, per LiveVideo session: process CPU (1 s), a few stream counters
++// (5 s), render-worker ownership transitions and stop durations, worker policy readback; on session end writes
++// <dir>/session-<n>.json with the production diagnosticReport (including the frame trace) on the main thread after
++// playback has stopped (never during measurement).
++@MainActor final class AcceptanceRecorder {
++    static let shared = AcceptanceRecorder()
++    static let directory = ProcessInfo.processInfo.environment["XFRAME_ACCEPT_DIR"]
++    static var enabled: Bool { directory != nil }
++    static var traceCapacity: Int? { ProcessInfo.processInfo.environment["XFRAME_ACCEPT_TRACE_CAPACITY"].flatMap(Int.init) }
++
++    private struct Sample: Encodable { let t: Double; let cpu: Double; let decoded: Int?; let presented: Int?; let dropped: Int?
++        let videoPackets: Int?; let videoLost: Int?; let nacks: Int?; let audioPackets: Int?; let audioEnergy: Double? }
++    private struct Event: Encodable { let t: Double; let name: String; let value: Double? }
++    private struct Session: Encodable {
++        let workerEnabled: Bool; let started: Double; let ended: Double; let traceOrigin: Double
++        let samples: [Sample]; let events: [Event]; let report: StreamDiagnosticReport
++    }
++    private var source: LiveVideo?, workerEnabled = false, started = 0.0, samples: [Sample] = [], events: [Event] = []
++    private var timer: Timer?, tick = 0, index = 0
++
++    private static func cpuSeconds() -> Double {
++        var ru = rusage(); getrusage(RUSAGE_SELF, &ru)
++        return Double(ru.ru_utime.tv_sec) + Double(ru.ru_utime.tv_usec) / 1e6 + Double(ru.ru_stime.tv_sec) + Double(ru.ru_stime.tv_usec) / 1e6
++    }
++    func event(_ name: String, _ value: Double? = nil) {
++        guard Self.enabled, source != nil else { return }
++        events.append(Event(t: CACurrentMediaTime(), name: name, value: value))
++    }
++    func begin(_ live: LiveVideo, workerEnabled: Bool) {
++        guard Self.enabled else { return }
++        source = live; self.workerEnabled = workerEnabled; started = CACurrentMediaTime(); samples = []; events = []; tick = 0
++        let t = Timer(timeInterval: 1.0, repeats: true) { _ in MainActor.assumeIsolated { AcceptanceRecorder.shared.sample() } }
++        RunLoop.main.add(t, forMode: .common); timer = t
++        event(workerEnabled ? "mode.worker" : "mode.mtk")
++    }
++    private func sample() {
++        guard let source else { return }
++        let now = CACurrentMediaTime(); tick += 1
++        if tick % 5 == 0 {
++            let s = source.snapshot()
++            samples.append(Sample(t: now, cpu: Self.cpuSeconds(), decoded: s.decoded, presented: s.presented, dropped: s.dropped,
++                                  videoPackets: s.videoPacketsReceived, videoLost: s.videoPacketsLost, nacks: s.videoNacks,
++                                  audioPackets: s.audioPacketsReceived, audioEnergy: s.audioEnergy))
++        } else {
++            samples.append(Sample(t: now, cpu: Self.cpuSeconds(), decoded: nil, presented: nil, dropped: nil, videoPackets: nil,
++                                  videoLost: nil, nacks: nil, audioPackets: nil, audioEnergy: nil))
++        }
++    }
++    /// Called when the renderer leaves this source (new source or nil). Writes the session file.
++    func end() {
++        guard Self.enabled, let source, let dir = Self.directory else { return }
++        timer?.invalidate(); timer = nil
++        let session = Session(workerEnabled: workerEnabled, started: started, ended: CACurrentMediaTime(),
++                              traceOrigin: source.frameTrace.origin, samples: samples, events: events, report: source.diagnosticReport())
++        self.source = nil
++        index += 1
++        let url = URL(fileURLWithPath: dir).appendingPathComponent(String(format: "session-%02d-%d.json", index, Int(Date().timeIntervalSince1970)))
++        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
++        let encoder = JSONEncoder()
++        if let data = try? encoder.encode(session) { try? data.write(to: url) }
++    }
++}
+diff --git a/Sources/XFrame/MetalRenderer.swift b/Sources/XFrame/MetalRenderer.swift
+index 6b3847b..fb19661 100644
+--- a/Sources/XFrame/MetalRenderer.swift
++++ b/Sources/XFrame/MetalRenderer.swift
+@@ -303,6 +303,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     fileprivate func renderWorkerTick(_ link: CADisplayLink) {
+         guard let worker = workerSlot.worker, let view = workerView else { return }
+         worker.lattice.update(timestamp: link.timestamp, target: link.targetTimestamp, now: CACurrentMediaTime())
++        // The worker cannot call UI closures; forward its scaling status (e.g. after a resize) from the main thread.
++        if workerOwnsDrawing, let status = worker.lastScalingStatus, status != lastScalingStatus {
++            lastScalingStatus = status
++            scalingReport?(status)
++        }
+         let state = source?.playbackState ?? "Ended"
+         let wanted = source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+             && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
+diff --git a/Sources/XFrame/OriginalPresenter.swift b/Sources/XFrame/OriginalPresenter.swift
+index 7a8df8c..ae136b3 100644
+--- a/Sources/XFrame/OriginalPresenter.swift
++++ b/Sources/XFrame/OriginalPresenter.swift
+@@ -43,6 +43,8 @@ final class OriginalPresenter: @unchecked Sendable {
+     let lattice = VsyncLattice()
+     private let lock = NSLock()
+     private var active = false, stopped = false, idle = true, drawableSize = CGSize.zero
++    private var scalingStatus: ScalingStatus?
++    private var policyApplied: Bool?
+     private var source: LiveVideo?
+     private let queue: any MTLCommandQueue
+     private let pipeline: any MTLRenderPipelineState
+@@ -71,11 +73,16 @@ final class OriginalPresenter: @unchecked Sendable {
+     var isIdle: Bool { lock.withLock { idle } }
+     /// Size of the last drawable rendered (diagnostic; follows CAMetalLayer.drawableSize changes).
+     var lastDrawableSize: CGSize { lock.withLock { drawableSize } }
++    /// Scaling status of the last rendered frame, for the main thread to forward to the UI (scalingReport).
++    var lastScalingStatus: ScalingStatus? { lock.withLock { scalingStatus } }
++    /// Result of applying the time-constraint policy to the render thread (nil until the thread has started).
++    var timeConstraintApplied: Bool? { lock.withLock { policyApplied } }
+ 
+     func start() {
+         lock.withLock { guard !started else { return }; started = true }
+         let t = Thread { [self] in
+-            applyTimeConstraintPolicy(periodMs: 16.667, computationMs: 2.0, constraintMs: 4.0)
++            let applied = applyTimeConstraintPolicy(periodMs: 16.667, computationMs: 2.0, constraintMs: 4.0)
++            lock.withLock { policyApplied = applied }
+             var ticks = mach_timebase_info_data_t(); mach_timebase_info(&ticks)
+             let perSecond = 1e9 * Double(ticks.denom) / Double(ticks.numer)
+             var lastSubmit = 0.0
+@@ -105,7 +112,9 @@ final class OriginalPresenter: @unchecked Sendable {
+     /// Returns true when a frame was submitted.
+     private func renderOne(at now: Double) -> Bool {
+         guard let live = lock.withLock({ source }) else { return false }
+-        guard inFlight.wait(timeout: .now()) == .success else { return false }
++        // Same HUD accounting as the MTK path: one draw tick per render attempt, busy when no GPU permit is free.
++        live.performance.note(.draw, at: now)
++        guard inFlight.wait(timeout: .now()) == .success else { live.performance.note(.busy); return false }
+         guard let presentation = presentationQueue.reserve(enforcingLimit: true) else { inFlight.signal(); return false }
+         guard let frame = live.nextFrame(at: now) else { presentation.finish(); inFlight.signal(); return false }
+         let video: VideoTextures
+@@ -118,6 +127,9 @@ final class OriginalPresenter: @unchecked Sendable {
+             presentation.finish(); inFlight.signal(); return false
+         }
+         live.performance.record(.drawableWait, seconds: CACurrentMediaTime() - drawableStarted)
++        // nextDrawable can block (up to 1 s). If ownership was withdrawn or the worker was stopped meanwhile (e.g. a
++        // timed-out stop), do not present: the MTK path may already own drawing again.
++        guard lock.withLock({ active && !stopped }) else { presentation.finish(); inFlight.signal(); return false }
+         lock.withLock { drawableSize = CGSize(width: drawable.texture.width, height: drawable.texture.height) }
+         let pass = MTLRenderPassDescriptor()
+         pass.colorAttachments[0].texture = drawable.texture
+@@ -128,6 +140,8 @@ final class OriginalPresenter: @unchecked Sendable {
+                                     canvas: ScalingExtent(width: drawable.texture.width, height: drawable.texture.height),
+                                     fullscreen: false, supported: false)
+         guard let encoder = command.makeRenderCommandEncoder(descriptor: pass) else { presentation.finish(); inFlight.signal(); return false }
++        live.performance.setScaling(plan.status)
++        lock.withLock { scalingStatus = plan.status }
+         encoder.setViewport(MTLViewport(originX: plan.x, originY: plan.y, width: plan.width, height: plan.height, znear: 0, zfar: 1))
+         encoder.setRenderPipelineState(pipeline)
+         encoder.setFragmentTexture(video.luma, index: 0); encoder.setFragmentTexture(video.chroma, index: 1)
+diff --git a/Tests/XFrameTests/OriginalPresenterTests.swift b/Tests/XFrameTests/OriginalPresenterTests.swift
+index 3b8a12e..2060e9f 100644
+--- a/Tests/XFrameTests/OriginalPresenterTests.swift
++++ b/Tests/XFrameTests/OriginalPresenterTests.swift
+@@ -137,10 +137,21 @@ private func acquirePermits(_ s: DispatchSemaphore, _ n: Int, timeout: Double) -
+         return cond()
+     }
+     #expect(await wait({ worker2.lastDrawableSize == CGSize(width: 64, height: 36) }, 2))
++    // HUD accounting while the worker draws: draw ticks advance and the scaling status reflects the drawable.
++    #expect(await wait({ source.performance.snapshot().pacing.drawTicks > 0 }, 1))
++    #expect(worker2.lastScalingStatus?.effective == .original)
++    #expect(worker2.timeConstraintApplied != nil)
+     layer.drawableSize = CGSize(width: 128, height: 72)                // resize while running
+     #expect(await wait({ worker2.lastDrawableSize == CGSize(width: 128, height: 72) }, 2))
++    #expect(await wait({ worker2.lastScalingStatus?.output == ScalingExtent(width: 128, height: 72) }, 1))
++    #expect(source.performance.snapshot().scaling?.output == ScalingExtent(width: 128, height: 72))
+     worker2.setActive(false)
+     #expect(await wait({ worker2.isIdle }, 0.2))                      // parks promptly (ownership hand-back precondition)
++    // Once parked, the worker submits nothing more while frames keep arriving (no second owner after hand-back).
++    let parkedSubmits = source.frameTrace.snapshot().filter { $0.stage == .submitted }.count
++    #expect(parkedSubmits > 0)
++    try? await Task.sleep(nanoseconds: 150_000_000)
++    #expect(source.frameTrace.snapshot().filter { $0.stage == .submitted }.count == parkedSubmits)
+     feeding.cancel()
+     #expect(worker2.stop())
+     #expect(worker2.stop())                                           // idempotent
+-- 
+2.56.1
+

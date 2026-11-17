@@ -1,0 +1,85 @@
+From a8bda082880ff5dfb0962178fbe142aab1cd9036 Mon Sep 17 00:00:00 2001
+From: Tianxiang Chen <txchendev@gmail.com>
+Date: Tue, 17 Nov 2026 12:45:55 -0800
+Subject: [PATCH] chore(diag): acceptance-only recorder gated by
+ XFRAME_ACCEPT_DIR
+
+---
+ Sources/XFrame/MetalRenderer.swift        | 12 +++++++++++-
+ Sources/XFrame/Streaming/FrameTrace.swift |  2 +-
+ Sources/XFrame/Streaming/LiveVideo.swift  |  2 +-
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/Sources/XFrame/MetalRenderer.swift b/Sources/XFrame/MetalRenderer.swift
+index fb19661..bbbb80e 100644
+--- a/Sources/XFrame/MetalRenderer.swift
++++ b/Sources/XFrame/MetalRenderer.swift
+@@ -44,6 +44,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     private var workerLink: CADisplayLink?
+     private var workerOwnsDrawing = false, workerHandingBack = false
+     private weak var workerView: MTKView?
++    private var workerPolicyLogged = false
+ 
+     private func restartHUD() {
+         hudSampler.stop()
+@@ -103,7 +104,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+     deinit { workerSlot.stop() }
+ 
+     func play(_ source: (any VideoSource)?, in view: MTKView) {
++        let stopStarted = CACurrentMediaTime()
+         stopRenderWorker()
++        AcceptanceRecorder.shared.event("worker.stop.seconds", CACurrentMediaTime() - stopStarted)
++        AcceptanceRecorder.shared.end()
++        if let live = source as? LiveVideo { AcceptanceRecorder.shared.begin(live, workerEnabled: renderWorkerEnabled) }
+         self.source = source
+         if renderWorkerEnabled, let live = source as? LiveVideo { startRenderWorker(live: live, view: view) }
+         presentationGeneration = UUID()
+@@ -311,13 +316,18 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
+         let state = source?.playbackState ?? "Ended"
+         let wanted = source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+             && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
++        if let applied = worker.timeConstraintApplied, !workerPolicyLogged {
++            workerPolicyLogged = true; AcceptanceRecorder.shared.event("worker.policy", applied ? 1 : 0)
++        }
+         if wanted, !workerOwnsDrawing, !workerHandingBack {
+             workerOwnsDrawing = true; worker.setActive(true)
++            AcceptanceRecorder.shared.event("worker.takeover")
+         } else if !wanted, workerOwnsDrawing {
+             // Hand back only after the worker has parked; MTK then waits for the next decoded frame instead of
+             // redrawing an older one it still holds.
+-            if !workerHandingBack { workerHandingBack = true; worker.setActive(false) }
++            if !workerHandingBack { workerHandingBack = true; worker.setActive(false); AcceptanceRecorder.shared.event("worker.handback.begin") }
+             if worker.isIdle {
++                AcceptanceRecorder.shared.event("worker.handback.done")
+                 workerOwnsDrawing = false; workerHandingBack = false
+                 currentVideo = nil; work = RenderWorkState(); invalidated = true
+             }
+diff --git a/Sources/XFrame/Streaming/FrameTrace.swift b/Sources/XFrame/Streaming/FrameTrace.swift
+index 63e537a..1438382 100644
+--- a/Sources/XFrame/Streaming/FrameTrace.swift
++++ b/Sources/XFrame/Streaming/FrameTrace.swift
+@@ -15,7 +15,7 @@ final class FrameTrace: @unchecked Sendable {
+         let frameID: Int?
+     }
+     private let lock = NSLock()
+-    private let origin = CACurrentMediaTime()
++    let origin = CACurrentMediaTime()
+     private let capacity: Int
+     private var events: [Event] = []
+     private var cursor = 0
+diff --git a/Sources/XFrame/Streaming/LiveVideo.swift b/Sources/XFrame/Streaming/LiveVideo.swift
+index 8ea3e26..ca4f81b 100644
+--- a/Sources/XFrame/Streaming/LiveVideo.swift
++++ b/Sources/XFrame/Streaming/LiveVideo.swift
+@@ -17,7 +17,7 @@ protocol VideoSource: AnyObject, Sendable {
+ // delivery jitter across display ticks; discard old frames after a render stall.
+ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Sendable {
+     let performance = PlaybackPerformance()
+-    let frameTrace = FrameTrace()
++    let frameTrace = FrameTrace(capacity: ProcessInfo.processInfo.environment["XFRAME_ACCEPT_TRACE_CAPACITY"].flatMap(Int.init) ?? 32_768)
+     private let lock = NSLock()
+     static let displayCapacity = FramePacingMode.balanced.capacity
+     static let maximumFrameAge = 0.050
+-- 
+2.56.1
+
