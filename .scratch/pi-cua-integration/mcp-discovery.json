@@ -1,0 +1,86 @@
+{
+  "tools": [
+    {
+      "name": "js",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "JavaScript to execute using the initialized cua_repl runtime.",
+            "type": "string"
+          },
+          "timeout_ms": {
+            "description": "Optional execution timeout in milliseconds. Defaults to 30000 (30 seconds) when omitted.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Short user-facing description of what the code does.",
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "descriptionLength": 1511
+    },
+    {
+      "name": "js_add_node_module_dir",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "description": "Absolute path to a node_modules directory to add to Node package resolution.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "descriptionLength": 111
+    },
+    {
+      "name": "js_reset",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "descriptionLength": 239
+    },
+    {
+      "name": "turn_ended",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "hook_event_name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "session_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turn_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "hook_event_name",
+          "session_id",
+          "turn_id"
+        ],
+        "type": "object"
+      },
+      "descriptionLength": 115
+    }
+  ]
+}
