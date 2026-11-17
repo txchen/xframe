@@ -69,7 +69,7 @@ struct XboxAccountView: View {
                 if account.hasSavedSignIn { Button("Sign Out") { account.signOut() } }
             }.disabled(account.library.ownsSession || account.library.loading)
             DisclosureGroup("Development details") {
-                Text("Sign-in is saved in an owner-only, unencrypted local file, not Keychain. Sign Out removes that file; legacy Keychain entries and browser sign-in are unchanged.")
+                Text(account.credentialStorageDescription)
                 if !account.regionNames.isEmpty { Text("Available regions: \(account.regionNames.joined(separator: ", "))") }
             }.font(.caption).foregroundStyle(.secondary)
         }

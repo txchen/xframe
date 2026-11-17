@@ -150,12 +150,13 @@ final class XboxAccount {
     @ObservationIgnored private let service: XboxAuthService
     @ObservationIgnored private let catalogSession: URLSession?
     @ObservationIgnored private let store: any CredentialStore
+    var credentialStorageDescription: String { store.storageDescription }
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var refreshTask: Task<Void, Error>?
     @ObservationIgnored private var transferTask: Task<String, Error>?
 
-    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore(),
+    init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = CredentialStorage.makeDefault(),
          catalogSession: URLSession? = nil) {
         self.service = service
         self.store = store
