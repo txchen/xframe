@@ -6,16 +6,12 @@ enum CredentialFileError: Error, LocalizedError {
     var errorDescription: String? { "Cannot access the local sign-in file securely. Check its ownership and permissions." }
 }
 
-// Storage for development builds without an Apple team identity, and the
-// legacy source migrated into Keychain by team-signed builds. Owner-only
-// permissions are not encryption. Never print file contents on failure.
+// Temporary development storage. Owner-only permissions are not encryption.
+// Never fall back to Keychain or print file contents on failure.
 @MainActor
 struct FileCredentialStore: CredentialStore {
     let directory: URL
     private let filename = "microsoft-refresh-token"
-    var storageDescription: String {
-        "Development build without an Apple team signature: sign-in is saved in an owner-only, unencrypted local file, not Keychain. Sign Out removes that file; browser sign-in is unchanged."
-    }
     init(directory: URL = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/XFrame/Credentials", isDirectory: true)) {
         self.directory = directory

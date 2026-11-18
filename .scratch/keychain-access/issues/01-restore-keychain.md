@@ -1,6 +1,6 @@
 # Restore Keychain Credential Storage Before Release
 
-Status: needs-info
+Status: wontfix
 
 ## Temporary Development Decision
 
@@ -29,3 +29,7 @@ After the screen saver was disabled, the new build launched with the local-file 
 The application was then quit normally and relaunched. Within approximately two seconds it showed verified xCloud credentials with a renewed expiration, without requiring user intervention. This verifies real file-backed restoration across one full same-build restart. Changed-build restoration has not yet been separately exercised. The historical blocked checks above are superseded by this successful run.
 
 A subsequent changed build added streaming diagnostics, was compiled and certificate-signed, and restored verified xCloud credentials in approximately three seconds without user intervention. This completes one changed-binary file-restoration acceptance check. No credential contents were inspected.
+
+## Decision — 2026-11-18
+
+The user decided to keep file-backed storage on purpose, including in releases. In their experience, Keychain storage causes too many problems. A Keychain implementation with file migration was committed in `03f999b` and reverted at the user's request before any release. It remains in git history. During that work, a probe found that legacy Keychain lets only the exact creating binary delete an item; later team-signed builds can read and update it. No real credential was migrated.

@@ -317,7 +317,6 @@ private final class MemoryCredentials: CredentialStore {
         token = refreshToken
     }
     func delete() throws { token = nil }
-    var storageDescription: String { "memory" }
 }
 
 @MainActor

@@ -9,7 +9,7 @@ This is the agreed implementation order, not a claim that every item is fully sp
 Sections below dated 2026-09-22 are kept for history; this section supersedes them where they conflict.
 
 - **Releases.** 0.1.1–0.1.4 shipped as Developer ID signed, notarized ZIPs on GitHub and the `txchen/tap/xframe` Homebrew cask ([distribution](../../docs/distribution.md), [0.1.4 verification](../playback-performance/release-0.1.4-verification.md)).
-- **Credentials.** `03f999b` returns team-signed builds to Keychain with a verified one-time migration from the plaintext file. Changed-build read/update/sign-out was probed without prompts. Live migration of a real sign-in is pending human acceptance. [Issue](../keychain-access/issues/01-restore-keychain.md).
+- **Credentials.** The user decided to keep the owner-only file store, including in releases. A Keychain migration (`03f999b`) was reverted before release. [Decision](../keychain-access/issues/01-restore-keychain.md).
 - **Series X LAN.** Discovery, video, audio, keyboard and physical controller were verified on 2026-10-16, along with the presentation-lifetime and consent-flicker fixes. Physical wake, rumble, live acceptance of the flicker fix and extended stability remain. [Spec](../xbox-console-remote-play/spec.md).
 - **Neural rendering.** The Small NR benchmark (0.1.2) measured about 204 ms per 720p frame on M1, far above the 33.33 ms budget. This is feasibility evidence, not a shipped enhancement. [Validation](../small-nr-benchmark/validation.md).
 - **Original presentation latency.** 0.1.4 bounds the Original queue. The render-worker candidate (W) has not passed final acceptance and is not integrated. [Handoff](../../docs/research/original-render-latency/README.md).
@@ -77,7 +77,7 @@ Implementation reference: [Veyra-NRVideo source study](../4k-post-processing/vey
 
 ### Before distribution
 
-- [ ] **Security and packaging.** Formal signing and notarization are delivered (0.1.1+). Keychain migration is implemented in `03f999b`; live migration acceptance is pending. Original scope: formal signing and notarization, reproducible distribution build, and migration from the approved development credential file back to Keychain. Verify changed-build access and safe migration before removing the fallback file. Never broaden Keychain access to all applications. [Tracked credential work](../keychain-access/issues/01-restore-keychain.md).
+- [ ] **Security and packaging.** Formal signing and notarization are delivered (0.1.1+). Credential storage stays file-backed by user decision (Keychain migration reverted). Original scope: formal signing and notarization, reproducible distribution build, and migration from the approved development credential file back to Keychain. Verify changed-build access and safe migration before removing the fallback file. Never broaden Keychain access to all applications. [Tracked credential work](../keychain-access/issues/01-restore-keychain.md).
 
 ### Later, not required for this macOS increment
 
