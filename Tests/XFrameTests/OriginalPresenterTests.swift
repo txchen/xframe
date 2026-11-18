@@ -158,3 +158,14 @@ private func acquirePermits(_ s: DispatchSemaphore, _ n: Int, timeout: Double) -
     // every GPU permit returns once submitted work completes
     #expect(acquirePermits(inFlight, 3, timeout: 1) == 3)
 }
+
+@Test @MainActor func renderWorkerDefaultsOnAndHonorsSavedChoice() throws {
+    let suite = "xframe-render-worker-\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    #expect(MetalRenderer.renderWorkerPreference(defaults))
+    defaults.set(false, forKey: MetalRenderer.renderWorkerKey)
+    #expect(!MetalRenderer.renderWorkerPreference(defaults))
+    defaults.set(true, forKey: MetalRenderer.renderWorkerKey)
+    #expect(MetalRenderer.renderWorkerPreference(defaults))
+}

@@ -38,10 +38,19 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var firstFrameReady: (() -> Void)?
     private var presentationGeneration = UUID()
     private var awaitingFirstFrame = false
-    // Experimental Original render worker (opt-in, default off). MTK stays the default path and the fallback owner.
-    // On by default since 0.1.5; `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool NO`
-    // restores the main-thread MTK path. The key keeps its original name so earlier opt-in/opt-out choices persist.
-    var renderWorkerEnabled = UserDefaults.standard.object(forKey: "XFrame.Experimental.OriginalRenderWorker") as? Bool ?? true
+    // Original render worker, on by default since 0.1.5 (View > Low-Latency Original Rendering). MTK remains the
+    // fallback owner: turning it off hands drawing back through the same path as leaving Original scaling.
+    static let renderWorkerKey = "XFrame.Experimental.OriginalRenderWorker" // Name kept so earlier choices persist.
+    static func renderWorkerPreference(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: renderWorkerKey) as? Bool ?? true
+    }
+    var renderWorkerEnabled = MetalRenderer.renderWorkerPreference() {
+        didSet {
+            guard renderWorkerEnabled, workerSlot.worker == nil, let live = source as? LiveVideo, let view = playView else { return }
+            startRenderWorker(live: live, view: view)
+        }
+    }
+    private weak var playView: MTKView?
     private let workerSlot = RenderWorkerSlot()
     private var workerLink: CADisplayLink?
     private var workerOwnsDrawing = false, workerHandingBack = false
@@ -107,6 +116,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func play(_ source: (any VideoSource)?, in view: MTKView) {
         stopRenderWorker()
         self.source = source
+        playView = view
         if renderWorkerEnabled, let live = source as? LiveVideo { startRenderWorker(live: live, view: view) }
         presentationGeneration = UUID()
         awaitingFirstFrame = source != nil
@@ -311,7 +321,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             scalingReport?(status)
         }
         let state = source?.playbackState ?? "Ended"
-        let wanted = source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+        let wanted = renderWorkerEnabled && source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
             && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
         if wanted, !workerOwnsDrawing, !workerHandingBack {
             workerOwnsDrawing = true; worker.setActive(true)

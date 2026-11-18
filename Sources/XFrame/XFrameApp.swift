@@ -99,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var sharpening = SharpeningPreset.load()
     private var scalingMode = VideoScalingMode(rawValue: UserDefaults.standard.string(forKey: VideoScalingMode.preferenceKey) ?? "") ?? .original
     private var scalingMenuItems: [NSMenuItem] = []
+    private var renderWorkerMenuItem: NSMenuItem?
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
     private var rumbleMenuItem: NSMenuItem?
@@ -401,6 +402,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         account.library.controllerEnabled.toggle()
         refreshInputMenu()
     }
+    @objc private func toggleRenderWorker(_ sender: NSMenuItem) {
+        let enabled = !MetalRenderer.renderWorkerPreference()
+        UserDefaults.standard.set(enabled, forKey: MetalRenderer.renderWorkerKey)
+        renderer?.renderWorkerEnabled = enabled
+        sender.state = enabled ? .on : .off
+        videoView?.needsDisplay = true
+    }
     @objc private func toggleControllerVibration(_ sender: NSMenuItem) {
         account.library.rumbleEnabled.toggle()
         refreshInputMenu()
@@ -636,6 +644,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             item.state = mode == scalingMode ? .on : .off
             scalingMenuItems.append(item)
         }
+        renderWorkerMenuItem = viewMenu.addItem(withTitle: "Low-Latency Original Rendering", action: #selector(toggleRenderWorker(_:)), keyEquivalent: "")
+        renderWorkerMenuItem?.target = self
+        renderWorkerMenuItem?.toolTip = "Renders Original scaling on a dedicated thread just before each refresh (about 7 ms lower latency on M1)."
+        renderWorkerMenuItem?.state = MetalRenderer.renderWorkerPreference() ? .on : .off
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.control, .command]
         controllerMenuItem = viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "")

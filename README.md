@@ -34,7 +34,7 @@ The script explicitly selects SwiftPM's native build engine because the default 
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
 
-Original scaling renders on a dedicated real-time worker thread, timed just before each display refresh. In matched xCloud sessions on M1, this lowered local frame age by about 7 ms, from about 40 to 33 ms. Version 0.1.5 enables it by default. To return to the previous main-thread path, run `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool NO` and restart XFrame. `defaults delete win.xframe.app XFrame.Experimental.OriginalRenderWorker` restores the default. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
+Original scaling renders on a dedicated real-time worker thread, timed just before each display refresh. In matched xCloud sessions on M1, this lowered local frame age by about 7 ms, from about 40 to 33 ms. Version 0.1.5 enables it by default. Turn it off or on with **View → Low-Latency Original Rendering**. The change applies immediately, including during a stream, and persists. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
 
 Controller input enablement is remembered across app restarts (first launch defaults to off); focus loss still releases game input. The controller toggle stays in the View menu so a controller user cannot disable their own navigation from the playback panel.
 
