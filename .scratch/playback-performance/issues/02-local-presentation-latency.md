@@ -1,6 +1,6 @@
 # Reduce local presentation latency without restoring sustained frame loss
 
-Status: ready-for-agent
+Status: ready-for-human
 Type: task
 Resolution: bounded freshness and accurate presentation accounting implemented; foreground pacing gates pass; lower display-latency target and final controller gameplay remain open
 
@@ -53,3 +53,7 @@ Added a real presentation-callback seam regression: a zero drawable timestamp in
 - Final 25 ms policy: Detailed 0.256 skips/s, Hidden 0.268/s, Compact 0.238/s; all pass the existing pacing gate. Foreground recent presentation mean 31.4–36.9 ms, p95 34.3–39.3 ms. Exported final/end-focus window is 37.17/51.27 ms and fails the separate 25/40 ms latency target. 95 tests and signed release build pass. Physical controller was disconnected for the final run; acceptance remains open. See ../latency-optimization-validation.md and diagnostics/freshness-balanced-hud.json.
 
 - Controller-connected follow-up on the final app: input active throughout, Detailed 0.418 / Hidden 0.439 / Compact 0.224 skips/s, all pacing checks pass; HUD OUT 59.6 fps. Local mean 29.5–39.1 ms remains above the 25 ms target. Physical connection/input-overhead check completed; manual gameplay feel and extended sessions remain open. See final follow-up in ../latency-optimization-validation.md.
+
+## Comments
+
+- 2026-11-18: The Original render worker (W) passed acceptance after the user-approved G5 amendment. Frame age is about 7 ms lower. It is integrated as an opt-in, default-off setting (`XFrame.Experimental.OriginalRenderWorker`). Whether to enable it by default is the user's decision. See docs/research/original-render-latency/acceptance-results-r2.md.

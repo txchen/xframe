@@ -38,6 +38,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var firstFrameReady: (() -> Void)?
     private var presentationGeneration = UUID()
     private var awaitingFirstFrame = false
+    // Experimental Original render worker (opt-in, default off). MTK stays the default path and the fallback owner.
+    var renderWorkerEnabled = UserDefaults.standard.bool(forKey: "XFrame.Experimental.OriginalRenderWorker")
+    private let workerSlot = RenderWorkerSlot()
+    private var workerLink: CADisplayLink?
+    private var workerOwnsDrawing = false, workerHandingBack = false
+    private weak var workerView: MTKView?
 
     private func restartHUD() {
         hudSampler.stop()
@@ -94,8 +100,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func invalidate() { invalidated = true }
 
+    deinit { workerSlot.stop() }
+
     func play(_ source: (any VideoSource)?, in view: MTKView) {
+        stopRenderWorker()
         self.source = source
+        if renderWorkerEnabled, let live = source as? LiveVideo { startRenderWorker(live: live, view: view) }
         presentationGeneration = UUID()
         awaitingFirstFrame = source != nil
         restartHUD()
@@ -112,6 +122,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     func draw(in view: MTKView) {
+        // While the render worker owns Original drawing, MTK callbacks return before reserving or dequeuing.
+        if workerOwnsDrawing { return }
         let now = CACurrentMediaTime()
         source?.performance.note(.draw, at: now)
         if let state = source?.playbackState, state == "Ended" || state.hasPrefix("Failed:") {
@@ -273,6 +285,45 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         command.commit()
     }
 
+    // MARK: Render worker ownership (main thread)
+    private func startRenderWorker(live: LiveVideo, view: MTKView) {
+        guard let layer = view.layer as? CAMetalLayer, let device = view.device,
+              let worker = try? OriginalPresenter(queue: queue, pipeline: videoPipeline, inFlight: inFlight,
+                                                   presentationQueue: presentationQueue, layer: layer, device: device) else { return }
+        worker.configure(source: live); worker.start(); workerSlot.set(worker)
+        workerView = view
+        let link = view.displayLink(target: RenderWorkerTick(self), selector: #selector(RenderWorkerTick.tick(_:)))
+        link.add(to: .main, forMode: .common); workerLink = link
+    }
+    private func stopRenderWorker() {
+        workerLink?.invalidate(); workerLink = nil
+        workerSlot.stop()
+        workerOwnsDrawing = false; workerHandingBack = false; workerView = nil
+    }
+    fileprivate func renderWorkerTick(_ link: CADisplayLink) {
+        guard let worker = workerSlot.worker, let view = workerView else { return }
+        worker.lattice.update(timestamp: link.timestamp, target: link.targetTimestamp, now: CACurrentMediaTime())
+        // The worker cannot call UI closures; forward its scaling status (e.g. after a resize) from the main thread.
+        if workerOwnsDrawing, let status = worker.lastScalingStatus, status != lastScalingStatus {
+            lastScalingStatus = status
+            scalingReport?(status)
+        }
+        let state = source?.playbackState ?? "Ended"
+        let wanted = source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+            && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
+        if wanted, !workerOwnsDrawing, !workerHandingBack {
+            workerOwnsDrawing = true; worker.setActive(true)
+        } else if !wanted, workerOwnsDrawing {
+            // Hand back only after the worker has parked; MTK then waits for the next decoded frame instead of
+            // redrawing an older one it still holds.
+            if !workerHandingBack { workerHandingBack = true; worker.setActive(false) }
+            if worker.isIdle {
+                workerOwnsDrawing = false; workerHandingBack = false
+                currentVideo = nil; work = RenderWorkState(); invalidated = true
+            }
+        }
+    }
+
     private func encodeSource(_ encoder: any MTLRenderCommandEncoder, integer: Bool) {
         if let video = currentVideo {
             encoder.setRenderPipelineState(integer ? integerVideoPipeline : videoPipeline)
@@ -329,5 +380,23 @@ final class VideoTextures: @unchecked Sendable {
         planes = wrapped
         self.luma = luma
         self.chroma = chroma
+    }
+}
+
+// Holds the worker so the nonisolated deinit can stop its thread.
+final class RenderWorkerSlot: @unchecked Sendable {
+    private let lock = NSLock(); private var current: OriginalPresenter?
+    var worker: OriginalPresenter? { lock.withLock { current } }
+    func set(_ w: OriginalPresenter) { lock.withLock { current = w } }
+    func stop() { let w = lock.withLock { () -> OriginalPresenter? in let w = current; current = nil; return w }; w?.stop() }
+}
+
+// Display-link target that does not retain the renderer; invalidates itself once the renderer is gone.
+@MainActor final class RenderWorkerTick: NSObject {
+    private weak var renderer: MetalRenderer?
+    init(_ renderer: MetalRenderer) { self.renderer = renderer }
+    @objc func tick(_ link: CADisplayLink) {
+        guard let renderer else { link.invalidate(); return }
+        renderer.renderWorkerTick(link)
     }
 }

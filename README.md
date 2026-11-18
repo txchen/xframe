@@ -34,6 +34,8 @@ The script explicitly selects SwiftPM's native build engine because the default 
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
 
+An experimental Original-mode render worker lowers local display latency by about 7 ms: frame age fell from about 40 to 33 ms in matched xCloud sessions on M1. It is off by default. Enable it with `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool YES` and restart XFrame; `defaults delete win.xframe.app XFrame.Experimental.OriginalRenderWorker` turns it off. It applies only with Original scaling. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
+
 Controller input enablement is remembered across app restarts (first launch defaults to off); focus loss still releases game input. The controller toggle stays in the View menu so a controller user cannot disable their own navigation from the playback panel.
 
 For game input, choose **View → Enable Controller Input** or **View → Enable Keyboard Input** (both can be enabled; the last device with a fresh button press or deliberate stick/trigger motion takes control). Keyboard mode maps physical key positions to the Xbox controller: WASD moves, arrows look, J/Space=A, K=B, U=X, I=Y, Q/E=LB/RB, Z/C=LT/RT, F/T/H/G=D-pad, L/O=stick clicks, Return=Menu and Tab=View. **View → Keyboard Controls…** shows the mapping. Only the focused streaming playback window captures game keys; Command/Control/Option shortcuts remain available. Keyboard sticks/triggers are digital, and custom bindings/mouse look are not implemented. See [keyboard validation](.scratch/keyboard-input/validation.md) for the current live acceptance limits.
