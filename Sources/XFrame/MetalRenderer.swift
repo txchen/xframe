@@ -39,7 +39,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private var presentationGeneration = UUID()
     private var awaitingFirstFrame = false
     // Experimental Original render worker (opt-in, default off). MTK stays the default path and the fallback owner.
-    var renderWorkerEnabled = UserDefaults.standard.bool(forKey: "XFrame.Experimental.OriginalRenderWorker")
+    // On by default since 0.1.5; `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool NO`
+    // restores the main-thread MTK path. The key keeps its original name so earlier opt-in/opt-out choices persist.
+    var renderWorkerEnabled = UserDefaults.standard.object(forKey: "XFrame.Experimental.OriginalRenderWorker") as? Bool ?? true
     private let workerSlot = RenderWorkerSlot()
     private var workerLink: CADisplayLink?
     private var workerOwnsDrawing = false, workerHandingBack = false

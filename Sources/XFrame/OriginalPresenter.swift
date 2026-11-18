@@ -4,7 +4,7 @@ import Metal
 import CoreVideo
 import Darwin
 
-// Experimental Original-mode render worker (opt-in, default off: UserDefaults "XFrame.Experimental.OriginalRenderWorker").
+// Original-mode render worker (default on since 0.1.5; disable with UserDefaults "XFrame.Experimental.OriginalRenderWorker" = NO).
 // A dedicated thread with a time-constraint policy wakes `lead` before the predicted VSync, takes the newest decoded
 // frame from LiveVideo (queue rules unchanged) and submits it. The MTK path stays the default and the fallback.
 

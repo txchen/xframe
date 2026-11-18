@@ -34,7 +34,7 @@ The script explicitly selects SwiftPM's native build engine because the default 
 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
 
-An experimental Original-mode render worker lowers local display latency by about 7 ms: frame age fell from about 40 to 33 ms in matched xCloud sessions on M1. It is off by default. Enable it with `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool YES` and restart XFrame; `defaults delete win.xframe.app XFrame.Experimental.OriginalRenderWorker` turns it off. It applies only with Original scaling. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
+Original scaling renders on a dedicated real-time worker thread, timed just before each display refresh. In matched xCloud sessions on M1, this lowered local frame age by about 7 ms, from about 40 to 33 ms. Version 0.1.5 enables it by default. To return to the previous main-thread path, run `defaults write win.xframe.app XFrame.Experimental.OriginalRenderWorker -bool NO` and restart XFrame. `defaults delete win.xframe.app XFrame.Experimental.OriginalRenderWorker` restores the default. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
 
 Controller input enablement is remembered across app restarts (first launch defaults to off); focus loss still releases game input. The controller toggle stays in the View menu so a controller user cannot disable their own navigation from the playback panel.
 
@@ -95,7 +95,7 @@ Physical controller integration is available for supervised acceptance; full pla
 
 ## Diagnostics and Offline Groundwork
 
-Version 0.1.4 bounds Original live playback to two outstanding actual presentations. This prevents additional display queue buildup; it does not claim a universal one-frame latency reduction. See [measured results and remaining research](docs/presentation-latency-research.md).
+Version 0.1.4 bounded Original live playback to two outstanding actual presentations. This prevents additional display queue buildup; it does not claim a universal one-frame latency reduction. See [measured results and remaining research](docs/presentation-latency-research.md).
 
 Playback diagnostics now include bounded recent p95 timings for decode submission-to-callback, decoded-frame waiting, GPU execution and receipt-to-presentation. JSON stream reports use schema version 10 and retain at most 256 samples per stage. Live playback keeps up to two decoded frames to absorb short delivery bursts. At consumption it catches up to a fresher ready frame when the head is older than 25 ms (1.5 intervals at 60 Hz), and discards frames older than 50 ms after stalls. Detailed HUD labels skipped frames as cumulative and separates inbox loss, renderer replacement, busy ticks, unavailable drawables and drawable callbacks that were not actually displayed; reports include bounded arrival/draw/drawable-wait timing distributions. Missing GPU/display timestamps remain `n/a`; these overlapping local intervals are not network or controller-to-photon latency. See [timing definitions and regression results](.scratch/playback-performance/validation.md).
 
