@@ -81,6 +81,20 @@ struct PostProcessingBenchmarkReport: Codable, Sendable {
         } else {
             frameText = "No tested frame-generation tier has clear time-budget headroom"
         }
+        let coremlText: String
+        if let best = measurements.reversed().first(where: {
+            $0.id.hasPrefix("coreml") && $0.grade == .headroom
+        }) {
+            coremlText = "; \(best.title) has measured headroom"
+        } else if let tight = measurements.reversed().first(where: {
+            $0.id.hasPrefix("coreml") && $0.grade == .tight
+        }) {
+            coremlText = "; \(tight.title) is close to its time budget"
+        } else if measurements.contains(where: { $0.id.hasPrefix("coreml") }) {
+            coremlText = "; no tested Core ML FG tier has clear 30 → 60 fps headroom"
+        } else {
+            coremlText = ""
+        }
         let mlxText: String
         if let best = measurements.reversed().first(where: {
             $0.id.hasPrefix("mlxEndToEnd") && $0.grade == .headroom
@@ -91,7 +105,7 @@ struct PostProcessingBenchmarkReport: Codable, Sendable {
         } else {
             mlxText = ""
         }
-        return "\(spatialText); \(frameText)\(mlxText)."
+        return "\(spatialText); \(frameText)\(coremlText)\(mlxText)."
     }
 }
 
@@ -156,29 +170,54 @@ enum PostProcessingBenchmark {
         if selection.needsFG, let weightsURL {
             do {
                 let digest = try MLXFrameGenerationBenchmark.modelDigest(weightsURL)
-                notes.append("Selected MLX-DLSS model SHA-256: \(digest). The cached model remains local and is not included in the app bundle or report.")
-                for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
-                    try Task.checkCancellation()
-                    let id = "mlx\(height)", title = "MLX-DLSS video \(height)p 30 → 60 fps"
-                    guard selection.contains(id) else { continue }
-                    progress("Testing \(title)…")
-                    do {
-                        measurements.append(contentsOf: try await MLXFrameGenerationBenchmark.measure(
-                            frames: Array(frames.prefix(selection.length.samples + 6)).map(\.buffer), width: width, height: height, weightsURL: weightsURL))
-                    } catch is CancellationError { throw CancellationError() }
-                    catch { measurements.append(.failed(id, title, error: error, budgetMS: interpolationBudgetMS)) }
+                notes.append("Selected DLSS FG model SHA-256: \(digest). The cached weights remain local and are not included in the app bundle or report.")
+                let bundle = try resourceBundle()
+                if selection.needsCoreMLFG {
+                    for profile in CoreMLFGProfile.allCases {
+                        try Task.checkCancellation()
+                        guard selection.contains(profile.id) else { continue }
+                        progress("Testing \(profile.title)…")
+                        do {
+                            measurements.append(try CoreMLFrameGenerationBenchmark.measure(
+                                profile: profile,
+                                frames: Array(frames.prefix(selection.length.samples + 6)).map(\.buffer),
+                                weightsURL: weightsURL,
+                                resourceBundle: bundle
+                            ))
+                        } catch is CancellationError { throw CancellationError() }
+                        catch { measurements.append(.failed(profile.id, profile.title, error: error, budgetMS: interpolationBudgetMS)) }
+                    }
+                    notes.append("Core ML FG runs the two-stage flow network in FP16 on Core ML (ANE) with Metal warp/compose from decoded NV12 directly to a GPU RGB texture, without CPU RGB packing or readback. Balanced reduces flow estimation resolution (1/3) while composing at full output resolution.")
+                }
+                if selection.needsMLXFG {
+                    for (width, height) in [(1280, 720), (1920, 1080), (2560, 1440)] {
+                        try Task.checkCancellation()
+                        let id = "mlx\(height)", title = "MLX-DLSS video \(height)p 30 → 60 fps"
+                        guard selection.contains(id) else { continue }
+                        progress("Testing \(title)…")
+                        do {
+                            measurements.append(contentsOf: try await MLXFrameGenerationBenchmark.measure(
+                                frames: Array(frames.prefix(selection.length.samples + 6)).map(\.buffer), width: width, height: height, weightsURL: weightsURL))
+                        } catch is CancellationError { throw CancellationError() }
+                        catch { measurements.append(.failed(id, title, error: error, budgetMS: interpolationBudgetMS)) }
+                    }
+                    notes.append("MLX-DLSS is a separate video research port with no game motion vectors or depth. Helper round-trip excludes RGB preparation; the preparation-inclusive row includes resize, bitmap output and RGB packing and is used for capacity hints. Neither includes decoder or display latency; it is not a live XFrame backend.")
                 }
             } catch is CancellationError { throw CancellationError() }
             catch {
+                for profile in CoreMLFGProfile.allCases where selection.contains(profile.id) {
+                    measurements.append(.failed(profile.id, profile.title,
+                        error: RenderError.unavailable("Cannot read the selected model file."),
+                        budgetMS: interpolationBudgetMS))
+                }
                 for height in [720, 1080, 1440] where selection.contains("mlx\(height)") {
                     measurements.append(.failed("mlx\(height)", "MLX-DLSS video \(height)p 30 → 60 fps",
                         error: RenderError.unavailable("Cannot read the selected model file."),
                         budgetMS: interpolationBudgetMS))
                 }
             }
-            notes.append("MLX-DLSS is a separate video research port with no game motion vectors or depth. Helper round-trip excludes RGB preparation; the preparation-inclusive row includes resize, bitmap output and RGB packing and is used for capacity hints. Neither includes decoder or display latency; it is not a live XFrame backend.")
         } else {
-            notes.append("MLX-DLSS frame generation was not selected. Import framegen.safetensors to run its separate optional benchmark.")
+            notes.append("Neural frame generation (Core ML FG / MLX-DLSS) was not selected. Import or auto-download framegen.safetensors to run these optional benchmarks.")
         }
         if selection.needsNR { notes.append("Small NR helper upstream: \(SmallNRBenchmark.upstream). Independent-frame FP16, GPU pre/post, protocol 4 RGB8 output, history reset each frame. No temporal reconstruction or NVIDIA output-parity claim.") }
         if selection.needsNR, let smallNRURL {

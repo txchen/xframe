@@ -8,7 +8,7 @@ let package = Package(
     dependencies: [.package(url: "https://github.com/stasel/WebRTC.git", exact: "153.0.0")],
     targets: [
         .executableTarget(name: "XFrame", dependencies: [.product(name: "WebRTC", package: "WebRTC")],
-                          resources: [.copy("Shaders.metal"), .copy("Benchmark/BigBuckBunny-1080p30.mp4")],
+                          resources: [.copy("Shaders.metal"), .copy("Benchmark/BigBuckBunny-1080p30.mp4"), .copy("Benchmark/CoreMLFG")],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .testTarget(name: "XFrameTests", dependencies: ["XFrame"])
     ]

@@ -1,0 +1,432 @@
+{
+  "block0": {
+    "totalBytes": 773056,
+    "chunks": [
+      {
+        "metaOffset": 64,
+        "dataOffset": 128,
+        "byteLength": 9216,
+        "tensor": "block0.stem0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 9344,
+        "dataOffset": 9408,
+        "byteLength": 64,
+        "tensor": "block0.stem0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 9472,
+        "dataOffset": 9536,
+        "byteLength": 18432,
+        "tensor": "block0.stem1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 27968,
+        "dataOffset": 28032,
+        "byteLength": 64,
+        "tensor": "block0.stem1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 28096,
+        "dataOffset": 28160,
+        "byteLength": 36864,
+        "tensor": "block0.stem2.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 65024,
+        "dataOffset": 65088,
+        "byteLength": 128,
+        "tensor": "block0.stem2.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 65216,
+        "dataOffset": 65280,
+        "byteLength": 73728,
+        "tensor": "block0.res0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 139008,
+        "dataOffset": 139072,
+        "byteLength": 128,
+        "tensor": "block0.res0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 139200,
+        "dataOffset": 139264,
+        "byteLength": 73728,
+        "tensor": "block0.res1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 212992,
+        "dataOffset": 213056,
+        "byteLength": 128,
+        "tensor": "block0.res1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 213184,
+        "dataOffset": 213248,
+        "byteLength": 73728,
+        "tensor": "block0.res2.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 286976,
+        "dataOffset": 287040,
+        "byteLength": 128,
+        "tensor": "block0.res2.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 287168,
+        "dataOffset": 287232,
+        "byteLength": 73728,
+        "tensor": "block0.res3.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 360960,
+        "dataOffset": 361024,
+        "byteLength": 128,
+        "tensor": "block0.res3.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 361152,
+        "dataOffset": 361216,
+        "byteLength": 73728,
+        "tensor": "block0.res4.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 434944,
+        "dataOffset": 435008,
+        "byteLength": 128,
+        "tensor": "block0.res4.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 435136,
+        "dataOffset": 435200,
+        "byteLength": 73728,
+        "tensor": "block0.res5.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 508928,
+        "dataOffset": 508992,
+        "byteLength": 128,
+        "tensor": "block0.res5.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 509120,
+        "dataOffset": 509184,
+        "byteLength": 73728,
+        "tensor": "block0.res6.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 582912,
+        "dataOffset": 582976,
+        "byteLength": 128,
+        "tensor": "block0.res6.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 583104,
+        "dataOffset": 583168,
+        "byteLength": 73728,
+        "tensor": "block0.res7.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 656896,
+        "dataOffset": 656960,
+        "byteLength": 128,
+        "tensor": "block0.res7.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 657088,
+        "dataOffset": 657152,
+        "byteLength": 36864,
+        "tensor": "block0.bot0.head0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 694016,
+        "dataOffset": 694080,
+        "byteLength": 64,
+        "tensor": "block0.bot0.head0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 694144,
+        "dataOffset": 694208,
+        "byteLength": 2304,
+        "tensor": "block0.bot1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 696512,
+        "dataOffset": 696576,
+        "byteLength": 36864,
+        "tensor": "block0.bot0.head1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 733440,
+        "dataOffset": 733504,
+        "byteLength": 64,
+        "tensor": "block0.bot0.head1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 733568,
+        "dataOffset": 733632,
+        "byteLength": 576,
+        "tensor": "block0.bot1.weight",
+        "tensorByteOffset": 2304
+      },
+      {
+        "metaOffset": 734208,
+        "dataOffset": 734272,
+        "byteLength": 36864,
+        "tensor": "block0.bot0.head2.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 771136,
+        "dataOffset": 771200,
+        "byteLength": 64,
+        "tensor": "block0.bot0.head2.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 771264,
+        "dataOffset": 771328,
+        "byteLength": 1728,
+        "tensor": "block0.bot1.weight",
+        "tensorByteOffset": 2880
+      }
+    ]
+  },
+  "block1": {
+    "totalBytes": 194592,
+    "chunks": [
+      {
+        "metaOffset": 64,
+        "dataOffset": 128,
+        "byteLength": 5184,
+        "tensor": "block1.stem0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 5312,
+        "dataOffset": 5376,
+        "byteLength": 32,
+        "tensor": "block1.stem0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 5440,
+        "dataOffset": 5504,
+        "byteLength": 9216,
+        "tensor": "block1.stem1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 14720,
+        "dataOffset": 14784,
+        "byteLength": 64,
+        "tensor": "block1.stem1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 14848,
+        "dataOffset": 14912,
+        "byteLength": 18432,
+        "tensor": "block1.res0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 33344,
+        "dataOffset": 33408,
+        "byteLength": 64,
+        "tensor": "block1.res0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 33472,
+        "dataOffset": 33536,
+        "byteLength": 18432,
+        "tensor": "block1.res1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 51968,
+        "dataOffset": 52032,
+        "byteLength": 64,
+        "tensor": "block1.res1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 52096,
+        "dataOffset": 52160,
+        "byteLength": 18432,
+        "tensor": "block1.res2.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 70592,
+        "dataOffset": 70656,
+        "byteLength": 64,
+        "tensor": "block1.res2.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 70720,
+        "dataOffset": 70784,
+        "byteLength": 18432,
+        "tensor": "block1.res3.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 89216,
+        "dataOffset": 89280,
+        "byteLength": 64,
+        "tensor": "block1.res3.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 89344,
+        "dataOffset": 89408,
+        "byteLength": 18432,
+        "tensor": "block1.res4.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 107840,
+        "dataOffset": 107904,
+        "byteLength": 64,
+        "tensor": "block1.res4.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 107968,
+        "dataOffset": 108032,
+        "byteLength": 18432,
+        "tensor": "block1.res5.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 126464,
+        "dataOffset": 126528,
+        "byteLength": 64,
+        "tensor": "block1.res5.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 126592,
+        "dataOffset": 126656,
+        "byteLength": 18432,
+        "tensor": "block1.res6.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 145088,
+        "dataOffset": 145152,
+        "byteLength": 64,
+        "tensor": "block1.res6.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 145216,
+        "dataOffset": 145280,
+        "byteLength": 18432,
+        "tensor": "block1.res7.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 163712,
+        "dataOffset": 163776,
+        "byteLength": 64,
+        "tensor": "block1.res7.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 163840,
+        "dataOffset": 163904,
+        "byteLength": 9216,
+        "tensor": "block1.bot0.head0.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 173120,
+        "dataOffset": 173184,
+        "byteLength": 32,
+        "tensor": "block1.bot0.head0.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 173248,
+        "dataOffset": 173312,
+        "byteLength": 1152,
+        "tensor": "block1.bot1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 174464,
+        "dataOffset": 174528,
+        "byteLength": 9216,
+        "tensor": "block1.bot0.head1.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 183744,
+        "dataOffset": 183808,
+        "byteLength": 32,
+        "tensor": "block1.bot0.head1.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 183872,
+        "dataOffset": 183936,
+        "byteLength": 288,
+        "tensor": "block1.bot1.weight",
+        "tensorByteOffset": 1152
+      },
+      {
+        "metaOffset": 184256,
+        "dataOffset": 184320,
+        "byteLength": 9216,
+        "tensor": "block1.bot0.head2.weight",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 193536,
+        "dataOffset": 193600,
+        "byteLength": 32,
+        "tensor": "block1.bot0.head2.bias",
+        "tensorByteOffset": 0
+      },
+      {
+        "metaOffset": 193664,
+        "dataOffset": 193728,
+        "byteLength": 864,
+        "tensor": "block1.bot1.weight",
+        "tensorByteOffset": 1440
+      }
+    ]
+  }
+}

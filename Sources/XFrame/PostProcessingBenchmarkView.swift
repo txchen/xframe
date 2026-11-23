@@ -186,16 +186,35 @@ struct PostProcessingBenchmarkView: View {
                         Button("All") { model.selection.workloads = Set(BenchmarkWorkload.allCases) }
                         Button("None") { model.selection.workloads = [] }
                     }
-                    ForEach(["MetalFX scaling", "VideoToolbox interpolation", "MLX frame generation", "Small NR · research"], id: \.self) { group in
+                    ForEach(["MetalFX scaling", "VideoToolbox interpolation", "Core ML frame generation · ANE + Metal", "MLX frame generation", "Small NR · research"], id: \.self) { group in
                         VStack(alignment: .leading, spacing: 10) {
                             Text(group).font(.system(size: 17, weight: .semibold))
-                            HStack(spacing: 22) {
-                                ForEach(BenchmarkWorkload.allCases.filter { $0.group == group }) { item in
-                                    Toggle(item.title, isOn: Binding(get: { model.selection.workloads.contains(item) }, set: { selected in
-                                        if selected { model.selection.workloads.insert(item) }
-                                        else { model.selection.workloads.remove(item) }
-                                    }))
+                            let items = BenchmarkWorkload.allCases.filter { $0.group == group }
+                            if group == "Core ML frame generation · ANE + Metal" {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), alignment: .leading)], alignment: .leading, spacing: 10) {
+                                    ForEach(items) { item in
+                                        Toggle(item.title, isOn: Binding(get: { model.selection.workloads.contains(item) }, set: { selected in
+                                            if selected { model.selection.workloads.insert(item) }
+                                            else { model.selection.workloads.remove(item) }
+                                        }))
+                                    }
                                 }
+                            } else {
+                                HStack(spacing: 22) {
+                                    ForEach(items) { item in
+                                        Toggle(item.title, isOn: Binding(get: { model.selection.workloads.contains(item) }, set: { selected in
+                                            if selected { model.selection.workloads.insert(item) }
+                                            else { model.selection.workloads.remove(item) }
+                                        }))
+                                    }
+                                }
+                            }
+                            if group == "Core ML frame generation · ANE + Metal" {
+                                HStack {
+                                    Text(model.weightsURL == nil ? "Shares 2.9 MB FG weights · compiles Core ML once on first run" : "Weights ready · compiles Core ML once on first run")
+                                    Spacer()
+                                    Button("Import…") { model.chooseWeights() }
+                                }.font(.system(size: 14)).foregroundStyle(.secondary)
                             }
                             if group == "MLX frame generation" {
                                 HStack {
