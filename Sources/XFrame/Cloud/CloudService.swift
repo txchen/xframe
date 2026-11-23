@@ -17,8 +17,8 @@ struct CloudGame: Identifiable, Equatable, Sendable {
     }
 }
 
-struct CloudProductMetadata: Decodable, Sendable {
-    struct Image: Decodable, Sendable { let URL: String? }
+struct CloudProductMetadata: Codable, Equatable, Sendable {
+    struct Image: Codable, Equatable, Sendable { let URL: String? }
     let ProductTitle: String?
     let Image_Poster: Image?
     let Image_Tile: Image?
@@ -69,6 +69,21 @@ protocol SessionServing: Sendable {
 
 protocol CloudServing: SessionServing {
     func games() async throws -> [CloudGame]
+    func loadGames(
+        prioritizing priorityProductIDs: Set<String>,
+        onUpdate: @Sendable ([CloudGame]) async -> Void
+    ) async throws -> [CloudGame]
+}
+
+extension CloudServing {
+    func loadGames(
+        prioritizing priorityProductIDs: Set<String>,
+        onUpdate: @Sendable ([CloudGame]) async -> Void
+    ) async throws -> [CloudGame] {
+        let loaded = try await games()
+        await onUpdate(loaded)
+        return loaded
+    }
 }
 
 struct CloudService: CloudServing {
@@ -81,11 +96,13 @@ struct CloudService: CloudServing {
     private let expires: Date
     private let market: String
     private let session: URLSession
+    private let metadataCache: any ProductMetadataCaching
     private let tokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)?
     private let transferToken: @Sendable () async throws -> String
 
     init(credential: CloudToken, expires: Date, regionName: String? = nil, source: Source = .cloud,
          session: URLSession? = nil,
+         metadataCache: any ProductMetadataCaching = FileProductMetadataCache.shared,
          tokenProvider: (@Sendable (_ rejectedToken: String?) async throws -> String)? = nil,
          transferToken: @escaping @Sendable () async throws -> String = { throw CloudError.expired }) throws {
         let regions = credential.offeringSettings.regions
@@ -99,6 +116,7 @@ struct CloudService: CloudServing {
         token = credential.gsToken
         market = credential.market ?? "US"
         self.expires = expires
+        self.metadataCache = metadataCache
         self.tokenProvider = tokenProvider
         self.transferToken = transferToken
         let config = URLSessionConfiguration.ephemeral
@@ -122,47 +140,131 @@ struct CloudService: CloudServing {
         return url
     }
 
-    func games() async throws -> [CloudGame] {
-        struct Titles: Decodable { let results: [Title] }
-        struct Title: Decodable {
-            struct Details: Decodable {
-                let productId: String?; let name: String?
-                let hasEntitlement: Bool?
-                let programs: [String]?
-                let isFreeInStore: Bool?
-            }
-            let titleId: String
-            let details: Details?
+    private struct CatalogTitle: Decodable, Sendable {
+        struct Details: Decodable, Sendable {
+            let productId: String?
+            let name: String?
+            let hasEntitlement: Bool?
+            let programs: [String]?
+            let isFreeInStore: Bool?
         }
+        let titleId: String
+        let details: Details?
+    }
+
+    func games() async throws -> [CloudGame] {
+        try await loadGames(prioritizing: [], onUpdate: { _ in })
+    }
+
+    func loadGames(
+        prioritizing priorityProductIDs: Set<String> = [],
+        onUpdate: @Sendable ([CloudGame]) async -> Void
+    ) async throws -> [CloudGame] {
+        struct Titles: Decodable { let results: [CatalogTitle] }
         let data = try await request(host.appendingPathComponent("v2/titles"))
-        let titles = try decode(Titles.self, data).results
-        let ids = Array(Set(titles.compactMap { $0.details?.productId })).sorted()
-        let batches = stride(from: 0, to: ids.count, by: 100).map { Array(ids[$0..<min($0 + 100, ids.count)]) }
-        let products = try await withThrowingTaskGroup(of: [String: CloudProductMetadata].self) { group in
+        let rawTitles = try decode(Titles.self, data).results
+        var seen = Set<String>()
+        let titles = rawTitles.filter { !$0.titleId.isEmpty && seen.insert($0.titleId).inserted }
+
+        var products = metadataCache.load(market: market)
+        let missingIDs = prioritizedMissingProductIDs(
+            titles: titles,
+            cached: products,
+            priorityProductIDs: priorityProductIDs
+        )
+
+        let initial = buildGames(from: titles, products: products)
+        await onUpdate(initial)
+        guard !missingIDs.isEmpty else { return initial }
+
+        let batches = stride(from: 0, to: missingIDs.count, by: 100).map {
+            Array(missingIDs[$0..<min($0 + 100, missingIDs.count)])
+        }
+        var fetched: [String: CloudProductMetadata] = [:]
+        let concurrency = 6
+
+        await withTaskGroup(of: [String: CloudProductMetadata]?.self) { group in
             var next = 0
-            for _ in 0..<min(4, batches.count) {
+            for _ in 0..<min(concurrency, batches.count) {
                 let batch = batches[next]; next += 1
-                group.addTask { try await productMetadata(batch) }
+                group.addTask { try? await productMetadata(batch) }
             }
-            var result: [String: CloudProductMetadata] = [:]
-            while let batch = try await group.next() {
-                result.merge(batch) { first, _ in first }
-                if next < batches.count {
+            while let batch = await group.next() {
+                if let batch, !batch.isEmpty {
+                    products.merge(batch) { _, newer in newer }
+                    fetched.merge(batch) { _, newer in newer }
+                    if !Task.isCancelled {
+                        await onUpdate(buildGames(from: titles, products: products))
+                    }
+                }
+                if !Task.isCancelled, next < batches.count {
                     let batch = batches[next]; next += 1
-                    group.addTask { try await productMetadata(batch) }
+                    group.addTask { try? await productMetadata(batch) }
                 }
             }
-            return result
         }
-        var seen = Set<String>()
-        return titles.filter { !$0.titleId.isEmpty && seen.insert($0.titleId).inserted }.map {
+
+        if !fetched.isEmpty {
+            metadataCache.save(fetched, market: market)
+        }
+        try Task.checkCancellation()
+        return buildGames(from: titles, products: products)
+    }
+
+    private func prioritizedMissingProductIDs(
+        titles: [CatalogTitle],
+        cached: [String: CloudProductMetadata],
+        priorityProductIDs: Set<String>
+    ) -> [String] {
+        var missingSet = Set<String>()
+        for title in titles {
+            if let pid = title.details?.productId, !pid.isEmpty, cached[pid] == nil {
+                missingSet.insert(pid)
+            }
+        }
+        guard !missingSet.isEmpty else { return [] }
+
+        var ordered: [String] = []
+        ordered.reserveCapacity(missingSet.count)
+        var added = Set<String>()
+
+        // 1. Prioritize explicitly requested product IDs (e.g. favorites) first.
+        for pid in priorityProductIDs.sorted() where missingSet.contains(pid) && added.insert(pid).inserted {
+            ordered.append(pid)
+        }
+        // 2. Then prioritize playable titles sorted alphabetically so the first visible page fills in first.
+        let sortedTitles = titles.sorted {
+            let lhsPlayable = $0.details?.hasEntitlement == true
+            let rhsPlayable = $1.details?.hasEntitlement == true
+            if lhsPlayable != rhsPlayable { return lhsPlayable }
+            let lhsName = $0.details?.name ?? $0.titleId
+            let rhsName = $1.details?.name ?? $1.titleId
+            return lhsName.localizedStandardCompare(rhsName) == .orderedAscending
+        }
+        for title in sortedTitles {
+            if let pid = title.details?.productId, missingSet.contains(pid), added.insert(pid).inserted {
+                ordered.append(pid)
+            }
+        }
+        return ordered
+    }
+
+    private func buildGames(from titles: [CatalogTitle], products: [String: CloudProductMetadata]) -> [CloudGame] {
+        titles.map {
             let metadata = products[$0.details?.productId ?? ""]
-            return CloudGame(id: $0.titleId, name: metadata?.ProductTitle ?? $0.details?.name ?? $0.titleId,
-                      productID: $0.details?.productId, posterURL: metadata?.posterURL,
-                      categories: Array(Set((metadata?.Categories ?? []).filter { !$0.isEmpty })).sorted(),
-                      publisher: metadata?.PublisherName,
-                      access: CloudGameAccess(entitled: $0.details?.hasEntitlement,
-                          programs: $0.details?.programs ?? [], free: $0.details?.isFreeInStore == true))
+            return CloudGame(
+                id: $0.titleId,
+                name: metadata?.ProductTitle ?? $0.details?.name ?? $0.titleId,
+                productID: $0.details?.productId,
+                posterURL: metadata?.posterURL,
+                categories: Array(Set((metadata?.Categories ?? []).filter { !$0.isEmpty })).sorted(),
+                publisher: metadata?.PublisherName,
+                access: CloudGameAccess(
+                    entitled: $0.details?.hasEntitlement,
+                    programs: $0.details?.programs ?? [],
+                    free: $0.details?.isFreeInStore == true
+                )
+            )
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 

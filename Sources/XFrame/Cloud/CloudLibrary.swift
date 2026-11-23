@@ -31,8 +31,9 @@ final class CloudLibrary {
     private(set) var catalogLoaded = false
     var gameLoadAction: GameLoadAction {
         if loading { return .loading }
+        if errorMessage != nil { return .retry }
         if catalogLoaded { return .refresh }
-        return errorMessage == nil ? .load : .retry
+        return .load
     }
     private(set) var artworkRevisions: [String: Int] = [:]
     func reloadArtwork(for game: CloudGame) {
@@ -288,21 +289,33 @@ final class CloudLibrary {
     func load(using service: any CloudServing) {
         guard !ownsSession && !loading else { return }
         self.service = service
+        let refreshing = catalogLoaded
+        let priorityProductIDs = Set(games.filter { favorites.contains($0.id) }.compactMap(\.productID))
         loading = true
         retryGameID = nil
-        games = []
-        artworkRevisions = [:]
-        selection = nil
-        query.pageIndex = 0
-        catalogLoaded = false
+        if !refreshing {
+            games = []
+            artworkRevisions = [:]
+            selection = nil
+            query.pageIndex = 0
+        }
         errorMessage = nil
-        status = "Loading cloud games…"
+        status = refreshing ? "Refreshing cloud games…" : "Loading cloud games…"
         task = Task {
             defer { loading = false; task = nil }
             do {
-                games = try await service.games()
+                let finalGames = try await service.loadGames(prioritizing: priorityProductIDs) { [weak self] partial in
+                    await MainActor.run {
+                        guard let self, self.loading else { return }
+                        self.games = partial
+                        self.catalogLoaded = true
+                        self.status = "\(partial.count) cloud games · updating details…"
+                    }
+                }
+                games = finalGames
                 catalogLoaded = true
                 if !categories.contains(query.category) { query.category = "" }
+                if let selection, !games.contains(where: { $0.id == selection }) { self.selection = nil }
                 status = "\(games.count) cloud games"
             }
             catch { fail(error) }

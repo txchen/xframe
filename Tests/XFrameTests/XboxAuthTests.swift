@@ -154,13 +154,19 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
     #expect(body == "refresh_token=a%2Bb%26c%3Dd%25%20e")
 }
 
+private struct EmptyMetadataCache: ProductMetadataCaching {
+    func load(market: String) -> [String: CloudProductMetadata] { [:] }
+    func save(_ products: [String: CloudProductMetadata], market: String) {}
+}
+
 @Test func catalogRequiresHeadersWithoutLeakingBearerToken() async throws {
     let harness = AuthHarness([
         Reply(#"{"results":[{"titleId":"TEST","details":{"productId":"PRODUCT"}}]}"#),
         Reply(#"{"Products":{"PRODUCT":{"ProductTitle":"Test Game"}}}"#)
     ])
     let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
-    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600),
+                                   session: harness.session, metadataCache: EmptyMetadataCache())
     let games = try await service.games()
     #expect(games == [CloudGame(id: "TEST", name: "Test Game", productID: "PRODUCT")])
 }
@@ -170,7 +176,8 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
         Reply(#"{"results":[{"titleId":"PASS","details":{"hasEntitlement":true,"programs":["GPULTIMATE"],"isFreeInStore":false}},{"titleId":"007","details":{"hasEntitlement":false}},{"titleId":"UNKNOWN"}]}"#)
     ])
     let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
-    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600),
+                                   session: harness.session, metadataCache: EmptyMetadataCache())
     let games = try await service.games()
     #expect(games.first { $0.id == "PASS" }?.access == CloudGameAccess(entitled: true, programs: ["GPULTIMATE"]))
     #expect(games.first { $0.id == "007" }?.access.entitled == false)
@@ -262,7 +269,8 @@ private let cloudJSON = #"{"gsToken":"test-cloud","durationInSeconds":14400,"mar
         Reply(#"{"Products":{"PRODUCT":{"ProductTitle":"Test Game","Image_Poster":{"URL":"//store-images.s-microsoft.com/poster"},"Categories":["Action","Action",""],"PublisherName":"Publisher"}}}"#)
     ])
     let credential = try JSONDecoder().decode(CloudToken.self, from: Data(cloudJSON.utf8))
-    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600), session: harness.session)
+    let service = try CloudService(credential: credential, expires: Date().addingTimeInterval(3600),
+                                   session: harness.session, metadataCache: EmptyMetadataCache())
     let games = try await service.games()
     #expect(games.count == 2)
     let game = try #require(games.first { $0.id == "TEST" })
@@ -327,9 +335,20 @@ private func waitForIdle(_ account: XboxAccount) async throws {
 }
 
 @Test @MainActor func restoreRotatesTokenAndDistinguishesFreeToPlay() async throws {
-    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(cloudJSON), Reply(403, "{}"), Reply(cloudJSON), Reply(#"{"results":[]}"#)])
+    let harness = AuthHarness([])
+    harness.script.respond { request in
+        guard let url = request.url else { return Reply(500, "{}") }
+        if url.host == "login.microsoftonline.com" { return Reply(tokenJSON) }
+        if url.host == "user.auth.xboxlive.com" || url.host == "xsts.auth.xboxlive.com" { return Reply(xboxJSON) }
+        if url.host == "xhome.gssv-play-prod.xboxlive.com" { return Reply(cloudJSON) }
+        if url.host == "xgpuweb.gssv-play-prod.xboxlive.com" { return Reply(403, "{}") }
+        if url.host == "xgpuwebf2p.gssv-play-prod.xboxlive.com" { return Reply(cloudJSON) }
+        if url.path == "/v2/titles" { return Reply(#"{"results":[]}"#) }
+        return Reply(500, "{}")
+    }
     let store = MemoryCredentials("previous-refresh")
-    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session)
+    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session,
+                              metadataCache: EmptyMetadataCache())
     #expect(!account.hasCloudAccess)
     account.restore()
     #expect(!account.hasCloudAccess)
@@ -359,7 +378,7 @@ private func waitForIdle(_ account: XboxAccount) async throws {
 @Test @MainActor func downstreamFailurePreservesRotatedRefreshToken() async throws {
     let harness = AuthHarness([Reply(tokenJSON), Reply(503, "{}")])
     let store = MemoryCredentials("previous-refresh")
-    let account = XboxAccount(service: harness.service, store: store)
+    let account = XboxAccount(service: harness.service, store: store, metadataCache: EmptyMetadataCache())
     account.restore()
     try await waitForIdle(account)
     #expect(store.token == "rotated-refresh")
@@ -370,9 +389,18 @@ private func waitForIdle(_ account: XboxAccount) async throws {
 }
 
 @Test @MainActor func consoleAccessSurvivesCloudDenial() async throws {
-    let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON),
-                               Reply(cloudJSON), Reply(403, "{}"), Reply(403, "{}")])
-    let account = XboxAccount(service: harness.service, store: MemoryCredentials("saved"))
+    let harness = AuthHarness([])
+    harness.script.respond { request in
+        guard let url = request.url else { return Reply(500, "{}") }
+        if url.host == "login.microsoftonline.com" { return Reply(tokenJSON) }
+        if url.host == "user.auth.xboxlive.com" || url.host == "xsts.auth.xboxlive.com" { return Reply(xboxJSON) }
+        if url.host == "xhome.gssv-play-prod.xboxlive.com" { return Reply(cloudJSON) }
+        if url.host == "xgpuweb.gssv-play-prod.xboxlive.com" { return Reply(403, "{}") }
+        if url.host == "xgpuwebf2p.gssv-play-prod.xboxlive.com" { return Reply(403, "{}") }
+        return Reply(500, "{}")
+    }
+    let account = XboxAccount(service: harness.service, store: MemoryCredentials("saved"),
+                              metadataCache: EmptyMetadataCache())
     account.restore()
     try await waitForIdle(account)
     #expect(account.hasXboxSignIn)
@@ -381,6 +409,52 @@ private func waitForIdle(_ account: XboxAccount) async throws {
     #expect(account.homeError == nil)
     #expect(account.cloudError != nil)
     #expect(try account.homeService().stream?.source == .home)
+}
+
+@Test @MainActor func restoreRunsIndependentXSTSAndOfferingRequestsInParallel() async throws {
+    final class ArrivalLog: @unchecked Sendable {
+        private let lock = NSLock()
+        private var xsts: [ContinuousClock.Instant] = []
+        private var offerings: [ContinuousClock.Instant] = []
+        func recordXSTS() { lock.withLock { xsts.append(.now) } }
+        func recordOffering() { lock.withLock { offerings.append(.now) } }
+        var xstsTimes: [ContinuousClock.Instant] { lock.withLock { xsts } }
+        var offeringTimes: [ContinuousClock.Instant] { lock.withLock { offerings } }
+    }
+    let arrivals = ArrivalLog()
+    let harness = AuthHarness([])
+    harness.script.respond { request in
+        guard let url = request.url else { return Reply(500, "{}") }
+        if url.host == "login.microsoftonline.com" { return Reply(tokenJSON) }
+        if url.host == "user.auth.xboxlive.com" { return Reply(xboxJSON) }
+        if url.host == "xsts.auth.xboxlive.com" {
+            arrivals.recordXSTS()
+            return Reply(200, xboxJSON, delay: 0.25)
+        }
+        if url.host == "xhome.gssv-play-prod.xboxlive.com" || url.host == "xgpuweb.gssv-play-prod.xboxlive.com" {
+            arrivals.recordOffering()
+            return Reply(200, cloudJSON, delay: 0.25)
+        }
+        if url.path == "/v2/titles" { return Reply(#"{"results":[]}"#) }
+        return Reply(500, "{}")
+    }
+    let account = XboxAccount(service: harness.service, store: MemoryCredentials("saved"),
+                              catalogSession: harness.session, metadataCache: EmptyMetadataCache())
+    account.restore()
+    try await waitForIdle(account)
+    #expect(account.hasConsoleAccess)
+    #expect(account.hasCloudAccess)
+    let xstsTimes = arrivals.xstsTimes
+    let offeringTimes = arrivals.offeringTimes
+    #expect(xstsTimes.count == 2)
+    #expect(offeringTimes.count == 2)
+    // Each request takes 250ms; if sent sequentially the second arrival would be >= 250ms after the first.
+    if xstsTimes.count == 2 {
+        #expect(xstsTimes[0].duration(to: xstsTimes[1]) < .milliseconds(200))
+    }
+    if offeringTimes.count == 2 {
+        #expect(offeringTimes[0].duration(to: offeringTimes[1]) < .milliseconds(200))
+    }
 }
 
 @Test @MainActor func signOutCancelsPendingAuthorization() async throws {
@@ -518,7 +592,8 @@ private func restoredRefreshAccount() async throws -> (AuthHarness, MemoryCreden
     let harness = AuthHarness([Reply(tokenJSON), Reply(xboxJSON), Reply(xboxJSON), Reply(xboxJSON),
         Reply(cloudJSON), Reply(cloudJSON), Reply(#"{"results":[]}"#)])
     let store = MemoryCredentials("saved")
-    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session)
+    let account = XboxAccount(service: harness.service, store: store, catalogSession: harness.session,
+                              metadataCache: EmptyMetadataCache())
     account.restore()
     try await waitForIdle(account)
     let deadline = ContinuousClock.now.advanced(by: .seconds(3))

@@ -40,7 +40,7 @@ final class XboxAccount {
         let run = generation
         return try CloudService(credential: cloudCredential, expires: accessExpires,
                                 regionName: selectedRegion.isEmpty ? nil : selectedRegion,
-                                session: catalogSession, tokenProvider: { [weak self] rejected in
+                                session: catalogSession, metadataCache: metadataCache, tokenProvider: { [weak self] rejected in
             guard let self else { throw CloudError.expired }
             return try await self.streamingToken(source: .cloud, rejected: rejected, run: run)
         }, transferToken: { [weak self] in
@@ -149,6 +149,7 @@ final class XboxAccount {
     @ObservationIgnored private var webUserHash: String?
     @ObservationIgnored private let service: XboxAuthService
     @ObservationIgnored private let catalogSession: URLSession?
+    @ObservationIgnored private let metadataCache: any ProductMetadataCaching
     @ObservationIgnored private let store: any CredentialStore
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var generation = 0
@@ -156,10 +157,12 @@ final class XboxAccount {
     @ObservationIgnored private var transferTask: Task<String, Error>?
 
     init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore(),
-         catalogSession: URLSession? = nil) {
+         catalogSession: URLSession? = nil,
+         metadataCache: any ProductMetadataCaching = FileProductMetadataCache.shared) {
         self.service = service
         self.store = store
         self.catalogSession = catalogSession
+        self.metadataCache = metadataCache
     }
 
     func loadCloudGames() {
@@ -274,39 +277,53 @@ final class XboxAccount {
         let user = try await service.xboxUserToken(accessToken: accessToken)
         try check(run)
         guard !user.Token.isEmpty else { throw AuthError.invalidResponse("Xbox authentication") }
-        status = "Reading Xbox profile…"
-        let profile = try await service.xsts(userToken: user.Token, relyingParty: "http://xboxlive.com")
+        status = "Authorizing Xbox profile and streaming…"
+        let authService = service
+        let userToken = user.Token
+        async let profileTask = authService.xsts(userToken: userToken, relyingParty: "http://xboxlive.com")
+        async let streamingTask = authService.xsts(userToken: userToken, relyingParty: "http://gssv.xboxlive.com/")
+        let profile = try await profileTask
         try check(run)
         gamertag = profile.gamertag ?? "Xbox account"
         guard let hash = profile.userHash, !hash.isEmpty else { throw AuthError.invalidResponse("Xbox profile") }
         webToken = profile.Token
         webUserHash = hash
-        status = "Requesting streaming authorization…"
-        let streaming = try await service.xsts(userToken: user.Token, relyingParty: "http://gssv.xboxlive.com/")
+        let streaming = try await streamingTask
         try check(run)
         guard !streaming.Token.isEmpty else { throw AuthError.invalidResponse("Xbox streaming authorization") }
-        do {
-            let home = try await service.cloud(token: streaming.Token, offering: .home)
-            try check(run)
+        status = "Checking Xbox console and xCloud access…"
+        let streamingToken = streaming.Token
+        async let homeResult: Result<CloudToken, Error> = {
+            do { return .success(try await authService.cloud(token: streamingToken, offering: .home)) }
+            catch { return .failure(error) }
+        }()
+        async let cloudResult: Result<(CloudToken, CloudOffering), Error> = {
+            var selected = CloudOffering.gamePass
+            do {
+                let cloud: CloudToken
+                do { cloud = try await authService.cloud(token: streamingToken, offering: selected) }
+                catch AuthError.service(_, let statusCode, _) where statusCode == 403 {
+                    try Task.checkCancellation()
+                    selected = .freeToPlay
+                    cloud = try await authService.cloud(token: streamingToken, offering: selected)
+                }
+                return .success((cloud, selected))
+            } catch {
+                return .failure(error)
+            }
+        }()
+        let (homeOutcome, cloudOutcome) = await (homeResult, cloudResult)
+        try check(run)
+        switch homeOutcome {
+        case .success(let home):
             homeCredential = home
             homeExpires = Date().addingTimeInterval(Double(home.durationInSeconds))
             homeError = nil
-        } catch {
-            try check(run)
+        case .failure(let error):
             homeError = (error as? AuthError)?.localizedDescription ?? "Xbox console access could not be checked."
         }
-        status = "Checking xCloud access…"
-        var selected = CloudOffering.gamePass
-        do {
-            let cloud: CloudToken
-            do { cloud = try await service.cloud(token: streaming.Token, offering: selected) }
-            catch AuthError.service(_, let statusCode, _) where statusCode == 403 {
-                try check(run)
-                selected = .freeToPlay
-                status = "Checking free-to-play xCloud access…"
-                cloud = try await service.cloud(token: streaming.Token, offering: selected)
-            }
-            try check(run)
+        switch cloudOutcome {
+        case .success(let (cloud, selected)):
             cloudCredential = cloud
             offering = selected
             regionNames = cloud.offeringSettings.regions.map(\.name)
@@ -315,8 +332,7 @@ final class XboxAccount {
             if !regionNames.contains(selectedRegion) { selectedRegion = "" }
             accessExpires = Date().addingTimeInterval(Double(cloud.durationInSeconds))
             cloudError = nil
-        } catch {
-            try check(run)
+        case .failure(let error):
             cloudError = (error as? AuthError)?.localizedDescription ?? "xCloud access could not be checked."
         }
         status = hasConsoleAccess && hasCloudAccess ? "Xbox console and xCloud access verified" :

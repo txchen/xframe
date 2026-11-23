@@ -56,7 +56,7 @@ struct GameBrowserView: View {
     }
 
     @ViewBuilder private var catalog: some View {
-        if library.loading {
+        if library.loading && !library.catalogLoaded {
             VStack(spacing: 12) {
                 ProgressView()
                 Text("Loading your library").font(.title2.bold())
@@ -125,10 +125,10 @@ struct GameBrowserView: View {
                 library.updateQuery { $0.pageSize = value }
             })) { ForEach([24, 48, 96], id: \.self) { Text("\($0)").tag($0) } }.frame(width: 140)
             Button("Previous", systemImage: "chevron.left") { library.goToPage(page.index - 1) }
-                .disabled(page.index == 0 || library.loading)
+                .disabled(page.index == 0 || (library.loading && !library.catalogLoaded))
             Text("\(page.index + 1) / \(page.count)").monospacedDigit().frame(minWidth: 64)
             Button("Next", systemImage: "chevron.right") { library.goToPage(page.index + 1) }
-                .disabled(page.index + 1 >= page.count || library.loading)
+                .disabled(page.index + 1 >= page.count || (library.loading && !library.catalogLoaded))
         }.font(.system(size: 14)).tint(.white).controlSize(.regular)
     }
 }
