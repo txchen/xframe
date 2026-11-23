@@ -98,7 +98,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var hudPreset = PerformanceHUDPreset(rawValue: UserDefaults.standard.string(forKey: "XFrame.PerformanceHUD") ?? "") ?? .compact
     private var sharpening = SharpeningPreset.load()
     private var scalingMode = VideoScalingMode(rawValue: UserDefaults.standard.string(forKey: VideoScalingMode.preferenceKey) ?? "") ?? .original
+    private var frameGenerationMode = FrameGenerationMode.load()
     private var scalingMenuItems: [NSMenuItem] = []
+    private var frameGenerationMenuItems: [NSMenuItem] = []
     private var renderWorkerMenuItem: NSMenuItem?
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
@@ -123,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let view = MetalView(frame: NSRect(x: 0, y: 0, width: 960, height: 540), device: device)
             let renderer = try MetalRenderer(view: view)
             renderer.scalingMode = scalingMode
+            renderer.frameGenerationMode = frameGenerationMode
             renderer.hudPreset = hudPreset
             renderer.sharpening = sharpening
             playbackSettings.updateSharpening(sharpening)
@@ -524,6 +527,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    @objc private func selectFrameGeneration(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String,
+              let mode = FrameGenerationMode(rawValue: value) else { return }
+        setFrameGeneration(mode)
+    }
+    private func setFrameGeneration(_ mode: FrameGenerationMode) {
+        frameGenerationMode = mode
+        mode.save()
+        renderer?.frameGenerationMode = mode
+        for item in frameGenerationMenuItems {
+            item.state = item.representedObject as? String == mode.rawValue ? .on : .off
+        }
+        videoView?.needsDisplay = true
+        videoView?.draw()
+    }
+
     @objc private func selectScaling(_ sender: NSMenuItem) {
         guard let value = sender.representedObject as? String, let mode = VideoScalingMode(rawValue: value) else { return }
         setScaling(mode)
@@ -643,6 +662,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             item.representedObject = mode.rawValue
             item.state = mode == scalingMode ? .on : .off
             scalingMenuItems.append(item)
+        }
+        let fgItem = viewMenu.addItem(withTitle: "Frame Generation (30 → 60 fps)", action: nil, keyEquivalent: "")
+        let fgMenu = NSMenu(title: "Frame Generation (30 → 60 fps)")
+        fgItem.submenu = fgMenu
+        for mode in FrameGenerationMode.allCases {
+            let item = fgMenu.addItem(withTitle: mode.title, action: #selector(selectFrameGeneration(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode.rawValue
+            item.state = mode == frameGenerationMode ? .on : .off
+            frameGenerationMenuItems.append(item)
         }
         renderWorkerMenuItem = viewMenu.addItem(withTitle: "Low-Latency Original Rendering", action: #selector(toggleRenderWorker(_:)), keyEquivalent: "")
         renderWorkerMenuItem?.target = self

@@ -153,7 +153,7 @@ struct CoreMLFGWeightLayout: Decodable {
     }
 }
 
-private struct FGBiasUniform {
+struct FGBiasUniform {
     var b0: (UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16) = (0, 0, 0, 0, 0, 0, 0, 0)
     var b1: (UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16, UInt16) = (0, 0, 0, 0, 0, 0, 0, 0)
 }
@@ -173,6 +173,30 @@ enum CoreMLFrameGenerationBenchmark {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Application Support/XFrame/BenchmarkModels/CoreML", isDirectory: true)
             .appendingPathComponent(String(weightsDigest.prefix(12)), isDirectory: true)
+    }
+
+    static func prepareCompiledStages(
+        profile: CoreMLFGProfile,
+        weightsURL: URL,
+        resourceBundle: Bundle
+    ) throws -> (block0: URL, block1: URL, bias: FGBiasUniform) {
+        let templateRoot = try templateDirectory(in: resourceBundle)
+        let weightsData = try Data(contentsOf: weightsURL)
+        let weightsDigest = SHA256.hash(data: weightsData).map { String(format: "%02x", $0) }.joined()
+        let safetensors = try SafetensorsFile(data: weightsData)
+        let layoutURL = templateRoot.appendingPathComponent("weight-layout.json")
+        let layout = try JSONDecoder().decode(CoreMLFGWeightLayout.self, from: Data(contentsOf: layoutURL))
+        let biasUniform = try makeBiasUniform(from: safetensors)
+        let cacheRoot = compiledModelCacheDirectory(weightsDigest: weightsDigest)
+        let b0URL = try ensureCompiledModel(
+            stageIndex: 0, shapeLabel: profile.shapeLabel,
+            templateRoot: templateRoot, layout: layout, safetensors: safetensors, cacheRoot: cacheRoot
+        )
+        let b1URL = try ensureCompiledModel(
+            stageIndex: 1, shapeLabel: profile.shapeLabel,
+            templateRoot: templateRoot, layout: layout, safetensors: safetensors, cacheRoot: cacheRoot
+        )
+        return (b0URL, b1URL, biasUniform)
     }
 
     static func measure(

@@ -26,8 +26,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var scalingReport: ((ScalingStatus) -> Void)?
     private var lastScalingStatus: ScalingStatus?
     private let cache: CVMetalTextureCache
+    private let interpolator: LiveFrameInterpolator
     private var currentVideo: VideoTextures?
+    private var currentInterpolatedTexture: (box: InterpolatedTextureBox, sourceFrame: VideoFrame)?
     private var source: (any VideoSource)?
+    var frameGenerationMode: FrameGenerationMode = FrameGenerationMode.load() {
+        didSet {
+            interpolator.setMode(frameGenerationMode)
+            currentInterpolatedTexture = nil
+            invalidated = true
+        }
+    }
     private let inFlight = DispatchSemaphore(value: 3)
     private let presentationQueue = PresentationQueue()
     private var lastDrawableSize = CGSize.zero
@@ -102,6 +111,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             throw RenderError.unavailable("Unable to create the video texture cache.")
         }
         self.cache = cache
+        interpolator = LiveFrameInterpolator(device: device, resourceBundle: resourceBundle)
+        interpolator.setMode(frameGenerationMode)
         texture = try TestPattern.makeTexture(device: device)
         self.queue = queue
         super.init()
@@ -121,7 +132,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         presentationGeneration = UUID()
         awaitingFirstFrame = source != nil
         restartHUD()
+        interpolator.reset()
         currentVideo = nil
+        currentInterpolatedTexture = nil
         spatial = nil
         failedSpatialStatus = nil
         invalidated = true
@@ -153,24 +166,41 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         ) else { return }
 
         let next = source?.nextFrame(at: now)
-        if let next {
-            do {
-                let textures = try VideoTextures(frame: next, cache: cache)
-                if work.receivedFrame() {
-                    source?.didSkipFrame()
-                    if let live = source as? LiveVideo, let previous = currentVideo?.frame, let rtp = previous.sourceRTP {
-                        live.frameTrace.note(.rendererReplaced, rtp: rtp, frameID: previous.id)
-                    }
-                }
-                currentVideo = textures
+        let displayOutput: FrameInterpolationScheduler.Output?
+        if frameGenerationMode != .off {
+            if let next {
+                displayOutput = interpolator.ingest(frame: next, at: now, isLive: source is LiveVideo)
+                    ?? interpolator.pollDisplay(at: now)
+            } else {
+                displayOutput = interpolator.pollDisplay(at: now)
             }
-            catch {
-                source?.fail(error.localizedDescription)
-                view.isPaused = true
-                return
+        } else {
+            displayOutput = next.map { .real($0) }
+        }
+        if let displayOutput {
+            switch displayOutput {
+            case .real(let frame):
+                do {
+                    let textures = try VideoTextures(frame: frame, cache: cache)
+                    if work.receivedFrame() {
+                        source?.didSkipFrame()
+                        if let live = source as? LiveVideo, let previous = currentVideo?.frame, let rtp = previous.sourceRTP {
+                            live.frameTrace.note(.rendererReplaced, rtp: rtp, frameID: previous.id)
+                        }
+                    }
+                    currentVideo = textures
+                    currentInterpolatedTexture = nil
+                } catch {
+                    source?.fail(error.localizedDescription)
+                    view.isPaused = true
+                    return
+                }
+            case .interpolated(let box, _, _, let sourceFrame):
+                _ = work.receivedFrame()
+                currentInterpolatedTexture = (box, sourceFrame)
             }
         }
-        if source != nil && currentVideo == nil { return }
+        if source != nil && currentVideo == nil && currentInterpolatedTexture == nil { return }
         guard work.needsDraw(hasSource: source != nil, resized: invalidated || lastDrawableSize != view.drawableSize) else { return }
         // Acquire scarce drawables only after determining that work is necessary.
         let drawableStarted = CACurrentMediaTime()
@@ -179,8 +209,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         source?.performance.record(.drawableWait, seconds: CACurrentMediaTime() - drawableStarted)
         guard let pass = renderPass, let drawable = acquiredDrawable,
               let command = queue.makeCommandBuffer() else { source?.performance.note(.drawableMiss); return }
-        let sourceExtent = ScalingExtent(width: currentVideo?.luma.width ?? texture.width,
-                                         height: currentVideo?.luma.height ?? texture.height)
+        let sourceExtent = ScalingExtent(
+            width: currentInterpolatedTexture?.box.texture.width ?? currentVideo?.luma.width ?? texture.width,
+            height: currentInterpolatedTexture?.box.texture.height ?? currentVideo?.luma.height ?? texture.height
+        )
         var plan = ScalingPlan.make(mode: scalingMode, source: sourceExtent,
             canvas: ScalingExtent(width: drawable.texture.width, height: drawable.texture.height),
             fullscreen: view.window?.styleMask.contains(.fullScreen) == true, supported: supportsSpatial)
@@ -253,15 +285,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         let scalingRevision = source?.performance.setScaling(plan.status)
         let retainedVideo = currentVideo
+        let retainedInterpolated = currentInterpolatedTexture?.box
         let permit = inFlight
         let activeSource = source
         let sample: FramePresentation?
-        if work.pendingFrame, let source, let frame = currentVideo?.frame {
+        if work.pendingFrame, let source, let frame = currentInterpolatedTexture?.sourceFrame ?? currentVideo?.frame {
             sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(), sourceRTP: frame.sourceRTP, frameID: frame.id)
         } else { sample = nil }
         let generation = presentationGeneration
         command.addCompletedHandler { [weak self] command in
             withExtendedLifetime(retainedVideo) {}
+            withExtendedLifetime(retainedInterpolated) {}
             if let counter {
                 if command.status == .completed, let seconds = SpatialUpscaler.scalerSeconds(counter), let scalingRevision {
                     activeSource?.performance.recordScaler(seconds: seconds, revision: scalingRevision)
@@ -321,7 +355,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             scalingReport?(status)
         }
         let state = source?.playbackState ?? "Ended"
-        let wanted = renderWorkerEnabled && source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+        let wanted = renderWorkerEnabled && frameGenerationMode == .off && source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
             && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
         if wanted, !workerOwnsDrawing, !workerHandingBack {
             workerOwnsDrawing = true; worker.setActive(true)
@@ -337,7 +371,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func encodeSource(_ encoder: any MTLRenderCommandEncoder, integer: Bool) {
-        if let video = currentVideo {
+        if let interp = currentInterpolatedTexture {
+            encoder.setRenderPipelineState(integer ? nearestPipeline : pipeline)
+            encoder.setFragmentTexture(interp.box.texture, index: 0)
+        } else if let video = currentVideo {
             encoder.setRenderPipelineState(integer ? integerVideoPipeline : videoPipeline)
             encoder.setFragmentTexture(video.luma, index: 0)
             encoder.setFragmentTexture(video.chroma, index: 1)
