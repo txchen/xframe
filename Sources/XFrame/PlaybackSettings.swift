@@ -179,7 +179,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
             addRow(.scaling)
             stack.addArrangedSubview(effectiveLabel)
             effectiveLabel.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
-            if scaling == .metalFX { addRow(.sharpening) }
+            if scaling == .metalFX || scaling == .fsr1 { addRow(.sharpening) }
             addRow(.frameGeneration)
             addRow(.hud)
             section(cloud ? "Audio & Input" : "Input")

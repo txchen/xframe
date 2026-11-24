@@ -15,7 +15,10 @@ struct CloudStreamSettingsView: View {
                 Picker("Stream quality", selection: $library.streamPreferences.quality) {
                     ForEach(CloudStreamQuality.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                Text("HQ requests higher streaming quality. Resolution and bitrate depend on the game, subscription and service. Bitrate is negotiated automatically.")
+                Picker("Max video bitrate", selection: $library.streamPreferences.maxBitrate) {
+                    ForEach(CloudMaxBitrate.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                Text("HQ requests higher streaming quality. Auto lets WebRTC negotiate bitrate; choosing a cap sets SDP video bandwidth limits for the next session.")
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

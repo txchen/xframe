@@ -3,6 +3,7 @@ import GameController
 import CoreHaptics
 
 struct RumbleCommand: Equatable, Sendable {
+    let gamepadIndex: UInt8
     let strong: Double
     let weak: Double
     let leftTrigger: Double
@@ -11,9 +12,13 @@ struct RumbleCommand: Equatable, Sendable {
     let delay: TimeInterval
     let repeatCount: Int
 
-    // Match XStreaming's ordinary controller path: use the transmitted duration
-    // and motor levels, replacing the preceding command. Other clients disagree
-    // about scheduling delay/repeat, so retain them without expanding them here.
+    init(gamepadIndex: UInt8 = 0, strong: Double, weak: Double, leftTrigger: Double, rightTrigger: Double,
+         duration: TimeInterval, delay: TimeInterval, repeatCount: Int) {
+        self.gamepadIndex = gamepadIndex; self.strong = strong; self.weak = weak
+        self.leftTrigger = leftTrigger; self.rightTrigger = rightTrigger
+        self.duration = duration; self.delay = delay; self.repeatCount = repeatCount
+    }
+
     var pulse: RumblePulse? {
         guard max(strong, weak, leftTrigger, rightTrigger) > 0 else { return nil }
         return RumblePulse(leftHandle: strong, rightHandle: weak,
@@ -27,10 +32,11 @@ struct RumbleCommand: Equatable, Sendable {
         let flags = UInt16(bytes[0]) | UInt16(bytes[1]) << 8
         guard flags & 0x80 != 0 else { return nil }
         let offset = flags & 0x10 != 0 ? 10 : 2
-        guard bytes.count >= offset + 11, bytes[offset] == 0, bytes[offset + 1] == 0 else { return nil }
+        guard bytes.count >= offset + 11, bytes[offset] == 0, bytes[offset + 1] < 4 else { return nil }
         let duration = Int(bytes[offset + 6]) | Int(bytes[offset + 7]) << 8
         let delay = Int(bytes[offset + 8]) | Int(bytes[offset + 9]) << 8
-        return RumbleCommand(strong: min(1, Double(bytes[offset + 2]) / 100),
+        return RumbleCommand(gamepadIndex: bytes[offset + 1],
+            strong: min(1, Double(bytes[offset + 2]) / 100),
             weak: min(1, Double(bytes[offset + 3]) / 100),
             leftTrigger: min(1, Double(bytes[offset + 4]) / 100),
             rightTrigger: min(1, Double(bytes[offset + 5]) / 100),

@@ -156,6 +156,7 @@ final class XboxAccount {
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var refreshTask: Task<Void, Error>?
     @ObservationIgnored private var transferTask: Task<String, Error>?
+    @ObservationIgnored private var renewalTask: Task<Void, Never>?
 
     init(service: XboxAuthService = XboxAuthService(), store: any CredentialStore = FileCredentialStore(),
          catalogSession: URLSession? = nil,
@@ -221,6 +222,7 @@ final class XboxAccount {
 
     func cancel() {
         generation += 1
+        renewalTask?.cancel(); renewalTask = nil
         refreshTask?.cancel(); refreshTask = nil
         transferTask?.cancel(); transferTask = nil
         task?.cancel()
@@ -251,6 +253,7 @@ final class XboxAccount {
 
     private func begin(status: String) {
         generation += 1
+        renewalTask?.cancel(); renewalTask = nil
         refreshTask?.cancel(); refreshTask = nil
         transferTask?.cancel(); transferTask = nil
         isBusy = true
@@ -346,7 +349,26 @@ final class XboxAccount {
         guard run == generation else { return }
         isBusy = false
         task = nil
+        scheduleRenewal(run: run)
         loadCloudGames()
+    }
+
+    private func scheduleRenewal(run: Int) {
+        renewalTask?.cancel()
+        renewalTask = nil
+        guard hasXboxSignIn else { return }
+        renewalTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self, self.generation == run else { return }
+                let earliest = [self.accessExpires, self.homeExpires].compactMap { $0 }.min()
+                guard let earliest else { return }
+                // Renew 10 minutes before expiry so long streaming sessions stay authenticated.
+                let delay = max(60, earliest.timeIntervalSinceNow - 600)
+                do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+                guard !Task.isCancelled, self.generation == run else { return }
+                _ = try? await self.refreshAccess(run: run)
+            }
+        }
     }
 
     private func failed(_ error: Error, run: Int) {

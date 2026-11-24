@@ -14,11 +14,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private let pipeline: any MTLRenderPipelineState
     private let texture: any MTLTexture
     private let sharpenPipeline: any MTLRenderPipelineState
+    private let fsr1EasuPipeline: any MTLRenderPipelineState
+    private let fsr1RcasPipeline: any MTLRenderPipelineState
     private let videoPipeline: any MTLRenderPipelineState
     private let nearestPipeline: any MTLRenderPipelineState
     private let integerVideoPipeline: any MTLRenderPipelineState
     private let supportsSpatial: Bool
     private var spatial: SpatialUpscaler?
+    private var fsrIntermediate: (any MTLTexture)?
     private var failedSpatialStatus: ScalingStatus?
     private var invalidated = true
     var scalingMode: VideoScalingMode = .original { didSet { invalidated = true; failedSpatialStatus = nil } }
@@ -35,6 +38,16 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             interpolator.setMode(frameGenerationMode)
             currentInterpolatedTexture = nil
             invalidated = true
+        }
+    }
+    var frameGenerationStatusNote: String? { interpolator.statusNote }
+    static let vrrKey = "XFrame.Experimental.VRRAdaptiveSync"
+    static func vrrPreference(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: vrrKey)
+    }
+    var vrrEnabled = MetalRenderer.vrrPreference() {
+        didSet {
+            (playView?.layer as? CAMetalLayer)?.displaySyncEnabled = !vrrEnabled
         }
     }
     private let inFlight = DispatchSemaphore(value: 3)
@@ -105,6 +118,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         integerVideoPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
         descriptor.fragmentFunction = library.makeFunction(name: "sharpenFragment")
         sharpenPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
+        descriptor.fragmentFunction = library.makeFunction(name: "fsr1EasuVideoFragment")
+        fsr1EasuPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
+        descriptor.fragmentFunction = library.makeFunction(name: "fsr1RcasFragment")
+        fsr1RcasPipeline = try device.makeRenderPipelineState(descriptor: descriptor)
         supportsSpatial = MTLFXSpatialScalerDescriptor.supportsDevice(device)
         var cache: CVMetalTextureCache?
         guard CVMetalTextureCacheCreate(nil, nil, device, nil, &cache) == kCVReturnSuccess, let cache else {
@@ -128,6 +145,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         stopRenderWorker()
         self.source = source
         playView = view
+        (view.layer as? CAMetalLayer)?.displaySyncEnabled = !vrrEnabled
         if renderWorkerEnabled, let live = source as? LiveVideo { startRenderWorker(live: live, view: view) }
         presentationGeneration = UUID()
         awaitingFirstFrame = source != nil
@@ -137,6 +155,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         currentInterpolatedTexture = nil
         CVMetalTextureCacheFlush(cache, 0)
         spatial = nil
+        fsrIntermediate = nil
         failedSpatialStatus = nil
         invalidated = true
         work = RenderWorkState()
@@ -232,6 +251,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                 }
             }
         } else { spatial = nil }
+        let activeFSR: (any MTLTexture)?
+        if plan.status.effective == .fsr1, currentVideo != nil, currentInterpolatedTexture == nil {
+            if fsrIntermediate?.width != plan.status.output.width || fsrIntermediate?.height != plan.status.output.height {
+                let d = MTLTextureDescriptor.texture2DDescriptor(
+                    pixelFormat: view.colorPixelFormat,
+                    width: plan.status.output.width, height: plan.status.output.height, mipmapped: false
+                )
+                d.storageMode = .private
+                d.usage = [.renderTarget, .shaderRead]
+                fsrIntermediate = view.device?.makeTexture(descriptor: d)
+            }
+            activeFSR = fsrIntermediate
+        } else {
+            fsrIntermediate = nil
+            activeFSR = nil
+        }
         let activeSpatial = plan.status.effective == .metalFX ? spatial : nil
         let counter = activeSpatial?.takeCounter()
         var counterSubmitted = false
@@ -256,6 +291,20 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             conversion.endEncoding()
             activeSpatial.scaler.encode(commandBuffer: command)
         }
+        if let activeFSR, let video = currentVideo {
+            let easuPass = MTLRenderPassDescriptor()
+            easuPass.colorAttachments[0].texture = activeFSR
+            easuPass.colorAttachments[0].loadAction = .dontCare
+            easuPass.colorAttachments[0].storeAction = .store
+            guard let easu = command.makeRenderCommandEncoder(descriptor: easuPass) else { return }
+            easu.setRenderPipelineState(fsr1EasuPipeline)
+            easu.setFragmentTexture(video.luma, index: 0)
+            easu.setFragmentTexture(video.chroma, index: 1)
+            var conversion = video.conversion
+            easu.setFragmentBytes(&conversion, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+            easu.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+            easu.endEncoding()
+        }
         // MTKView may reuse its pass descriptor across modes. Never leave a
         // retired counter attached when this submission has no counter lease.
         pass.sampleBufferAttachments[0]!.sampleBuffer = nil
@@ -275,6 +324,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             var amount = sharpening.amount
             encoder.setFragmentBytes(&amount, length: MemoryLayout<Float>.size, index: 0)
             encoder.setFragmentTexture(activeSpatial.output, index: 0)
+            encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+        } else if let activeFSR {
+            encoder.setRenderPipelineState(fsr1RcasPipeline)
+            var sharpness = sharpening == .off ? Float(0.35) : min(1.0, 0.35 + sharpening.amount * 0.65)
+            encoder.setFragmentBytes(&sharpness, length: MemoryLayout<Float>.size, index: 0)
+            encoder.setFragmentTexture(activeFSR, index: 0)
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         } else { encodeSource(encoder, integer: plan.status.effective == .integer) }
         encoder.endEncoding()
@@ -344,7 +399,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
               let worker = try? OriginalPresenter(queue: queue, pipeline: videoPipeline, inFlight: inFlight,
                                                    presentationQueue: presentationQueue, layer: layer, device: device,
                                                    integerPipeline: integerVideoPipeline, patternPipeline: pipeline,
-                                                   sharpenPipeline: sharpenPipeline, supportsSpatial: supportsSpatial) else { return }
+                                                   sharpenPipeline: sharpenPipeline, fsr1EasuPipeline: fsr1EasuPipeline,
+                                                   fsr1RcasPipeline: fsr1RcasPipeline, supportsSpatial: supportsSpatial) else { return }
         worker.configure(source: live)
         worker.configureRender(scalingMode: scalingMode, sharpening: sharpening,
                                fullscreen: view.window?.styleMask.contains(.fullScreen) == true)

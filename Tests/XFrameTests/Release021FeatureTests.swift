@@ -1,0 +1,105 @@
+import CoreVideo
+import Foundation
+import Metal
+import Testing
+@testable import XFrame
+
+@Test func sceneCutDetectionDistinguishesCutsFromMotion() throws {
+    func filled(_ value: UInt8) throws -> LumaFingerprint {
+        var pb: CVPixelBuffer?
+        let status = CVPixelBufferCreate(
+            kCFAllocatorDefault, 128, 72,
+            kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
+            [kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]] as CFDictionary,
+            &pb
+        )
+        #expect(status == kCVReturnSuccess)
+        let buffer = try #require(pb)
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        if let base = CVPixelBufferGetBaseAddressOfPlane(buffer, 0) {
+            memset(base, Int32(value), CVPixelBufferGetBytesPerRowOfPlane(buffer, 0) * CVPixelBufferGetHeightOfPlane(buffer, 0))
+        }
+        return try #require(LumaFingerprint.capture(from: buffer))
+    }
+
+    let dark = try filled(20)
+    let slightlyBrighter = try filled(35)
+    let flash = try filled(210)
+    #expect(!slightlyBrighter.isSceneCut(from: dark))
+    #expect(flash.isSceneCut(from: dark))
+}
+
+@Test func recentlyPlayedStoreOrdersMostRecentFirstAndFiltersQuery() throws {
+    let suite = "XFrameTests.Recent.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let store = RecentlyPlayedStore(defaults: defaults)
+    var recent = store.load()
+    #expect(recent.isEmpty)
+    recent = store.record("B", existing: recent)
+    recent = store.record("A", existing: recent)
+    recent = store.record("B", existing: recent)
+    #expect(recent == ["B", "A"])
+    #expect(store.load() == ["B", "A"])
+
+    let games = [
+        CloudGame(id: "A", name: "Alpha", productID: nil, access: .init(entitled: true)),
+        CloudGame(id: "B", name: "Beta", productID: nil, access: .init(entitled: true)),
+        CloudGame(id: "C", name: "Gamma", productID: nil, access: .init(entitled: true)),
+    ]
+    var query = GameLibraryQuery()
+    query.recentlyPlayedOnly = true
+    let page = query.page(in: games, favorites: [], recentlyPlayed: recent)
+    #expect(page.games.map(\.id) == ["B", "A"])
+}
+
+@Test func sdpBitrateAppliesOnlyToVideoSection() {
+    let sdp = [
+        "v=0",
+        "m=audio 9 UDP/TLS/RTP/SAVPF 111",
+        "c=IN IP4 0.0.0.0",
+        "m=video 9 UDP/TLS/RTP/SAVPF 96",
+        "c=IN IP4 0.0.0.0",
+        "b=AS:10000",
+        "a=rtpmap:96 H264/90000"
+    ].joined(separator: "\r\n")
+
+    let updated = SDPBitrate.apply(sdp: sdp, maxMbps: 20)
+    #expect(updated.contains("b=AS:20000\r\nb=TIAS:20000000"))
+    #expect(!updated.contains("b=AS:10000"))
+    let audioPart = updated.components(separatedBy: "m=video")[0]
+    #expect(!audioPart.contains("b=AS:"))
+}
+
+@Test func fsr1ScalingPlanAndShadersCompile() throws {
+    let plan = ScalingPlan.make(mode: .fsr1, source: .init(width: 1920, height: 1080),
+                                canvas: .init(width: 3840, height: 2160), fullscreen: false, supported: false)
+    #expect(plan.status.effective == .fsr1)
+    #expect(plan.status.bypass == nil)
+    #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .fsr1, metalFXGpuEMA: 0.003) > 0.003)
+
+    let sameSize = ScalingPlan.make(mode: .fsr1, source: .init(width: 1920, height: 1080),
+                                    canvas: .init(width: 1920, height: 1080), fullscreen: false, supported: true)
+    #expect(sameSize.status.effective == .original && sameSize.status.bypass == .noEnlargement)
+
+    let device = try #require(MTLCreateSystemDefaultDevice())
+    let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    let source = try String(contentsOf: root.appendingPathComponent("Sources/XFrame/Shaders.metal"), encoding: .utf8)
+    let library = try device.makeLibrary(source: source, options: nil)
+    #expect(library.makeFunction(name: "fsr1EasuVideoFragment") != nil)
+    #expect(library.makeFunction(name: "fsr1RcasFragment") != nil)
+}
+
+@Test func multiControllerPacketIndexAndRumbleIndex() throws {
+    let packet = try GamepadPacketEncoder.encode(GamepadSnapshot(buttons: [.a]), sequence: 1, timestampMS: 10, gamepadIndex: 2)
+    #expect(packet[15] == 2)
+
+    var rumbleBytes: [UInt8] = [0x80, 0x00, 0x00, 0x02, 50, 25, 0, 0, 0xF4, 0x01, 0, 0, 0]
+    let cmd = try #require(RumbleCommand.parse(Data(rumbleBytes)))
+    #expect(cmd.gamepadIndex == 2)
+    #expect(cmd.strong == 0.5 && cmd.weak == 0.25)
+
+    rumbleBytes[3] = 4 // Out of 0..3 range rejected
+    #expect(RumbleCommand.parse(Data(rumbleBytes)) == nil)
+}

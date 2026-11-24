@@ -56,14 +56,14 @@ struct GamepadInput {
 
     // Commit the sequence and dequeue only when the transport accepts the bytes.
     @discardableResult
-    mutating func send(timestampMS: Double, minimumButtonHoldMS: Double = 0, transport: (Data) -> Bool) -> Bool {
+    mutating func send(timestampMS: Double, minimumButtonHoldMS: Double = 0, gamepadIndex: UInt8 = 0, transport: (Data) -> Bool) -> Bool {
         let next = queue.first ?? latest
         let releasing = !sent.buttons.subtracting(next.buttons).isEmpty ||
             (sent.leftTrigger > 0 && next.leftTrigger == 0) || (sent.rightTrigger > 0 && next.rightTrigger == 0)
         let holding = !needsNeutral && releasing && timestampMS - pressedAtMS < minimumButtonHoldMS
         let state = needsNeutral ? GamepadSnapshot() : holding ? sent : next
         var candidate = encoder
-        guard let packet = try? candidate.packet(state, timestampMS: timestampMS), transport(packet) else { return false }
+        guard let packet = try? candidate.packet(state, timestampMS: timestampMS, gamepadIndex: gamepadIndex), transport(packet) else { return false }
         encoder = candidate
         if !state.buttons.subtracting(sent.buttons).isEmpty ||
             (state.leftTrigger > 0 && sent.leftTrigger == 0) || (state.rightTrigger > 0 && sent.rightTrigger == 0) {

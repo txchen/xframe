@@ -66,9 +66,13 @@ struct GameBrowserView: View {
             emptyState("Find your next game", subtitle: "Sign in, choose a region, then load the cloud catalog.", icon: "gamecontroller")
         } else if library.page.total == 0 {
             VStack {
-                emptyState(library.query.favoritesOnly ? "No matching favorites" : "No games found",
+                let emptyTitle = library.query.recentlyPlayedOnly ? "No recently played games"
+                    : library.query.favoritesOnly ? "No matching favorites" : "No games found"
+                emptyState(emptyTitle,
                     subtitle: "Try another filter. All cloud games includes unavailable and unverified titles.", icon: "magnifyingglass")
-                Button("Reset Filters") { library.updateQuery { $0.search = ""; $0.category = ""; $0.favoritesOnly = false; $0.access = .playable } }
+                Button("Reset Filters") {
+                    library.updateQuery { $0.search = ""; $0.category = ""; $0.favoritesOnly = false; $0.recentlyPlayedOnly = false; $0.access = .playable }
+                }
                 Button("Browse All Cloud Games") { library.updateQuery { $0.access = .all } }
                     .padding(.bottom, 20)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -145,15 +149,8 @@ private struct GameLibraryCard: View {
             Button(action: select) {
                 VStack(alignment: .leading, spacing: 8) {
                     GeometryReader { geometry in
-                    AsyncImage(url: game.posterURL) { phase in
-                        if let image = phase.image { image.resizable().scaledToFill() }
-                        else {
-                            ZStack {
-                                LinearGradient(colors: [LibraryStyle.surface, LibraryStyle.sidebar], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                Image(systemName: "gamecontroller").font(.system(size: 32)).foregroundStyle(.secondary)
-                            }
-                        }
-                    }.id(artworkRevision).frame(width: geometry.size.width, height: geometry.size.height).clipped().accessibilityHidden(true)
+                        CachedPosterImage(url: game.posterURL, revision: artworkRevision)
+                            .frame(width: geometry.size.width, height: geometry.size.height).clipped().accessibilityHidden(true)
                     }.aspectRatio(2.0 / 3.0, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     Text(game.name).font(.system(size: large ? 21 : 18, weight: .semibold)).lineLimit(2).frame(height: large ? 54 : 48, alignment: .topLeading)

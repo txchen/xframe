@@ -102,12 +102,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var scalingMenuItems: [NSMenuItem] = []
     private var frameGenerationMenuItems: [NSMenuItem] = []
     private var renderWorkerMenuItem: NSMenuItem?
+    private var vrrMenuItem: NSMenuItem?
     private var zeroPlayoutMenuItem: NSMenuItem?
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
     private var rumbleMenuItem: NSMenuItem?
     private var keyboardMenuItem: NSMenuItem?
     private var keyboardMonitor: Any?
+    private var mouseMonitor: Any?
+    private let displayAssertion = PlaybackDisplayAssertion()
+    private let cursorHider = FullscreenCursorHider()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         WebRTCFieldTrials.configureIfNeeded()
@@ -115,6 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
             guard let self else { return event }
             return self.handleKeyboard(event)
+        }
+        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.cursorHider.mouseMoved()
+            return event
         }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemWillSleep(_:)),
             name: NSWorkspace.willSleepNotification, object: nil)
@@ -217,7 +225,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             ])
             renderer.report = { [weak self] stats in
                 guard let self else { return }
-                self.diagnostics.update(stats, controller: self.account.library.controllerStatus,
+                let fgNote = self.renderer?.frameGenerationStatusNote
+                let controller = fgNote.map { "\(self.account.library.controllerStatus) · \($0)" } ?? self.account.library.controllerStatus
+                self.diagnostics.update(stats, controller: controller,
                     quality: self.account.library.activeStreamPreferences?.quality)
             }
             window.contentView = content
@@ -245,10 +255,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 view.updateBackingSize()
                 self.diagnostics.showMessage(source == nil ? "Stream playback stopped" : self.account.library.sessionSource == .home ? "Connecting console video…" : "Connecting cloud video…")
                 if source != nil {
+                    self.displayAssertion.acquire(reason: "XFrame active Xbox stream")
                     self.playbackPresentation?.showWindowed()
                 } else if self.account.library.ownsSession {
+                    self.displayAssertion.release()
                     self.presentTermination(self.account.library.termination)
                 } else {
+                    self.displayAssertion.release()
                     self.hidePlaybackWindow()
                 }
             }
@@ -286,12 +299,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     func applicationWillTerminate(_ notification: Notification) {
         benchmarkModel?.cancel()
+        displayAssertion.release()
+        cursorHider.reveal()
         if let keyboardMonitor { NSEvent.removeMonitor(keyboardMonitor) }
+        if let mouseMonitor { NSEvent.removeMonitor(mouseMonitor) }
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         panelInput.stop()
         playback?.stop(); account.cancel()
     }
-    @objc private func systemWillSleep(_ notification: Notification) { account.library.systemWillSleep() }
+    @objc private func systemWillSleep(_ notification: Notification) {
+        displayAssertion.release()
+        cursorHider.reveal()
+        account.library.systemWillSleep()
+    }
     @objc private func systemDidWake(_ notification: Notification) { account.library.systemDidWake() }
 
     @objc private func showXboxAccount() {
@@ -367,6 +387,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         videoView.sourceName = url.lastPathComponent
         videoView.updateBackingSize()
         renderer.play(source, in: videoView)
+        displayAssertion.acquire(reason: "XFrame local video playback")
         playbackPresentation?.showWindowed()
     }
 
@@ -385,6 +406,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func hidePlaybackWindow() {
+        displayAssertion.release()
+        cursorHider.reveal()
         connectingView?.isHidden = true
         hidePlaybackSettings(force: true)
         playbackPresentation?.hide()
@@ -408,6 +431,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     private func updateControllerFocus() {
         account.library.playbackFocused = NSApp.isActive && window?.isKeyWindow == true
+        updateCursorAutoHide()
+    }
+    private func updateCursorAutoHide() {
+        let fullscreen = window?.styleMask.contains(.fullScreen) == true
+        let eligible = fullscreen && NSApp.isActive && window?.isKeyWindow == true && playbackSettings.isHidden
+        cursorHider.update(eligible: eligible)
+    }
+    @objc private func toggleVRR(_ sender: NSMenuItem) {
+        let enabled = !MetalRenderer.vrrPreference()
+        UserDefaults.standard.set(enabled, forKey: MetalRenderer.vrrKey)
+        renderer?.vrrEnabled = enabled
+        sender.state = enabled ? .on : .off
+        videoView?.needsDisplay = true
     }
     @objc private func toggleControllerInput(_ sender: NSMenuItem) {
         account.library.controllerEnabled.toggle()
@@ -592,6 +628,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         refreshPlaybackControls()
         account.library.playbackSettingsVisible = true
         playbackSettings.show(scaling: scalingMode, hud: hudPreset)
+        updateCursorAutoHide()
         startPanelInput()
     }
     private func hidePlaybackSettings(force: Bool = false) {
@@ -600,6 +637,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         playbackSettings.hide()
         panelInput.stop()
         account.library.playbackSettingsVisible = false
+        updateCursorAutoHide()
     }
     private func refreshPlaybackControls() {
         playbackSettings.configure(cloud: account.library.ownsSession,
@@ -704,6 +742,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         renderWorkerMenuItem?.target = self
         renderWorkerMenuItem?.toolTip = "Renders Original, Integer, and MetalFX Spatial on a dedicated real-time thread with adaptive VSync lead."
         renderWorkerMenuItem?.state = MetalRenderer.renderWorkerPreference() ? .on : .off
+        vrrMenuItem = viewMenu.addItem(withTitle: "VRR / Adaptive Sync (Disable VSync)", action: #selector(toggleVRR(_:)), keyEquivalent: "")
+        vrrMenuItem?.target = self
+        vrrMenuItem?.toolTip = "Disables CAMetalLayer displaySyncEnabled for HDMI 2.1 VRR / FreeSync displays. May tear on fixed-refresh screens."
+        vrrMenuItem?.state = MetalRenderer.vrrPreference() ? .on : .off
         zeroPlayoutMenuItem = viewMenu.addItem(withTitle: "Zero Playout Delay (WebRTC)", action: #selector(toggleZeroPlayoutDelay(_:)), keyEquivalent: "")
         zeroPlayoutMenuItem?.target = self
         zeroPlayoutMenuItem?.toolTip = "Applies WebRTC-ForcePlayoutDelay (min_ms:0,max_ms:0) to minimize jitter-buffer wait. Takes effect on next launch."

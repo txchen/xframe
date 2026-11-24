@@ -54,16 +54,52 @@ enum WebRTCFieldTrials {
     }
 }
 
+enum SDPBitrate {
+    /// Applies a maximum video bitrate cap (in Mbps) to the `m=video` section of an SDP.
+    static func apply(sdp: String, maxMbps: Int) -> String {
+        guard maxMbps > 0 else { return sdp }
+        let separator = sdp.contains("\r\n") ? "\r\n" : "\n"
+        let lines = sdp.components(separatedBy: separator)
+        var out: [String] = []
+        out.reserveCapacity(lines.count + 2)
+        var inVideo = false
+        var inserted = false
+        let kbps = maxMbps * 1000
+        let bps = kbps * 1000
+        for line in lines {
+            if line.hasPrefix("m=") {
+                inVideo = line.hasPrefix("m=video ")
+                inserted = false
+                out.append(line)
+                continue
+            }
+            if inVideo && (line.hasPrefix("b=AS:") || line.hasPrefix("b=TIAS:")) {
+                continue
+            }
+            out.append(line)
+            if inVideo && !inserted && line.hasPrefix("c=") {
+                out.append("b=AS:\(kbps)")
+                out.append("b=TIAS:\(bps)")
+                inserted = true
+            }
+        }
+        return out.joined(separator: separator)
+    }
+}
+
 @MainActor
 final class CloudVideoConnection {
     let video: LiveVideo
-    init(framePacing: FramePacingMode = .balanced, quality: CloudStreamQuality = .standard, requireLocalMedia: Bool = false) {
+    init(framePacing: FramePacingMode = .balanced, quality: CloudStreamQuality = .standard,
+         maxBitrate: CloudMaxBitrate = .auto, requireLocalMedia: Bool = false) {
         video = LiveVideo(framePacing: framePacing)
         self.quality = quality
+        self.maxBitrate = maxBitrate
         self.requireLocalMedia = requireLocalMedia
         if requireLocalMedia { audio.configure(muted: true, volume: requestedVolume) }
     }
     private let quality: CloudStreamQuality
+    private let maxBitrate: CloudMaxBitrate
     private let requireLocalMedia: Bool
     private var localGate = LocalPathGate()
     private var localPathVerified: Bool { localGate.isVerified }
@@ -93,6 +129,10 @@ final class CloudVideoConnection {
         keyboard.release(); input.release(); settingsShortcut.reset()
         controllerBarrier.pause(gamepad.sample())
         ownership.reset()
+        for slot in 1..<NativeGamepad.maxControllers {
+            secondaryInputs[slot].release()
+            secondaryBarriers[slot].pause(gamepad.sample(slot: slot))
+        }
     }
     private func handoffInput() {
         keyboard.release(); input.release(); settingsShortcut.reset()
@@ -133,6 +173,11 @@ final class CloudVideoConnection {
     }
     private let gamepad = NativeGamepad()
     private var input = GamepadInput()
+    private var secondaryInputs: [GamepadInput] = (0..<NativeGamepad.maxControllers).map { _ in GamepadInput() }
+    private var secondaryBarriers: [ControllerReleaseBarrier] = (0..<NativeGamepad.maxControllers).map { _ in ControllerReleaseBarrier() }
+    private var secondaryAdvertised = Array(repeating: false, count: NativeGamepad.maxControllers)
+    private var secondaryReset = Array(repeating: false, count: NativeGamepad.maxControllers)
+    private var secondaryAddAfter = Array(repeating: 0.0, count: NativeGamepad.maxControllers)
     private var settingsShortcut = GamepadSettingsShortcut()
     var showPlaybackSettings: (() -> Void)?
     var settingsGamepad: ((GamepadSnapshot) -> Void)?
@@ -226,6 +271,15 @@ final class CloudVideoConnection {
             }
             self.releaseInput()
         }
+        gamepad.slotChanged = { [weak self] slot, state in
+            guard let self, slot > 0, slot < NativeGamepad.maxControllers else { return }
+            self.secondaryControllerEvent(slot: slot, state: state, immediate: true)
+        }
+        gamepad.slotReplaced = { [weak self] slot in
+            guard let self, slot > 0, slot < NativeGamepad.maxControllers else { return }
+            self.secondaryInputs[slot].release()
+            self.secondaryBarriers[slot].pause(self.gamepad.sample(slot: slot))
+        }
         inputTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 self?.tickInput()
@@ -271,7 +325,9 @@ final class CloudVideoConnection {
         try checkActive()
         let answer = try await service.exchangeSDP(at: session, offer: offer)
         try checkActive()
-        try await setDescription(peer, sdp: filteredSDP(answer, side: .remote), local: false)
+        let filteredAnswer = try filteredSDP(answer, side: .remote)
+        let finalAnswer = maxBitrate == .auto ? filteredAnswer : SDPBitrate.apply(sdp: filteredAnswer, maxMbps: maxBitrate.rawValue)
+        try await setDescription(peer, sdp: finalAnswer, local: false)
         let gatherDeadline = ContinuousClock.now.advanced(by: .seconds(8))
         while !gatheringComplete && ContinuousClock.now < gatherDeadline {
             try await Task.sleep(for: .milliseconds(100))
@@ -504,6 +560,13 @@ final class CloudVideoConnection {
             }
             _ = send(["message": "gamepadChanged", "gamepadIndex": 0, "wasAdded": false], on: "control")
         }
+        for slot in 1..<NativeGamepad.maxControllers where secondaryAdvertised[slot] && (!requireLocalMedia || localPathVerified) {
+            _ = secondaryInputs[slot].send(timestampMS: CACurrentMediaTime() * 1000, gamepadIndex: UInt8(slot)) { [self] data in
+                channels["input"]?.sendData(RTCDataBuffer(data: data, isBinary: true)) ?? false
+            }
+            _ = send(["message": "gamepadChanged", "gamepadIndex": slot, "wasAdded": false], on: "control")
+            secondaryAdvertised[slot] = false
+        }
         if requireLocalMedia { updateLocalGate { $0.close() } }
         statsRequest = nil
         gamepad.stop()
@@ -687,7 +750,10 @@ final class CloudVideoConnection {
         if ownership.active == .keyboard { processGamepad(keyboard.snapshot) }
         else if ownership.active == nil && keyboardEnabled { processGamepad(GamepadSnapshot()) }
         if advertised { _ = sendInput(on: channel, now: now) }
-        let name = ownership.active == .keyboard ? "Keyboard" : ownership.active == .controller || !keyboardEnabled ? (gamepad.name ?? "Gamepad") : "Keyboard / Controller · awaiting input"
+        tickSecondaryControllers(on: channel, now: now)
+        let extra = (1..<NativeGamepad.maxControllers).filter { secondaryAdvertised[$0] }.count
+        let baseName = ownership.active == .keyboard ? "Keyboard" : ownership.active == .controller || !keyboardEnabled ? (gamepad.name ?? "Gamepad") : "Keyboard / Controller · awaiting input"
+        let name = extra > 0 ? "\(baseName) (+\(extra))" : baseName
         if !inputEnabled { controllerStatus = "Game input off (View menu)" }
         else if !inputConnected { controllerStatus = "Connect a controller" }
         else if !playbackFocused { controllerStatus = "\(name) · paused (focus playback)" }
@@ -711,6 +777,55 @@ final class CloudVideoConnection {
         let result = settingsShortcut.process(state, now: CACurrentMediaTime())
         for state in result.states { input.update(state, ownsInput: true) }
         if result.openSettings { showPlaybackSettings?() }
+    }
+
+    private func secondaryControllerEvent(slot: Int, state: GamepadSnapshot, immediate: Bool = false) {
+        let owns = controllerEnabled && playbackFocused && !playbackSettingsVisible && secondaryAdvertised[slot]
+            && !closed && !recovering && health.disconnectedAt == nil && blockedSince == nil
+            && (!requireLocalMedia || localPathVerified)
+        let filtered = secondaryBarriers[slot].filter(state, accepting: owns)
+        secondaryInputs[slot].update(filtered, ownsInput: owns)
+        if immediate, owns, !secondaryInputs[slot].queue.isEmpty,
+           let channel = channels["input"], channel.readyState == .open {
+            _ = sendSecondaryInput(slot: slot, on: channel, now: CACurrentMediaTime())
+        }
+    }
+
+    private func tickSecondaryControllers(on channel: RTCDataChannel, now: Double) {
+        for slot in 1..<NativeGamepad.maxControllers {
+            let wanted = controllerEnabled && gamepad.isConnected(slot: slot)
+            if !wanted && !secondaryAdvertised[slot] { continue }
+            if !secondaryReset[slot] {
+                guard send(["message": "gamepadChanged", "gamepadIndex": slot, "wasAdded": false], on: "control") else { continue }
+                secondaryReset[slot] = true
+                secondaryAddAfter[slot] = now + 0.5
+            }
+            if secondaryAdvertised[slot] && !wanted {
+                secondaryInputs[slot].release()
+                _ = sendSecondaryInput(slot: slot, on: channel, now: now)
+                if send(["message": "gamepadChanged", "gamepadIndex": slot, "wasAdded": false], on: "control") {
+                    secondaryAdvertised[slot] = false
+                    secondaryAddAfter[slot] = now + 0.5
+                }
+            }
+            if wanted && !secondaryAdvertised[slot] && now >= secondaryAddAfter[slot] {
+                if send(["message": "gamepadChanged", "gamepadIndex": slot, "wasAdded": true], on: "control") {
+                    secondaryAdvertised[slot] = true
+                    secondaryInputs[slot].release()
+                }
+            }
+            if secondaryAdvertised[slot] {
+                secondaryControllerEvent(slot: slot, state: gamepad.sample(slot: slot))
+                _ = sendSecondaryInput(slot: slot, on: channel, now: now)
+            }
+        }
+    }
+
+    private func sendSecondaryInput(slot: Int, on channel: RTCDataChannel, now: Double) -> Bool {
+        guard !closed, !requireLocalMedia || localPathVerified else { return false }
+        return secondaryInputs[slot].send(timestampMS: now * 1000, gamepadIndex: UInt8(slot)) { data in
+            channel.bufferedAmount < 4096 && channel.sendData(RTCDataBuffer(data: data, isBinary: true))
+        }
     }
 
     private func flushInputNow() {

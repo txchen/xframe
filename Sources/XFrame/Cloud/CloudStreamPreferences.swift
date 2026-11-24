@@ -28,11 +28,25 @@ enum CloudGameLanguage: String, CaseIterable, Sendable {
     }
 }
 
+enum CloudMaxBitrate: Int, CaseIterable, Sendable {
+    case auto = 0
+    case mbps10 = 10
+    case mbps15 = 15
+    case mbps20 = 20
+    case mbps30 = 30
+    case mbps50 = 50
+    var title: String { self == .auto ? "Auto" : "\(rawValue) Mbps" }
+}
+
 struct CloudStreamPreferences: Equatable, Sendable {
     var quality: CloudStreamQuality = .standard
     var language: CloudGameLanguage = .english
     var framePacing: FramePacingMode = .balanced
-    var summary: String { "\(quality.title) · \(language.title) · \(framePacing.title)" }
+    var maxBitrate: CloudMaxBitrate = .auto
+    var summary: String {
+        let base = "\(quality.title) · \(language.title) · \(framePacing.title)"
+        return maxBitrate == .auto ? base : "\(base) · \(maxBitrate.title)"
+    }
 }
 
 struct CloudStreamPreferencesStore {
@@ -41,11 +55,13 @@ struct CloudStreamPreferencesStore {
         CloudStreamPreferences(
             quality: defaults.string(forKey: "XFrame.StreamQuality").flatMap(CloudStreamQuality.init(rawValue:)) ?? .standard,
             language: defaults.string(forKey: "XFrame.GameLanguage").flatMap(CloudGameLanguage.init(rawValue:)) ?? .english,
-            framePacing: defaults.string(forKey: "XFrame.FramePacing").flatMap(FramePacingMode.init(rawValue:)) ?? .balanced)
+            framePacing: defaults.string(forKey: "XFrame.FramePacing").flatMap(FramePacingMode.init(rawValue:)) ?? .balanced,
+            maxBitrate: CloudMaxBitrate(rawValue: defaults.integer(forKey: "XFrame.MaxBitrateMbps")) ?? .auto)
     }
     func save(_ value: CloudStreamPreferences) {
         defaults.set(value.framePacing.rawValue, forKey: "XFrame.FramePacing")
         defaults.set(value.quality.rawValue, forKey: "XFrame.StreamQuality")
         defaults.set(value.language.rawValue, forKey: "XFrame.GameLanguage")
+        defaults.set(value.maxBitrate.rawValue, forKey: "XFrame.MaxBitrateMbps")
     }
 }

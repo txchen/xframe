@@ -63,13 +63,13 @@ struct GamepadPacketEncoder {
     init(lastSequence: UInt32 = 0) { sequence = lastSequence }
 
     mutating func reset() { sequence = 0 }
-    mutating func packet(_ state: GamepadSnapshot, timestampMS: Double) throws -> Data {
+    mutating func packet(_ state: GamepadSnapshot, timestampMS: Double, gamepadIndex: UInt8 = 0) throws -> Data {
         let next = sequence &+ 1
-        let data = try Self.encode(state, sequence: next, timestampMS: timestampMS)
+        let data = try Self.encode(state, sequence: next, timestampMS: timestampMS, gamepadIndex: gamepadIndex)
         sequence = next
         return data
     }
-    static func encode(_ state: GamepadSnapshot, sequence: UInt32, timestampMS: Double) throws -> Data {
+    static func encode(_ state: GamepadSnapshot, sequence: UInt32, timestampMS: Double, gamepadIndex: UInt8 = 0) throws -> Data {
         guard timestampMS.isFinite, timestampMS >= 0 else { throw EncodingError.invalidTimestamp }
         var data = Data()
         data.reserveCapacity(38)
@@ -78,7 +78,7 @@ struct GamepadPacketEncoder {
             withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
         }
         append(UInt16(2)); append(sequence); append(timestampMS.bitPattern)
-        append(UInt8(1)); append(UInt8(0)) // One physical gamepad, index zero.
+        append(UInt8(1)); append(gamepadIndex)
         append(state.buttons.reduce(UInt16(0)) { $0 | $1.rawValue })
         for axis in [state.leftX, -state.leftY, state.rightX, -state.rightY] {
             append(Int16(axis * 32767)) // Truncation toward zero, matching the reference.

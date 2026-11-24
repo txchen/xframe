@@ -89,14 +89,24 @@ struct LumaFingerprint: Equatable, Sendable {
         return LumaFingerprint(samples: out)
     }
 
-    /// Mean absolute luma difference <= 1.0 out of 255 treats consecutive 60 Hz frames as duplicate 30 fps content.
-    func isNearlyIdentical(to other: LumaFingerprint) -> Bool {
-        guard samples.count == other.samples.count, !samples.isEmpty else { return false }
+    /// Mean absolute luma difference (0...255) across the 8x8 sparse grid.
+    func meanAbsDiff(to other: LumaFingerprint) -> Double {
+        guard samples.count == other.samples.count, !samples.isEmpty else { return 0 }
         var diff = 0
         for i in 0..<samples.count {
             diff += abs(Int(samples[i]) - Int(other.samples[i]))
         }
-        return diff <= samples.count
+        return Double(diff) / Double(samples.count)
+    }
+
+    /// Mean absolute luma difference <= 1.0 treats consecutive 60 Hz frames as duplicate 30 fps content.
+    func isNearlyIdentical(to other: LumaFingerprint) -> Bool {
+        meanAbsDiff(to: other) <= 1.0
+    }
+
+    /// Large global luminance jump (>= 48 / 255) indicates a scene cut or black fade; skip interpolation to avoid ghosting.
+    func isSceneCut(from other: LumaFingerprint) -> Bool {
+        meanAbsDiff(to: other) >= 48.0
     }
 }
 
@@ -257,6 +267,7 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     private var lastLiveUniqueTime: Double = 0
     private var weightsURL: URL?
     private var downloadingWeights = false
+    private var downloadError: String?
     private var engine: CoreMLFGLiveEngine?
     private var failedProfile: CoreMLFGProfile?
     private let device: any MTLDevice
@@ -274,12 +285,23 @@ final class LiveFrameInterpolator: @unchecked Sendable {
 
     var isEnabled: Bool { mode != .off }
 
+    var statusNote: String? {
+        lock.withLock {
+            guard scheduler.mode != .off else { return nil }
+            if downloadingWeights { return "Downloading frame-generation model…" }
+            if let downloadError { return downloadError }
+            if failedProfile != nil { return "Frame generation unavailable for this stream" }
+            return nil
+        }
+    }
+
     func setMode(_ mode: FrameGenerationMode) {
         let shouldFetch: Bool = lock.withLock {
             scheduler.setMode(mode)
             lastLiveFingerprint = nil
             lastLiveUniqueTime = 0
             failedProfile = nil
+            downloadError = nil
             if mode != .off, weightsURL == nil, !downloadingWeights {
                 downloadingWeights = true
                 return true
@@ -289,10 +311,18 @@ final class LiveFrameInterpolator: @unchecked Sendable {
         if shouldFetch {
             Task.detached(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
-                let downloaded = try? await BenchmarkModelCache().download(from: BenchmarkReleaseModels.fgURL)
-                self.lock.withLock {
-                    self.downloadingWeights = false
-                    if let downloaded { self.weightsURL = downloaded }
+                do {
+                    let downloaded = try await BenchmarkModelCache().download(from: BenchmarkReleaseModels.fgURL)
+                    self.lock.withLock {
+                        self.downloadingWeights = false
+                        self.downloadError = nil
+                        self.weightsURL = downloaded
+                    }
+                } catch {
+                    self.lock.withLock {
+                        self.downloadingWeights = false
+                        self.downloadError = "Frame-generation model download failed"
+                    }
                 }
             }
         }
@@ -323,10 +353,17 @@ final class LiveFrameInterpolator: @unchecked Sendable {
                 return ((.real(frame), nil), nil)
             }
             // Suppress duplicated frames emitted by 60 Hz encoders running 30 fps games so unique frames trigger 30->60 FG.
-            if isLive, let fingerprint, let previous = lastLiveFingerprint,
-               frame.arrivedAt - lastLiveUniqueTime < FrameInterpolationScheduler.minimumSourceInterval,
-               fingerprint.isNearlyIdentical(to: previous) {
-                return ((nil, nil), nil)
+            if isLive, let fingerprint, let previous = lastLiveFingerprint {
+                if frame.arrivedAt - lastLiveUniqueTime < FrameInterpolationScheduler.minimumSourceInterval,
+                   fingerprint.isNearlyIdentical(to: previous) {
+                    return ((nil, nil), nil)
+                }
+                if fingerprint.isSceneCut(from: previous) {
+                    lastLiveFingerprint = fingerprint
+                    lastLiveUniqueTime = frame.arrivedAt
+                    scheduler.reset()
+                    return (scheduler.ingest(frame: frame, at: hostTime, isLive: isLive, width: width, height: height), weights)
+                }
             }
             if isLive {
                 lastLiveFingerprint = fingerprint

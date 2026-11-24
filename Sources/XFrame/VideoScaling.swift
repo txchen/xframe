@@ -2,10 +2,15 @@ import Foundation
 
 // Selected mode persists; effective mode is derived from the current picture.
 enum VideoScalingMode: String, CaseIterable, Codable, Sendable {
-    case original, integer, metalFX
+    case original, integer, metalFX, fsr1
     static let preferenceKey = "XFrame.VideoScaling"
     var title: String {
-        switch self { case .original: "Original"; case .integer: "Integer Scaling"; case .metalFX: "MetalFX Spatial" }
+        switch self {
+        case .original: "Original"
+        case .integer: "Integer Scaling"
+        case .metalFX: "MetalFX Spatial"
+        case .fsr1: "FSR 1 (EASU + RCAS)"
+        }
     }
 }
 
@@ -53,7 +58,7 @@ struct ScalingPlan: Equatable {
             else if mode == .integer {
                 if !fullscreen { status.bypass = .windowed }
                 else if abs(scale - scale.rounded()) > 0.000001 { status.bypass = .nonInteger }
-            } else if !supported { status.bypass = .unsupported }
+            } else if mode == .metalFX && !supported { status.bypass = .unsupported }
         }
         if status.bypass != nil { status.effective = .original }
         // Integer output starts on a backing-pixel boundary, including odd-sized black bars.

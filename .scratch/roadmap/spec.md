@@ -1,6 +1,6 @@
 # XFrame feature roadmap
 
-Updated: 2026-11-23. Latest version: 0.2.0 build 10.
+Updated: 2026-11-23. Latest version: 0.2.1 build 11.
 
 This is the agreed implementation order, not a claim that every item is fully specified. Keep this document current as features ship; link detailed specs and validation evidence rather than marking an item complete after compilation alone. The broader product requirements remain in [Design & Requirements](../../xframe_requirement.md).
 
@@ -15,7 +15,7 @@ Sections below dated 2026-09-22 are kept for history; this section supersedes th
 - **Credentials.** File-backed owner-only storage is kept by user decision; Keychain migration was reverted. [Decision](../keychain-access/issues/01-restore-keychain.md).
 - **Series X LAN.** Discovery, video, audio, keyboard and physical controller were verified on 2026-10-16. Physical wake, rumble, and extended stability remain. [Spec](../xbox-console-remote-play/spec.md).
 - **Neural rendering.** The Small NR benchmark (0.1.2) measured ~204 ms per 720p frame on M1 (feasibility evidence, not shipped). [Validation](../small-nr-benchmark/validation.md).
-- **Tests.** 232 automated tests pass on master.
+- **Tests.** 237 automated tests pass on master.
 
 ## Current baseline (2026-09-22)
 

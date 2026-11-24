@@ -149,8 +149,9 @@ struct CloudLibraryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("YOUR LIBRARY").font(.system(size: 14, weight: .semibold)).tracking(1.5)
                     .foregroundStyle(LibraryStyle.secondary).padding(.bottom, 6)
-                collectionButton("Cloud games", icon: "square.grid.2x2", favorites: false)
-                collectionButton("Favorites", icon: "star", favorites: true)
+                collectionButton("Cloud games", icon: "square.grid.2x2", favorites: false, recent: false)
+                collectionButton("Recently played", icon: "clock", favorites: false, recent: true)
+                collectionButton("Favorites", icon: "star", favorites: true, recent: false)
                 Button {
                     library.showingConsoles = true
                 } label: {
@@ -186,11 +187,14 @@ struct CloudLibraryView: View {
             .overlay(alignment: .trailing) { Rectangle().fill(LibraryStyle.border).frame(width: 1) }
     }
 
-    private func collectionButton(_ title: String, icon: String, favorites: Bool) -> some View {
-        let selected = !library.showingConsoles && library.query.favoritesOnly == favorites
+    private func collectionButton(_ title: String, icon: String, favorites: Bool, recent: Bool) -> some View {
+        let selected = !library.showingConsoles && library.query.favoritesOnly == favorites && library.query.recentlyPlayedOnly == recent
         return Button {
             library.showingConsoles = false
-            library.updateQuery { $0.favoritesOnly = favorites }
+            library.updateQuery {
+                $0.favoritesOnly = favorites
+                $0.recentlyPlayedOnly = recent
+            }
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: selected ? icon + ".fill" : icon).frame(width: 16)

@@ -1,6 +1,6 @@
 import Foundation
 import QuartzCore
-import Metal
+@preconcurrency import Metal
 import MetalFX
 import CoreVideo
 import Darwin
@@ -50,8 +50,11 @@ final class OriginalPresenter: @unchecked Sendable {
     private let integerPipeline: (any MTLRenderPipelineState)?
     private let patternPipeline: (any MTLRenderPipelineState)?
     private let sharpenPipeline: (any MTLRenderPipelineState)?
+    private let fsr1EasuPipeline: (any MTLRenderPipelineState)?
+    private let fsr1RcasPipeline: (any MTLRenderPipelineState)?
     private let supportsSpatial: Bool
     private var spatial: SpatialUpscaler?
+    private var fsrIntermediate: (any MTLTexture)?
     private var failedSpatialStatus: ScalingStatus?
     private let inFlight: DispatchSemaphore
     private let presentationQueue: PresentationQueue
@@ -66,6 +69,8 @@ final class OriginalPresenter: @unchecked Sendable {
          integerPipeline: (any MTLRenderPipelineState)? = nil,
          patternPipeline: (any MTLRenderPipelineState)? = nil,
          sharpenPipeline: (any MTLRenderPipelineState)? = nil,
+         fsr1EasuPipeline: (any MTLRenderPipelineState)? = nil,
+         fsr1RcasPipeline: (any MTLRenderPipelineState)? = nil,
          supportsSpatial: Bool = false) throws {
         self.device = device
         self.queue = queue; self.pipeline = pipeline; self.inFlight = inFlight; self.presentationQueue = presentationQueue
@@ -73,6 +78,8 @@ final class OriginalPresenter: @unchecked Sendable {
         self.integerPipeline = integerPipeline
         self.patternPipeline = patternPipeline
         self.sharpenPipeline = sharpenPipeline
+        self.fsr1EasuPipeline = fsr1EasuPipeline
+        self.fsr1RcasPipeline = fsr1RcasPipeline
         self.supportsSpatial = supportsSpatial && patternPipeline != nil && sharpenPipeline != nil
         var c: CVMetalTextureCache?
         guard CVMetalTextureCacheCreate(nil, nil, device, nil, &c) == kCVReturnSuccess, let c else {
@@ -107,7 +114,7 @@ final class OriginalPresenter: @unchecked Sendable {
     var timeConstraintApplied: Bool? { withState { policyApplied } }
 
     static func effectiveLead(baseLead: Double, scalingMode: VideoScalingMode, metalFXGpuEMA: Double) -> Double {
-        guard scalingMode == .metalFX else { return baseLead }
+        guard scalingMode == .metalFX || scalingMode == .fsr1 else { return baseLead }
         return min(0.011, max(0.004, metalFXGpuEMA + 0.0025))
     }
 
@@ -123,7 +130,8 @@ final class OriginalPresenter: @unchecked Sendable {
         }
         guard shouldStart else { return }
         let t = Thread { [self] in
-            let applied = applyTimeConstraintPolicy(periodMs: 16.667, computationMs: 2.0, constraintMs: 4.0)
+            var appliedPeriodMs = 16.667
+            let applied = applyTimeConstraintPolicy(periodMs: appliedPeriodMs, computationMs: 2.0, constraintMs: 4.0)
             withState { policyApplied = applied }
             var ticks = mach_timebase_info_data_t(); mach_timebase_info(&ticks)
             let perSecond = 1e9 * Double(ticks.denom) / Double(ticks.numer)
@@ -144,6 +152,14 @@ final class OriginalPresenter: @unchecked Sendable {
                     return
                 }
                 let now = CACurrentMediaTime()
+                let (_, _, rawPeriod) = lattice.next(after: now)
+                let targetPeriodMs = min(25.0, max(4.0, rawPeriod * 1000.0))
+                if abs(targetPeriodMs - appliedPeriodMs) > 1.0 {
+                    appliedPeriodMs = targetPeriodMs
+                    let comp = min(2.0, targetPeriodMs * 0.25)
+                    let constraint = min(4.0, targetPeriodMs * 0.45)
+                    _ = applyTimeConstraintPolicy(periodMs: appliedPeriodMs, computationMs: comp, constraintMs: constraint)
+                }
                 let activeLead = currentLead()
                 let (v, age) = VsyncTarget.next(lattice: lattice, now: now, lead: activeLead, lastSubmit: lastSubmit)
                 if v == 0 || age > Self.staleLimit {
@@ -228,6 +244,23 @@ final class OriginalPresenter: @unchecked Sendable {
             spatial = nil
         }
 
+        let activeFSR: (any MTLTexture)?
+        if plan.status.effective == .fsr1, fsr1EasuPipeline != nil, fsr1RcasPipeline != nil {
+            if fsrIntermediate?.width != plan.status.output.width || fsrIntermediate?.height != plan.status.output.height {
+                let d = MTLTextureDescriptor.texture2DDescriptor(
+                    pixelFormat: drawable.texture.pixelFormat,
+                    width: plan.status.output.width, height: plan.status.output.height, mipmapped: false
+                )
+                d.storageMode = .private
+                d.usage = [.renderTarget, .shaderRead]
+                fsrIntermediate = device.makeTexture(descriptor: d)
+            }
+            activeFSR = fsrIntermediate
+        } else {
+            fsrIntermediate = nil
+            activeFSR = nil
+        }
+
         let activeSpatial = plan.status.effective == .metalFX ? spatial : nil
         let counter = activeSpatial?.takeCounter()
         var counterSubmitted = false
@@ -251,6 +284,23 @@ final class OriginalPresenter: @unchecked Sendable {
             encodeVideo(conversion, video: video, integer: false)
             conversion.endEncoding()
             activeSpatial.scaler.encode(commandBuffer: command)
+        }
+
+        if let activeFSR, let fsr1EasuPipeline {
+            let easuPass = MTLRenderPassDescriptor()
+            easuPass.colorAttachments[0].texture = activeFSR
+            easuPass.colorAttachments[0].loadAction = .dontCare
+            easuPass.colorAttachments[0].storeAction = .store
+            guard let easu = command.makeRenderCommandEncoder(descriptor: easuPass) else {
+                presentation.finish(); inFlight.signal(); return false
+            }
+            easu.setRenderPipelineState(fsr1EasuPipeline)
+            easu.setFragmentTexture(video.luma, index: 0)
+            easu.setFragmentTexture(video.chroma, index: 1)
+            var conversion = video.conversion
+            easu.setFragmentBytes(&conversion, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+            easu.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+            easu.endEncoding()
         }
 
         let pass = MTLRenderPassDescriptor()
@@ -280,6 +330,12 @@ final class OriginalPresenter: @unchecked Sendable {
             encoder.setFragmentBytes(&amount, length: MemoryLayout<Float>.size, index: 0)
             encoder.setFragmentTexture(activeSpatial.output, index: 0)
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+        } else if let activeFSR, let fsr1RcasPipeline {
+            encoder.setRenderPipelineState(fsr1RcasPipeline)
+            var sharpness = config.sharpening == .off ? Float(0.35) : min(1.0, 0.35 + config.sharpening.amount * 0.65)
+            encoder.setFragmentBytes(&sharpness, length: MemoryLayout<Float>.size, index: 0)
+            encoder.setFragmentTexture(activeFSR, index: 0)
+            encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         } else {
             encodeVideo(encoder, video: video, integer: plan.status.effective == .integer)
         }
@@ -288,9 +344,10 @@ final class OriginalPresenter: @unchecked Sendable {
         let sample = FramePresentation(source: live, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(),
                                        sourceRTP: frame.sourceRTP, frameID: frame.id)
         let permit = inFlight
-        let isMetalFX = activeSpatial != nil
+        let isUpscaled = activeSpatial != nil || activeFSR != nil
         command.addCompletedHandler { [weak self] command in
             withExtendedLifetime(video) {}
+            withExtendedLifetime(activeFSR) {}
             if let counter {
                 if command.status == .completed, let seconds = SpatialUpscaler.scalerSeconds(counter) {
                     live.performance.recordScaler(seconds: seconds, revision: scalingRevision)
@@ -304,7 +361,7 @@ final class OriginalPresenter: @unchecked Sendable {
             if command.status == .completed, command.gpuStartTime > 0, command.gpuEndTime >= command.gpuStartTime {
                 let gpuDuration = command.gpuEndTime - command.gpuStartTime
                 sample.gpuCompleted(start: command.gpuStartTime, end: command.gpuEndTime)
-                if isMetalFX, gpuDuration < 0.025 {
+                if isUpscaled, gpuDuration < 0.025 {
                     self?.withState {
                         if let self { self.metalFXGpuEMA = self.metalFXGpuEMA * 0.8 + gpuDuration * 0.2 }
                     }

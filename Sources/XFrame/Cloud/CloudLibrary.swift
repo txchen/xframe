@@ -28,6 +28,7 @@ final class CloudLibrary {
         set { updateQuery { $0.search = newValue } }
     }
     private(set) var favorites: Set<String> { didSet { rebuildPage() } }
+    private(set) var recentlyPlayed: [String] = [] { didSet { rebuildPage() } }
     private(set) var catalogLoaded = false
     var gameLoadAction: GameLoadAction {
         if loading { return .loading }
@@ -41,11 +42,12 @@ final class CloudLibrary {
         artworkRevisions[game.id, default: 0] &+= 1
     }
     @ObservationIgnored private let favoritesStore: GameFavoritesStore
+    @ObservationIgnored private let recentStore: RecentlyPlayedStore
     private(set) var page = GameLibraryQuery().page(in: [], favorites: [])
     private(set) var categories: [String] = []
     @ObservationIgnored private(set) var pageComputations = 0
     private func rebuildPage() {
-        page = query.page(in: games, favorites: favorites)
+        page = query.page(in: games, favorites: favorites, recentlyPlayed: recentlyPlayed)
         pageComputations += 1
     }
     var selectedGame: CloudGame? { page.games.first { $0.id == selection } }
@@ -200,7 +202,9 @@ final class CloudLibrary {
         audioVolume = storedVolume.isFinite ? min(1, max(0, storedVolume)) : 1
         streamPreferences = preferencesStore.load()
         self.favoritesStore = favoritesStore
+        self.recentStore = RecentlyPlayedStore(defaults: favoritesStore.defaults)
         favorites = favoritesStore.load()
+        recentlyPlayed = recentStore.load()
         self.sleep = sleep
     }
 
@@ -346,6 +350,7 @@ final class CloudLibrary {
                 : "Access has not been verified. Refresh the library before starting this game."
             return
         }
+        recentlyPlayed = recentStore.record(game.id, existing: recentlyPlayed)
         launch(id: game.id, name: game.name, service: service, source: .cloud)
     }
 
@@ -375,7 +380,7 @@ final class CloudLibrary {
     private func launch(id: String, name: String, service: any SessionServing, source: CloudService.Source) {
         // Console sessions have a fixed 1080p profile; cloud quality and language do not apply.
         let launchPreferences = source == .home
-            ? CloudStreamPreferences(quality: .standard, language: .english, framePacing: streamPreferences.framePacing)
+            ? CloudStreamPreferences(quality: .standard, language: .english, framePacing: streamPreferences.framePacing, maxBitrate: streamPreferences.maxBitrate)
             : streamPreferences
         activeStreamPreferences = launchPreferences
         sessionSource = source
@@ -422,7 +427,7 @@ final class CloudLibrary {
                         if cancelRequested { await cleanup(); return }
                         ready = true
                         if let signaling = service as? any CloudSignaling {
-                            let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing, quality: launchPreferences.quality, requireLocalMedia: source == .home)
+                            let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing, quality: launchPreferences.quality, maxBitrate: launchPreferences.maxBitrate, requireLocalMedia: source == .home)
                             self.connection = connection
                             connection.showPlaybackSettings = { [weak library = self] in library?.showPlaybackSettings?() }
                             connection.settingsGamepad = { [weak library = self] state in library?.settingsGamepad?(state) }

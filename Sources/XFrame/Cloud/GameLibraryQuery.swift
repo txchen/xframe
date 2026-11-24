@@ -10,6 +10,7 @@ struct GameLibraryQuery: Hashable {
     var search = ""
     var category = ""
     var favoritesOnly = false
+    var recentlyPlayedOnly = false
     var sort: Sort = .ascending
     var layout: Layout = .grid
     var pageSize = 24
@@ -20,16 +21,21 @@ struct GameLibraryQuery: Hashable {
         let total, index, count, first, last: Int
     }
 
-    func page(in games: [CloudGame], favorites: Set<String>) -> Page {
+    func page(in games: [CloudGame], favorites: Set<String>, recentlyPlayed: [String] = []) -> Page {
         let terms = search.split(whereSeparator: \.isWhitespace).map(String.init)
+        let recentRank = Dictionary(uniqueKeysWithValues: recentlyPlayed.enumerated().map { ($1, $0) })
         let matches = games.filter { game in
             matchesAccess(game.access) &&
             (!favoritesOnly || favorites.contains(game.id)) &&
+            (!recentlyPlayedOnly || recentRank[game.id] != nil) &&
             (category.isEmpty || game.categories.contains(category)) &&
             terms.allSatisfy { term in
                 game.name.range(of: term, options: [.caseInsensitive, .diacriticInsensitive]) != nil
             }
         }.sorted { lhs, rhs in
+            if recentlyPlayedOnly, let l = recentRank[lhs.id], let r = recentRank[rhs.id], l != r {
+                return l < r
+            }
             let order = lhs.name.localizedStandardCompare(rhs.name)
             if order == .orderedSame { return lhs.id < rhs.id }
             return sort == .ascending ? order == .orderedAscending : order == .orderedDescending
@@ -59,4 +65,20 @@ struct GameFavoritesStore {
     private let key = "cloudLibrary.favoriteTitleIDs.v1"
     func load() -> Set<String> { Set((defaults.stringArray(forKey: key) ?? []).filter { !$0.isEmpty }) }
     func save(_ ids: Set<String>) { defaults.set(ids.sorted(), forKey: key) }
+}
+
+struct RecentlyPlayedStore {
+    let defaults: UserDefaults
+    private let key = "cloudLibrary.recentlyPlayedTitleIDs.v1"
+    static let limit = 16
+    func load() -> [String] { (defaults.stringArray(forKey: key) ?? []).filter { !$0.isEmpty } }
+    @discardableResult
+    func record(_ id: String, existing: [String]) -> [String] {
+        guard !id.isEmpty else { return existing }
+        var updated = existing.filter { $0 != id }
+        updated.insert(id, at: 0)
+        if updated.count > Self.limit { updated = Array(updated.prefix(Self.limit)) }
+        defaults.set(updated, forKey: key)
+        return updated
+    }
 }
