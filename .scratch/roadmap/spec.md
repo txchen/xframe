@@ -1,6 +1,6 @@
 # XFrame feature roadmap
 
-Updated: 2026-11-23. Latest version: 0.1.8 build 9.
+Updated: 2026-11-23. Latest version: 0.2.0 build 10.
 
 This is the agreed implementation order, not a claim that every item is fully specified. Keep this document current as features ship; link detailed specs and validation evidence rather than marking an item complete after compilation alone. The broader product requirements remain in [Design & Requirements](../../xframe_requirement.md).
 

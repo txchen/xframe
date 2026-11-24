@@ -15,8 +15,8 @@ import Testing
     keyboard.handle(code: 124, down: true)
     keyboard.handle(code: 126, down: true)
     #expect(keyboard.snapshot.rightX > 0 && keyboard.snapshot.rightY < 0)
-    keyboard.handle(code: 6, down: true)
-    keyboard.handle(code: 8, down: true)
+    keyboard.handle(code: 32, down: true)
+    keyboard.handle(code: 31, down: true)
     #expect(keyboard.snapshot.leftTrigger == 1 && keyboard.snapshot.rightTrigger == 1)
     keyboard.release()
     #expect(keyboard.snapshot == GamepadSnapshot())
@@ -26,10 +26,10 @@ import Testing
     var keyboard = KeyboardGamepad()
     var input = GamepadInput()
     input.update(keyboard.snapshot, ownsInput: true)
-    keyboard.handle(code: 38, down: true)
+    keyboard.handle(code: 40, down: true)
     input.update(keyboard.snapshot, ownsInput: true)
     keyboard.handle(code: 49, down: true)
-    keyboard.handle(code: 38, down: false)
+    keyboard.handle(code: 40, down: false)
     #expect(keyboard.snapshot.buttons == [.a])
     keyboard.handle(code: 49, down: false)
     input.update(keyboard.snapshot, ownsInput: true)
@@ -61,7 +61,9 @@ import Testing
     let defaults = try #require(UserDefaults(suiteName: suite))
     defer { defaults.removePersistentDomain(forName: suite) }
     let library = CloudLibrary(inputDefaults: defaults)
-    #expect(!library.keyboardEnabled && !library.controllerEnabled)
+    #expect(library.keyboardEnabled && !library.controllerEnabled)
+    library.keyboardEnabled = false
+    #expect(!CloudLibrary(inputDefaults: defaults).keyboardEnabled)
     library.controllerEnabled = true
     library.keyboardEnabled = true
     #expect(library.keyboardEnabled && library.controllerEnabled)
@@ -70,8 +72,8 @@ import Testing
 }
 
 @Test func keyboardMapsEveryGamepadButtonInHelp() {
-    let mappings: [UInt16: GamepadButton] = [38:.a,40:.b,32:.x,34:.y,12:.leftShoulder,14:.rightShoulder,
-        3:.left,17:.up,4:.right,5:.down,37:.leftThumb,31:.rightThumb,36:.menu,48:.view]
+    let mappings: [UInt16: GamepadButton] = [40:.a,49:.a,37:.b,51:.b,38:.x,15:.x,34:.y,3:.y,
+        12:.leftShoulder,14:.rightShoulder,18:.up,19:.down,20:.left,21:.right,56:.leftThumb,9:.rightThumb,36:.menu,48:.view]
     for (code, button) in mappings {
         var keyboard = KeyboardGamepad()
         keyboard.handle(code: code, down: true)

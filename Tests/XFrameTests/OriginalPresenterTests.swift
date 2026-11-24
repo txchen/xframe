@@ -177,7 +177,7 @@ private func acquirePermits(_ s: DispatchSemaphore, _ n: Int, timeout: Double) -
     #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .metalFX, metalFXGpuEMA: 0.0005) == 0.004)
     #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .metalFX, metalFXGpuEMA: 0.020) == 0.011)
 
-    let suite = "xframe-webrtc-trials-(UUID().uuidString)"
+    let suite = "xframe-webrtc-trials-\(UUID().uuidString)"
     let defaults = try #require(UserDefaults(suiteName: suite))
     defer { defaults.removePersistentDomain(forName: suite) }
     #expect(WebRTCFieldTrials.zeroPlayoutDelayPreference(defaults))

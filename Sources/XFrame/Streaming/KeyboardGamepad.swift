@@ -5,31 +5,38 @@ import Foundation
 struct KeyboardGamepad {
     private var held: Set<UInt16> = []
     private static let buttons: [UInt16: GamepadButton] = [
-        38: .a, 49: .a, 40: .b, 32: .x, 34: .y,
-        12: .leftShoulder, 14: .rightShoulder,
-        3: .left, 17: .up, 4: .right, 5: .down,
-        37: .leftThumb, 31: .rightThumb, 36: .menu, 48: .view
+        40: .a, 49: .a,           // K / Space -> A
+        37: .b, 51: .b,           // L / Backspace -> B
+        38: .x, 15: .x,           // J / R -> X
+        34: .y, 3: .y,            // I / F -> Y
+        12: .leftShoulder,        // Q -> LB
+        14: .rightShoulder,       // E -> RB
+        18: .up, 19: .down,       // 1 / 2 -> D-pad Up / Down
+        20: .left, 21: .right,    // 3 / 4 -> D-pad Left / Right
+        56: .leftThumb,           // Left Shift -> LS (Sprint)
+        9: .rightThumb,           // V -> RS
+        36: .menu,                // Return -> Menu
+        48: .view                 // Tab -> View
     ]
     static let controls = """
-    WASD — Left stick (move)
+    W A S D — Left stick (move)
     Arrow keys — Right stick (look)
-    J / Space — A       K — B       U — X       I — Y
-    Q / E — LB / RB       Z / C — LT / RT
-    F / T / H / G — D-pad left / up / right / down
-    L / O — Left / right stick click
+    I / J / K / L — Y / X / A / B  (Xbox diamond)
+    Space — A     Backspace — B     R — X     F — Y
+    Q / E — LB / RB       U / O — LT / RT
+    Left Shift — LS (sprint)       V — RS
+    1 / 2 / 3 / 4 — D-pad Up / Down / Left / Right
     Return — Menu       Tab — View
 
-    Enable Keyboard Input in View, then focus the playback window.
-    Both input devices can be enabled; new input switches control automatically.
-    Uses physical key positions. Sticks and triggers are digital, not analog.
+    Keyboard input is enabled by default and can be toggled in View or the right-click panel.
+    Both controller and keyboard can be enabled; new input switches control automatically.
     Command, Control and Option shortcuts remain available.
-    Release and press keys again after switching windows or recovering a stream.
     """
 
     @discardableResult
     mutating func handle(code: UInt16, down: Bool, repeatKey: Bool = false, shortcut: Bool = false) -> Bool {
         if shortcut { release(); return false }
-        guard Self.buttons[code] != nil || [0, 1, 2, 13, 123, 124, 125, 126, 6, 8].contains(code) else { return false }
+        guard Self.buttons[code] != nil || [0, 1, 2, 13, 123, 124, 125, 126, 32, 31].contains(code) else { return false }
         if !down { held.remove(code) }
         else if !repeatKey { held.insert(code) }
         return true
@@ -48,6 +55,6 @@ struct KeyboardGamepad {
         let right = stick(axis(123, 124), axis(126, 125))
         return GamepadSnapshot(buttons: Set(held.compactMap { Self.buttons[$0] }),
             leftX: left.0, leftY: left.1, rightX: right.0, rightY: right.1,
-            leftTrigger: held.contains(6) ? 1 : 0, rightTrigger: held.contains(8) ? 1 : 0)
+            leftTrigger: held.contains(32) ? 1 : 0, rightTrigger: held.contains(31) ? 1 : 0)
     }
 }

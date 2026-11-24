@@ -146,8 +146,9 @@ final class CloudLibrary {
             connection?.rumbleEnabled = rumbleEnabled
         }
     }
-    var keyboardEnabled = false {
+    var keyboardEnabled = true {
         didSet {
+            inputDefaults.set(keyboardEnabled, forKey: "XFrame.KeyboardEnabled")
             connection?.keyboardEnabled = keyboardEnabled
         }
     }
@@ -193,6 +194,7 @@ final class CloudLibrary {
         self.inputDefaults = inputDefaults
         controllerEnabled = inputDefaults.bool(forKey: "XFrame.ControllerEnabled")
         rumbleEnabled = inputDefaults.object(forKey: "XFrame.RumbleEnabled") as? Bool ?? true
+        keyboardEnabled = inputDefaults.object(forKey: "XFrame.KeyboardEnabled") as? Bool ?? true
         audioMuted = inputDefaults.bool(forKey: "XFrame.AudioMuted")
         let storedVolume = inputDefaults.object(forKey: "XFrame.AudioVolume") as? Double ?? 1
         audioVolume = storedVolume.isFinite ? min(1, max(0, storedVolume)) : 1

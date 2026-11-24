@@ -26,20 +26,17 @@ import Testing
         let stack = try #require(scroll.documentView as? NSStackView)
         return stack.arrangedSubviews.compactMap { $0 as? NSButton }
     }
-    try #require(try buttons().first { $0.title.hasSuffix("Low") }).performClick(nil)
+    try #require(try buttons().first { $0.title.contains("Sharpening:") }).performClick(nil)
     #expect(selected == .low && !panel.isHidden)
-    panel.key(125)
-    panel.key(36)
+    panel.key(124) // Low -> Medium
     #expect(selected == .medium)
     panel.gamepad(GamepadSnapshot())
-    panel.gamepad(GamepadSnapshot(buttons: [.down]))
-    panel.gamepad(GamepadSnapshot())
-    panel.gamepad(GamepadSnapshot(buttons: [.a]))
+    panel.gamepad(GamepadSnapshot(buttons: [.a])) // Medium -> High
     #expect(selected == .high)
     panel.update(scaling: .integer, hud: .compact)
-    #expect(try !buttons().contains { $0.title.hasSuffix("High") })
+    #expect(try !buttons().contains { $0.title.contains("Sharpening:") })
     panel.update(scaling: .metalFX, hud: .compact)
-    #expect(try buttons().contains { $0.title.contains("✓ High") })
+    #expect(try buttons().contains { $0.title.contains("Sharpening:") && $0.title.contains("High") })
 }
 
 // Exercise the actual final-composition shader, including SDR bounds and zero

@@ -39,19 +39,18 @@ import Testing
     var selected: VideoScalingMode?
     var hud: PerformanceHUDPreset?
     var closed = false
-    panel.selectScaling = { selected = $0 }
+    panel.selectScaling = { selected = $0; panel.update(scaling: $0, hud: hud ?? .compact) }
     panel.selectHUD = { hud = $0 }
     panel.dismiss = { closed = true }
     panel.show(scaling: .original, hud: .compact)
-    panel.key(125) // Integer
-    panel.key(36)
+    panel.key(124) // Scaling -> Integer
     #expect(selected == .integer && !closed && !panel.isHidden)
-    panel.key(125) // MetalFX
-    panel.key(36)
+    panel.key(124) // Scaling -> MetalFX
     #expect(selected == .metalFX)
-    panel.key(125) // Compact
-    panel.key(125) // Detailed
-    panel.key(36)
+    panel.key(125) // Sharpening
+    panel.key(125) // Frame Generation
+    panel.key(125) // Overlay
+    panel.key(124) // Overlay -> Detailed
     #expect(hud == .detailed && !closed)
     panel.key(53)
     #expect(closed)

@@ -154,6 +154,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             playbackSettings.selectAudio = { [weak self] muted, volume in
                 self?.account.library.setAudio(muted: muted, volume: volume)
             }
+            playbackSettings.selectKeyboard = { [weak self] enabled in
+                self?.account.library.keyboardEnabled = enabled
+                self?.refreshInputMenu()
+            }
             playbackSettings.selectRumble = { [weak self] enabled in
                 self?.account.library.rumbleEnabled = enabled
                 self?.refreshInputMenu()
@@ -429,6 +433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc private func toggleKeyboardInput(_ sender: NSMenuItem) {
         account.library.keyboardEnabled.toggle()
         refreshInputMenu()
+        refreshPlaybackControls()
     }
     private func refreshInputMenu() {
         controllerMenuItem?.state = account.library.controllerEnabled ? .on : .off
@@ -451,17 +456,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
             return nil
         }
-        guard account.library.keyboardEnabled, account.library.ready,
-              NSApp.isActive, let window, event.window === window, window.isKeyWindow,
+        guard NSApp.isActive, let window, event.window === window, window.isKeyWindow,
               window.attachedSheet == nil else { return event }
         let shortcut = !event.modifierFlags.intersection([.command, .control, .option]).isEmpty
         if event.type == .flagsChanged {
-            if shortcut { account.library.releaseKeyboard() }
+            if shortcut { account.library.releaseKeyboard(); return event }
+            if account.library.keyboardEnabled, account.library.ready, event.keyCode == 56 {
+                let down = event.modifierFlags.contains(.shift)
+                _ = account.library.keyboardEvent(code: 56, down: down, repeatKey: false, shortcut: false)
+                return nil
+            }
             return event
         }
-        let consumed = account.library.keyboardEvent(code: event.keyCode, down: event.type == .keyDown,
-            repeatKey: event.isARepeat, shortcut: shortcut)
-        return consumed ? nil : event
+        if shortcut {
+            if account.library.keyboardEnabled { account.library.releaseKeyboard() }
+            return event
+        }
+        if account.library.keyboardEnabled, account.library.ready {
+            _ = account.library.keyboardEvent(code: event.keyCode, down: event.type == .keyDown,
+                repeatKey: event.isARepeat, shortcut: false)
+        }
+        // Swallow non-shortcut keys in the playback window so unmapped keys never trigger NSBeep().
+        return nil
     }
 
     func windowDidResize(_ notification: Notification) {
@@ -589,6 +605,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         playbackSettings.configure(cloud: account.library.ownsSession,
             muted: account.library.audioMuted, volume: account.library.audioVolume,
             rumbleEnabled: account.library.rumbleEnabled,
+            keyboardEnabled: account.library.keyboardEnabled,
             fullscreen: window?.styleMask.contains(.fullScreen) == true,
             transitioning: playbackPresentation?.transitioning == true,
             console: account.library.ownsSession && account.library.sessionSource == .home)
@@ -724,6 +741,9 @@ final class MetalView: MTKView {
     var sourceName = "1920×1080"
     var showPlaybackSettings: (() -> Void)?
     var dismissPlaybackSettings: (() -> Void)?
+    override var acceptsFirstResponder: Bool { true }
+    override func keyDown(with event: NSEvent) {}
+    override func keyUp(with event: NSEvent) {}
     override func mouseDown(with event: NSEvent) { dismissPlaybackSettings?() }
     override func rightMouseDown(with event: NSEvent) { showPlaybackSettings?() }
     override init(frame: NSRect, device: (any MTLDevice)?) {
