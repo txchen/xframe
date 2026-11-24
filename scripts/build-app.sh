@@ -11,8 +11,8 @@ fi
 swift build --build-system native -c release --arch arm64
 binary_dir="$(swift build --build-system native -c release --arch arm64 --show-bin-path)"
 app_dir="${XFRAME_APP_OUTPUT:-$PWD/.build/XFrame.app}"
-mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
-mkdir -p "$app_dir/Contents/Frameworks"
+rm -rf "$app_dir/Contents/Resources/XFrame_XFrame.bundle" "$app_dir/Contents/Frameworks/WebRTC.framework"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Frameworks"
 cp "$binary_dir/XFrame" "$app_dir/Contents/MacOS/XFrame"
 cp Resources/Info.plist "$app_dir/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app_dir/Contents/Resources/AppIcon.icns"

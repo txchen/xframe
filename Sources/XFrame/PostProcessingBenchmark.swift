@@ -267,19 +267,22 @@ enum PostProcessingBenchmark {
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
             kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
         ])
-        reader.add(output)
-        guard reader.startReading() else {
-            throw reader.error ?? RenderError.unavailable("Cannot decode the benchmark video.")
+        guard reader.canAdd(output) else {
+            throw RenderError.unavailable("Cannot read the benchmark video track.")
         }
+        let provider = reader.outputProvider(for: output)
+        try reader.start()
+        defer { reader.cancelReading() }
         var frames: [BenchmarkVideoFrame] = []
-        while frames.count < 61, let sample = output.copyNextSampleBuffer() {
+        while frames.count < 61, let ready = try await provider.next() {
             try Task.checkCancellation()
-            if let buffer = CMSampleBufferGetImageBuffer(sample) {
-                frames.append(BenchmarkVideoFrame(buffer: buffer,
-                                                  pts: CMSampleBufferGetPresentationTimeStamp(sample)))
+            ready.withUnsafeSampleBuffer { sample in
+                if let buffer = CMSampleBufferGetImageBuffer(sample) {
+                    frames.append(BenchmarkVideoFrame(buffer: buffer,
+                                                      pts: CMSampleBufferGetPresentationTimeStamp(sample)))
+                }
             }
         }
-        reader.cancelReading()
         guard frames.count == 61 else {
             throw RenderError.unavailable("The benchmark video decoded only \(frames.count) of 61 required frames.")
         }

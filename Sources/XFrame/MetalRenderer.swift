@@ -135,6 +135,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         interpolator.reset()
         currentVideo = nil
         currentInterpolatedTexture = nil
+        CVMetalTextureCacheFlush(cache, 0)
         spatial = nil
         failedSpatialStatus = nil
         invalidated = true
@@ -196,7 +197,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                     return
                 }
             case .interpolated(let box, _, _, let sourceFrame):
-                _ = work.receivedFrame()
+                if work.receivedFrame() { source?.didSkipFrame() }
                 currentInterpolatedTexture = (box, sourceFrame)
             }
         }
@@ -288,10 +289,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let retainedInterpolated = currentInterpolatedTexture?.box
         let permit = inFlight
         let activeSource = source
+        let isInterpolated = currentInterpolatedTexture != nil
         let sample: FramePresentation?
-        if work.pendingFrame, let source, let frame = currentInterpolatedTexture?.sourceFrame ?? currentVideo?.frame {
+        if work.pendingFrame, !isInterpolated, let source, let frame = currentVideo?.frame {
             sample = FramePresentation(source: source, arrivedAt: frame.arrivedAt, submittedAt: CACurrentMediaTime(), sourceRTP: frame.sourceRTP, frameID: frame.id)
         } else { sample = nil }
+        let generatedPending = work.pendingFrame && isInterpolated
         let generation = presentationGeneration
         command.addCompletedHandler { [weak self] command in
             withExtendedLifetime(retainedVideo) {}
@@ -322,6 +325,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         if let sample {
             drawable.addPresentedHandler { presented in sample.presented(at: presented.presentedTime) }
+        } else if generatedPending, let activeSource {
+            drawable.addPresentedHandler { presented in
+                if presented.presentedTime > 0 { activeSource.didPresentGeneratedFrame() }
+            }
         }
         drawable.addPresentedHandler { _ in presentation.finish() }
         command.present(drawable)
@@ -335,8 +342,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private func startRenderWorker(live: LiveVideo, view: MTKView) {
         guard let layer = view.layer as? CAMetalLayer, let device = view.device,
               let worker = try? OriginalPresenter(queue: queue, pipeline: videoPipeline, inFlight: inFlight,
-                                                   presentationQueue: presentationQueue, layer: layer, device: device) else { return }
-        worker.configure(source: live); worker.start(); workerSlot.set(worker)
+                                                   presentationQueue: presentationQueue, layer: layer, device: device,
+                                                   integerPipeline: integerVideoPipeline, patternPipeline: pipeline,
+                                                   sharpenPipeline: sharpenPipeline, supportsSpatial: supportsSpatial) else { return }
+        worker.configure(source: live)
+        worker.configureRender(scalingMode: scalingMode, sharpening: sharpening,
+                               fullscreen: view.window?.styleMask.contains(.fullScreen) == true)
+        worker.start(); workerSlot.set(worker)
         workerView = view
         let link = view.displayLink(target: RenderWorkerTick(self), selector: #selector(RenderWorkerTick.tick(_:)))
         link.add(to: .main, forMode: .common); workerLink = link
@@ -354,19 +366,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             lastScalingStatus = status
             scalingReport?(status)
         }
+        worker.configureRender(scalingMode: scalingMode, sharpening: sharpening,
+                               fullscreen: view.window?.styleMask.contains(.fullScreen) == true)
         let state = source?.playbackState ?? "Ended"
-        let wanted = renderWorkerEnabled && frameGenerationMode == .off && source is LiveVideo && scalingMode == .original && !awaitingFirstFrame && view.window != nil
+        let wanted = renderWorkerEnabled && frameGenerationMode == .off && source is LiveVideo && !awaitingFirstFrame && view.window != nil
             && view.drawableSize.width > 0 && view.drawableSize.height > 0 && state != "Ended" && !state.hasPrefix("Failed:")
         if wanted, !workerOwnsDrawing, !workerHandingBack {
             workerOwnsDrawing = true; worker.setActive(true)
         } else if !wanted, workerOwnsDrawing {
-            // Hand back only after the worker has parked; MTK then waits for the next decoded frame instead of
-            // redrawing an older one it still holds.
             if !workerHandingBack { workerHandingBack = true; worker.setActive(false) }
             if worker.isIdle {
                 workerOwnsDrawing = false; workerHandingBack = false
                 currentVideo = nil; work = RenderWorkState(); invalidated = true
+                if !renderWorkerEnabled { stopRenderWorker() }
             }
+        } else if !renderWorkerEnabled, !workerOwnsDrawing, worker.isIdle {
+            stopRenderWorker()
         }
     }
 

@@ -8,6 +8,7 @@ protocol VideoSource: AnyObject, Sendable {
     func snapshot() -> PlaybackStats
     func nextFrame(at hostTime: Double) -> VideoFrame?
     func didPresent()
+    func didPresentGeneratedFrame()
     func didSkipFrame()
     func didMissPresentation()
     func fail(_ message: String)
@@ -241,6 +242,9 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
     func didPresent() { lock.withLock { if !stopped {
         stats.presented += 1
         presentedRate.note(at: CACurrentMediaTime())
+    } } }
+    func didPresentGeneratedFrame() { lock.withLock { if !stopped {
+        stats.generatedFrames += 1
     } } }
     func didSkipFrame() { lock.withLock { if !stopped { stats.dropped += 1; performance.note(.rendererReplaced) } } }
     var streamState: (state: String, hasFrames: Bool) {

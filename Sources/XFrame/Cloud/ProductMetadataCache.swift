@@ -49,14 +49,15 @@ final class FileProductMetadataCache: ProductMetadataCaching, @unchecked Sendabl
         guard !products.isEmpty else { return }
         let key = Self.sanitizedMarket(market)
         let current = now()
-        lock.withLock {
+        let snapshot: [String: Entry] = lock.withLock {
             var entries = validEntries(for: key, now: current)
             for (id, metadata) in products {
                 entries[id] = Entry(metadata: metadata, cachedAt: current)
             }
             memory[key] = entries
-            persist(entries, for: key)
+            return entries
         }
+        persist(snapshot, for: key)
     }
 
     private func validEntries(for key: String, now current: Date) -> [String: Entry] {

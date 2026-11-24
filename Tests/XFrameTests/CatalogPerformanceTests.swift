@@ -308,36 +308,31 @@ private actor ProgressiveFakeCloud: CloudServing {
     let hydrated = CloudGame(id: "G1", name: "Full Game One", productID: "P1", access: .init(entitled: true))
     let library = CloudLibrary()
 
-    library.load(using: ProgressiveFakeCloud(initial: [raw], final: [hydrated], delay: .milliseconds(120)))
-    // Wait for initial progressive update while load is still in progress.
-    let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-    while !library.catalogLoaded && ContinuousClock.now < deadline {
-        try await Task.sleep(for: .milliseconds(5))
+    func waitUntil(_ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while !condition() && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(5))
+        }
     }
+
+    library.load(using: ProgressiveFakeCloud(initial: [raw], final: [hydrated], delay: .milliseconds(120)))
+    try await waitUntil { library.catalogLoaded }
     #expect(library.catalogLoaded)
     #expect(library.loading)
     #expect(library.games == [raw])
 
-    while library.loading && ContinuousClock.now < deadline {
-        try await Task.sleep(for: .milliseconds(5))
-    }
+    try await waitUntil { !library.loading }
     #expect(library.games == [hydrated])
     #expect(library.gameLoadAction == .refresh)
 
-    // Refreshing must keep existing games visible instead of blanking the catalog.
     library.load(using: ProgressiveFakeCloud(initial: [hydrated], final: [hydrated], delay: .milliseconds(80)))
     #expect(library.loading)
     #expect(library.catalogLoaded)
     #expect(library.games == [hydrated])
-    while library.loading && ContinuousClock.now < deadline {
-        try await Task.sleep(for: .milliseconds(5))
-    }
+    try await waitUntil { !library.loading }
 
-    // Failed refresh keeps existing catalog visible but surfaces Retry button.
     library.load(using: ProgressiveFakeCloud(initial: [], final: [], fail: true))
-    while library.loading && ContinuousClock.now < deadline {
-        try await Task.sleep(for: .milliseconds(5))
-    }
+    try await waitUntil { !library.loading }
     #expect(library.games == [hydrated])
     #expect(library.gameLoadAction == .retry)
 }

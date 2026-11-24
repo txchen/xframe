@@ -29,14 +29,41 @@ enum StreamError: Error, LocalizedError {
     }
 }
 
+enum WebRTCFieldTrials {
+    static let zeroPlayoutDelayKey = "XFrame.WebRTC.ZeroPlayoutDelay"
+    private static let lock = NSLock()
+    private nonisolated(unsafe) static var configured = false
+
+    static func zeroPlayoutDelayPreference(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: zeroPlayoutDelayKey) as? Bool ?? true
+    }
+
+    static func dictionary(zeroPlayoutDelay: Bool) -> [String: String] {
+        zeroPlayoutDelay ? ["WebRTC-ForcePlayoutDelay": "min_ms:0,max_ms:0"] : [:]
+    }
+
+    static func configureIfNeeded(_ defaults: UserDefaults = .standard) {
+        let shouldConfigure = lock.withLock { () -> Bool in
+            guard !configured else { return false }
+            configured = true
+            return true
+        }
+        guard shouldConfigure else { return }
+        let trials = dictionary(zeroPlayoutDelay: zeroPlayoutDelayPreference(defaults))
+        if !trials.isEmpty { RTCInitFieldTrialDictionary(trials) }
+    }
+}
+
 @MainActor
 final class CloudVideoConnection {
     let video: LiveVideo
-    init(framePacing: FramePacingMode = .balanced, requireLocalMedia: Bool = false) {
+    init(framePacing: FramePacingMode = .balanced, quality: CloudStreamQuality = .standard, requireLocalMedia: Bool = false) {
         video = LiveVideo(framePacing: framePacing)
+        self.quality = quality
         self.requireLocalMedia = requireLocalMedia
         if requireLocalMedia { audio.configure(muted: true, volume: requestedVolume) }
     }
+    private let quality: CloudStreamQuality
     private let requireLocalMedia: Bool
     private var localGate = LocalPathGate()
     private var localPathVerified: Bool { localGate.isVerified }
@@ -71,7 +98,7 @@ final class CloudVideoConnection {
         keyboard.release(); input.release(); settingsShortcut.reset()
         input.update(GamepadSnapshot(), ownsInput: ownsController)
     }
-    private func controllerEvent(_ state: GamepadSnapshot) {
+    private func controllerEvent(_ state: GamepadSnapshot, immediate: Bool = false) {
         let gameState = controllerBarrier.filter(state,
             accepting: controllerEnabled && ownsController && !playbackSettingsVisible)
         if playbackSettingsVisible {
@@ -80,13 +107,15 @@ final class CloudVideoConnection {
             return
         }
         if ownership.observeController(gameState, enabled: controllerEnabled && ownsController) { handoffInput() }
-        if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) { processGamepad(gameState) }
+        if ownership.active == .controller || (!keyboardEnabled && controllerEnabled) {
+            processGamepad(gameState)
+            if immediate { flushInputNow() }
+        }
     }
     @discardableResult
     func keyboardEvent(code: UInt16, down: Bool, repeatKey: Bool, shortcut: Bool) -> Bool {
         guard keyboardEnabled && playbackFocused && !closed else { return false }
         if shortcut { releaseKeyboard(); return false }
-        // Validate the key before it can take ownership. Repeats and key-up never claim.
         var probe = keyboard
         let handled = probe.handle(code: code, down: down, repeatKey: repeatKey)
         guard handled else { return false }
@@ -94,6 +123,7 @@ final class CloudVideoConnection {
         if ownership.active == .keyboard {
             keyboard.handle(code: code, down: down, repeatKey: repeatKey)
             processGamepad(keyboard.snapshot)
+            flushInputNow()
         }
         return true
     }
@@ -112,6 +142,7 @@ final class CloudVideoConnection {
     private var advertised = false
     private var addAfter = 0.0
     private var blockedSince: Double?
+    private var lastImmediateSend = 0.0
     private(set) var controllerStatus = "Controller input off"
     var rumbleStatus: String { gamepad.rumbleStatus }
     private var ownsController: Bool {
@@ -183,7 +214,7 @@ final class CloudVideoConnection {
     private func runSession(service: any CloudSignaling, session: URL, report: (String) -> Void) async throws {
         gamepad.changed = { [weak self] state in
             guard let self else { return }
-            self.controllerEvent(state)
+            self.controllerEvent(state, immediate: true)
         }
         gamepad.replaced = { [weak self] in
             guard let self else { return }
@@ -201,6 +232,7 @@ final class CloudVideoConnection {
                 do { try await Task.sleep(for: .milliseconds(16)) } catch { return }
             }
         }
+        WebRTCFieldTrials.configureIfNeeded()
         RTCSetMinDebugLogLevel(.none)
         let factory = RTCPeerConnectionFactory(encoderFactory: RTCVideoEncoderFactoryH264(),
                                                 decoderFactory: HardwareH264Factory(output: video))
@@ -208,6 +240,9 @@ final class CloudVideoConnection {
         let config = RTCConfiguration()
         config.sdpSemantics = .unifiedPlan
         config.bundlePolicy = .maxBundle
+        config.enableDscp = true
+        config.audioJitterBufferFastAccelerate = true
+        config.audioJitterBufferMaxPackets = 20
         config.iceServers = requireLocalMedia ? [] : [RTCIceServer(urlStrings: ["stun:worldaz.relay.teams.microsoft.com:3478"])]
         let events = PeerEvents(owner: self)
         self.events = events
@@ -567,9 +602,11 @@ final class CloudVideoConnection {
             sendMessage("/streaming/characteristics/orientationchanged", content: ["orientation": 0])
             sendMessage("/streaming/characteristics/touchinputenabledchanged", content: ["touchInputEnabled": false])
             sendMessage("/streaming/characteristics/clientdevicecapabilities", content: [:])
-            sendMessage("/streaming/characteristics/dimensionschanged", content: ["horizontal": 1920, "vertical": 1080,
-                "preferredWidth": 1920, "preferredHeight": 1080, "safeAreaLeft": 0, "safeAreaTop": 0,
-                "safeAreaRight": 1920, "safeAreaBottom": 1080, "supportsCustomResolution": true])
+            let width = requireLocalMedia ? 1920 : quality.width
+            let height = requireLocalMedia ? 1080 : quality.height
+            sendMessage("/streaming/characteristics/dimensionschanged", content: ["horizontal": width, "vertical": height,
+                "preferredWidth": width, "preferredHeight": height, "safeAreaLeft": 0, "safeAreaTop": 0,
+                "safeAreaRight": width, "safeAreaBottom": height, "supportsCustomResolution": true])
         } else if message["type"] as? String == "TransactionStart", let id = message["id"] as? String,
                   let target = message["target"] as? String {
             send(["type": "Unhandled", "id": id, "target": target, "cv": nextCV()], on: "message")
@@ -674,6 +711,15 @@ final class CloudVideoConnection {
         let result = settingsShortcut.process(state, now: CACurrentMediaTime())
         for state in result.states { input.update(state, ownsInput: true) }
         if result.openSettings { showPlaybackSettings?() }
+    }
+
+    private func flushInputNow() {
+        guard advertised, ownsController, !input.queue.isEmpty,
+              let channel = channels["input"], channel.readyState == .open else { return }
+        let now = CACurrentMediaTime()
+        let hasPendingEdge = input.queue.count > 1 || input.needsNeutral
+        guard hasPendingEdge || now - lastImmediateSend >= 0.004 else { return }
+        if sendInput(on: channel, now: now) { lastImmediateSend = now }
     }
 
     private func sendInput(on channel: RTCDataChannel, now: Double) -> Bool {

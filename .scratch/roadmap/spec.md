@@ -1,19 +1,21 @@
 # XFrame feature roadmap
 
-Updated: 2026-11-17 (status section below). Original baseline: `1944c38`. Console implementation: `eba77e2`. Latest release: 0.1.4 build 5 (`0db794c`).
+Updated: 2026-11-23. Latest version: 0.1.8 build 9.
 
 This is the agreed implementation order, not a claim that every item is fully specified. Keep this document current as features ship; link detailed specs and validation evidence rather than marking an item complete after compilation alone. The broader product requirements remain in [Design & Requirements](../../xframe_requirement.md).
 
-## Status update — 2026-11-17
+## Status update — 2026-11-23 (0.1.7)
 
 Sections below dated 2026-09-22 are kept for history; this section supersedes them where they conflict.
 
-- **Releases.** 0.1.1–0.1.4 shipped as Developer ID signed, notarized ZIPs on GitHub and the `txchen/tap/xframe` Homebrew cask ([distribution](../../docs/distribution.md), [0.1.4 verification](../playback-performance/release-0.1.4-verification.md)).
-- **Credentials.** The user decided to keep the owner-only file store, including in releases. A Keychain migration (`03f999b`) was reverted before release. [Decision](../keychain-access/issues/01-restore-keychain.md).
-- **Series X LAN.** Discovery, video, audio, keyboard and physical controller were verified on 2026-10-16, along with the presentation-lifetime and consent-flicker fixes. Physical wake, rumble, live acceptance of the flicker fix and extended stability remain. [Spec](../xbox-console-remote-play/spec.md).
-- **Neural rendering.** The Small NR benchmark (0.1.2) measured about 204 ms per 720p frame on M1, far above the 33.33 ms budget. This is feasibility evidence, not a shipped enhancement. [Validation](../small-nr-benchmark/validation.md).
-- **Original presentation latency.** 0.1.4 bounds the Original queue. The render-worker candidate (W) has not passed final acceptance and is not integrated. [Handoff](../../docs/research/original-render-latency/README.md).
-- **Tests.** 220 automated tests pass on master.
+- **Releases.** 0.1.1–0.1.5 shipped as Developer ID signed, notarized ZIPs on GitHub and the `txchen/tap/xframe` Homebrew cask ([distribution](../../docs/distribution.md)). 0.1.6–0.1.7 are on master.
+- **Original presentation latency.** The render-worker candidate (W) passed R2 acceptance (lowering local frame age ~7 ms on M1) and is enabled by default since 0.1.5, with a live View menu toggle ([R2 results](../../docs/research/original-render-latency/acceptance-results-r2.md)).
+- **Frame generation (0.1.6–0.1.7).** Core ML (ANE) + Metal 30 → 60 fps frame generation is integrated into both the benchmark suite and live rendering (`LiveFrameInterpolator`), with 60/120 Hz pacing, duplicate-frame cadence detection, direct NV12 Metal conversion, and Playback Settings toggle.
+- **Cloud catalog performance.** 7-day per-market product metadata cache, progressive catalog loading, and parallelized XSTS/offering auth landed on master (`6fe7237`).
+- **Credentials.** File-backed owner-only storage is kept by user decision; Keychain migration was reverted. [Decision](../keychain-access/issues/01-restore-keychain.md).
+- **Series X LAN.** Discovery, video, audio, keyboard and physical controller were verified on 2026-10-16. Physical wake, rumble, and extended stability remain. [Spec](../xbox-console-remote-play/spec.md).
+- **Neural rendering.** The Small NR benchmark (0.1.2) measured ~204 ms per 720p frame on M1 (feasibility evidence, not shipped). [Validation](../small-nr-benchmark/validation.md).
+- **Tests.** 232 automated tests pass on master.
 
 ## Current baseline (2026-09-22)
 

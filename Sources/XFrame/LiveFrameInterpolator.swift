@@ -1,6 +1,5 @@
-import CoreImage
 import CoreML
-import CryptoKit
+import CoreVideo
 import Foundation
 import Metal
 import QuartzCore
@@ -51,12 +50,59 @@ enum FrameGenerationMode: String, CaseIterable, Sendable {
 
 final class InterpolatedTextureBox: @unchecked Sendable {
     let texture: any MTLTexture
-    init(_ texture: any MTLTexture) { self.texture = texture }
+    private let onRelease: (@Sendable (any MTLTexture) -> Void)?
+
+    init(_ texture: any MTLTexture, onRelease: (@Sendable (any MTLTexture) -> Void)? = nil) {
+        self.texture = texture
+        self.onRelease = onRelease
+    }
+
+    deinit {
+        onRelease?(texture)
+    }
 }
 
-/// Pure cadence/ordering state machine for 30 → 60 fps real-time frame interpolation.
-/// Enforces monotonic presentation order (A → mid(A,B) → B), bypasses ~60 fps streams,
-/// and drops stale interpolations when a newer real frame arrives before completion.
+/// Fast sparse luma fingerprint on an NV12 CVPixelBuffer for detecting repeated 30 fps frames inside 60 Hz streams.
+struct LumaFingerprint: Equatable, Sendable {
+    let samples: [UInt8]
+
+    static func capture(from buffer: CVPixelBuffer) -> LumaFingerprint? {
+        guard CVPixelBufferGetPlaneCount(buffer) >= 1,
+              CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddressOfPlane(buffer, 0) else { return nil }
+        let width = CVPixelBufferGetWidthOfPlane(buffer, 0)
+        let height = CVPixelBufferGetHeightOfPlane(buffer, 0)
+        let stride = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
+        guard width >= 16, height >= 16, stride >= width else { return nil }
+        let ptr = base.assumingMemoryBound(to: UInt8.self)
+        var out = [UInt8]()
+        out.reserveCapacity(64)
+        for row in 0..<8 {
+            let y = (height * (row + 1)) / 9
+            let rowPtr = ptr.advanced(by: y * stride)
+            for col in 0..<8 {
+                let x = (width * (col + 1)) / 9
+                out.append(rowPtr[x])
+            }
+        }
+        return LumaFingerprint(samples: out)
+    }
+
+    /// Mean absolute luma difference <= 1.0 out of 255 treats consecutive 60 Hz frames as duplicate 30 fps content.
+    func isNearlyIdentical(to other: LumaFingerprint) -> Bool {
+        guard samples.count == other.samples.count, !samples.isEmpty else { return false }
+        var diff = 0
+        for i in 0..<samples.count {
+            diff += abs(Int(samples[i]) - Int(other.samples[i]))
+        }
+        return diff <= samples.count
+    }
+}
+
+/// Pure cadence/ordering state machine for 30 -> 60 fps real-time frame interpolation.
+/// Enforces monotonic presentation order (A -> mid(A,B) -> B), paces midpoint vs real frame for 60/120 Hz displays,
+/// bypasses native 60 fps motion, and drops stale interpolations when a newer real frame arrives.
 struct FrameInterpolationScheduler: @unchecked Sendable {
     enum Output: Sendable {
         case real(VideoFrame)
@@ -71,7 +117,7 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
     }
 
     static let minimumSourceInterval: Double = 0.024  // > ~41.6 fps bypasses interpolation
-    static let maximumSourceInterval: Double = 0.065  // > ~15.4 fps resets reference after stalls
+    static let maximumSourceInterval: Double = 0.065  // < ~15.4 fps resets reference after stalls
     static let fallbackWaitLimit: Double = 0.028      // Never hold a real frame longer than 28 ms
 
     private(set) var mode: FrameGenerationMode = .off
@@ -79,6 +125,8 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
     private var previousTime: Double?
     private var pendingReal: VideoFrame?
     private var pendingSince: Double = 0
+    private var pendingPairInterval: Double = 1.0 / 30.0
+    private var realNotBefore: Double = 0
     private var readyInterpolated: (box: InterpolatedTextureBox, width: Int, height: Int, sourceFrame: VideoFrame, generation: UInt64)?
     private var inFlightGeneration: UInt64?
     private var generation: UInt64 = 0
@@ -97,12 +145,12 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
         previousTime = nil
         pendingReal = nil
         pendingSince = 0
+        pendingPairInterval = 1.0 / 30.0
+        realNotBefore = 0
         readyInterpolated = nil
         inFlightGeneration = nil
     }
 
-    /// Ingest a newly dequeued real frame. Returns an immediate output if it should be displayed now,
-    /// and an optional background interpolation job to run for (previous → current).
     mutating func ingest(
         frame: VideoFrame,
         at hostTime: Double,
@@ -125,32 +173,35 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
 
         let dt = timestamp - prevTime
         guard dt >= Self.minimumSourceInterval, dt <= Self.maximumSourceInterval else {
-            // Stream is already ~60 fps or recovering from a long stall: pass through directly.
             clearPending()
             return (.real(frame), nil)
         }
 
-        // If a previous real frame was still held waiting for an unfinished interpolation,
-        // flush it immediately so we never accumulate backlog.
         let flushed: Output? = pendingReal.map { .real($0) }
-        if inFlightGeneration != nil {
+        if inFlightGeneration != nil || readyInterpolated != nil {
             skippedInterpolations += 1
         }
         generation &+= 1
         let jobGen = generation
         pendingReal = frame
         pendingSince = hostTime
+        pendingPairInterval = dt
+        realNotBefore = 0
         readyInterpolated = nil
         inFlightGeneration = jobGen
 
         return (flushed, ReadyJob(generation: jobGen, previous: prev, current: frame, profile: profile))
     }
 
-    mutating func complete(generation jobGen: UInt64, texture: any MTLTexture, width: Int, height: Int) {
+    mutating func complete(generation jobGen: UInt64, box: InterpolatedTextureBox, width: Int, height: Int) {
         guard jobGen == inFlightGeneration, let current = pendingReal else { return }
         inFlightGeneration = nil
-        readyInterpolated = (InterpolatedTextureBox(texture), width, height, current, jobGen)
+        readyInterpolated = (box, width, height, current, jobGen)
         generatedFrames += 1
+    }
+
+    mutating func complete(generation jobGen: UInt64, texture: any MTLTexture, width: Int, height: Int) {
+        complete(generation: jobGen, box: InterpolatedTextureBox(texture), width: width, height: height)
     }
 
     mutating func fail(generation jobGen: UInt64) {
@@ -159,24 +210,29 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
         skippedInterpolations += 1
     }
 
-    /// Called on each display tick (60 Hz) when no new real frame was dequeued yet.
-    /// Delivers the interpolated midpoint first, then the held real frame on the next tick.
     mutating func pollDisplay(at hostTime: Double) -> Output? {
         if let mid = readyInterpolated {
             readyInterpolated = nil
+            // Space the held real frame by roughly half the source interval to avoid 1-1-0-0 judder on 120 Hz displays.
+            let spacing = min(0.015, max(0.011, pendingPairInterval * 0.45))
+            realNotBefore = hostTime + spacing
             return .interpolated(box: mid.box, width: mid.width, height: mid.height, sourceFrame: mid.sourceFrame)
         }
         if let held = pendingReal {
             if inFlightGeneration == nil {
-                pendingReal = nil
-                return .real(held)
+                if hostTime >= realNotBefore || hostTime - pendingSince >= Self.fallbackWaitLimit {
+                    pendingReal = nil
+                    realNotBefore = 0
+                    return .real(held)
+                }
+                return nil
             }
             if hostTime - pendingSince >= Self.fallbackWaitLimit {
-                // Interpolation took too long: release real frame now and abandon stale mid-frame.
                 generation &+= 1
                 inFlightGeneration = nil
                 skippedInterpolations += 1
                 pendingReal = nil
+                realNotBefore = 0
                 return .real(held)
             }
         }
@@ -189,14 +245,16 @@ struct FrameInterpolationScheduler: @unchecked Sendable {
         readyInterpolated = nil
         pendingReal = nil
         pendingSince = 0
+        realNotBefore = 0
     }
 }
 
-/// Thread-safe live Core ML (ANE) + Metal 30 → 60 fps interpolator used by MetalRenderer.
 final class LiveFrameInterpolator: @unchecked Sendable {
     private let lock = NSLock()
     private let worker = DispatchQueue(label: "win.xframe.live-frame-generation", qos: .userInitiated)
     private var scheduler = FrameInterpolationScheduler()
+    private var lastLiveFingerprint: LumaFingerprint?
+    private var lastLiveUniqueTime: Double = 0
     private var weightsURL: URL?
     private var downloadingWeights = false
     private var engine: CoreMLFGLiveEngine?
@@ -219,6 +277,8 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     func setMode(_ mode: FrameGenerationMode) {
         let shouldFetch: Bool = lock.withLock {
             scheduler.setMode(mode)
+            lastLiveFingerprint = nil
+            lastLiveUniqueTime = 0
             failedProfile = nil
             if mode != .off, weightsURL == nil, !downloadingWeights {
                 downloadingWeights = true
@@ -241,6 +301,8 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     func reset() {
         lock.withLock {
             scheduler.reset()
+            lastLiveFingerprint = nil
+            lastLiveUniqueTime = 0
         }
     }
 
@@ -251,15 +313,24 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     func ingest(frame: VideoFrame, at hostTime: Double, isLive: Bool) -> FrameInterpolationScheduler.Output? {
         let width = CVPixelBufferGetWidth(frame.buffer)
         let height = CVPixelBufferGetHeight(frame.buffer)
+        let fingerprint = isLive ? LumaFingerprint.capture(from: frame.buffer) : nil
+
         let (result, weights): ((immediate: FrameInterpolationScheduler.Output?, job: FrameInterpolationScheduler.ReadyJob?), URL?) = lock.withLock {
-            guard scheduler.mode != .off else {
+            guard scheduler.mode != .off, let weights = weightsURL else {
                 return ((.real(frame), nil), nil)
             }
-            guard let weights = weightsURL else {
+            guard let profile = scheduler.mode.profile(width: width, height: height), profile != failedProfile else {
                 return ((.real(frame), nil), nil)
             }
-            if let profile = scheduler.mode.profile(width: width, height: height), profile == failedProfile {
-                return ((.real(frame), nil), nil)
+            // Suppress duplicated frames emitted by 60 Hz encoders running 30 fps games so unique frames trigger 30->60 FG.
+            if isLive, let fingerprint, let previous = lastLiveFingerprint,
+               frame.arrivedAt - lastLiveUniqueTime < FrameInterpolationScheduler.minimumSourceInterval,
+               fingerprint.isNearlyIdentical(to: previous) {
+                return ((nil, nil), nil)
+            }
+            if isLive {
+                lastLiveFingerprint = fingerprint
+                lastLiveUniqueTime = frame.arrivedAt
             }
             return (scheduler.ingest(frame: frame, at: hostTime, isLive: isLive, width: width, height: height), weights)
         }
@@ -296,11 +367,11 @@ final class LiveFrameInterpolator: @unchecked Sendable {
                 )
                 engine = activeEngine
             }
-            let texture = try activeEngine.interpolate(previous: job.previous.buffer, current: job.current.buffer)
+            let box = try activeEngine.interpolate(previous: job.previous, current: job.current)
             lock.withLock {
                 scheduler.complete(
                     generation: job.generation,
-                    texture: texture,
+                    box: box,
                     width: job.profile.width,
                     height: job.profile.height
                 )
@@ -314,19 +385,64 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     }
 }
 
-/// Stateful per-profile Core ML (ANE) + Metal live frame generator.
-/// Confined to LiveFrameInterpolator's serial worker queue.
+/// Thread-safe texture pool ensuring the renderer never reads a texture while the worker overwrites it.
+private final class FGTexturePool: @unchecked Sendable {
+    private let lock = NSLock()
+    private var available: [any MTLTexture] = []
+    private let device: any MTLDevice
+    private let width: Int
+    private let height: Int
+
+    init(device: any MTLDevice, width: Int, height: Int, initialCount: Int = 3) throws {
+        self.device = device
+        self.width = width
+        self.height = height
+        for _ in 0..<initialCount {
+            available.append(try Self.makeTexture(device: device, width: width, height: height))
+        }
+    }
+
+    func acquire() throws -> any MTLTexture {
+        if let tex = lock.withLock({ available.popLast() }) {
+            return tex
+        }
+        return try Self.makeTexture(device: device, width: width, height: height)
+    }
+
+    func release(_ texture: any MTLTexture) {
+        lock.withLock {
+            if available.count < 4 { available.append(texture) }
+        }
+    }
+
+    private static func makeTexture(device: any MTLDevice, width: Int, height: Int) throws -> any MTLTexture {
+        let desc = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .rgba8Unorm,
+            width: width,
+            height: height,
+            mipmapped: false
+        )
+        desc.usage = [.shaderRead, .shaderWrite]
+        desc.storageMode = .private
+        guard let tex = device.makeTexture(descriptor: desc) else {
+            throw RenderError.unavailable("Cannot allocate live FG output texture.")
+        }
+        return tex
+    }
+}
+
+/// Stateful per-profile Core ML (ANE) + Metal live frame generator, confined to LiveFrameInterpolator's serial worker.
 private final class CoreMLFGLiveEngine {
     let profile: CoreMLFGProfile
     private let queue: any MTLCommandQueue
-    private let ciContext: CIContext
-    private let colorSpace = CGColorSpaceCreateDeviceRGB()
+    private let cache: CVMetalTextureCache
+    private let nv12Pipe: any MTLComputePipelineState
     private let pipes: [any MTLComputePipelineState]
     private var biasUniform: FGBiasUniform
-    private let texA: any MTLTexture
-    private let texB: any MTLTexture
-    private let outputRing: [any MTLTexture]
-    private var outputIndex = 0
+    private var texA: any MTLTexture
+    private var texB: any MTLTexture
+    private var lastCurrentID: Int?
+    private let outputPool: FGTexturePool
 
     private let cand: SharedTensor
     private let coarse: SharedTensor
@@ -391,12 +507,22 @@ private final class CoreMLFGLiveEngine {
             throw RenderError.unavailable("Cannot create Metal queue for live frame generation.")
         }
         self.queue = queue
-        self.ciContext = CIContext(mtlCommandQueue: queue, options: [.cacheIntermediates: false])
+        var cache: CVMetalTextureCache?
+        guard CVMetalTextureCacheCreate(nil, nil, device, nil, &cache) == kCVReturnSuccess, let cache else {
+            throw RenderError.unavailable("Cannot create CVMetalTextureCache for live frame generation.")
+        }
+        self.cache = cache
 
         let templateRoot = try CoreMLFrameGenerationBenchmark.templateDirectory(in: resourceBundle)
         let shaderURL = templateRoot.appendingPathComponent("CoreMLFG.metal")
         let shaderSource = try String(contentsOf: shaderURL, encoding: .utf8)
         let library = try device.makeLibrary(source: shaderSource, options: nil)
+
+        guard let nv12Fn = library.makeFunction(name: "fgNV12ToRGBA") else {
+            throw RenderError.unavailable("Missing Metal kernel fgNV12ToRGBA.")
+        }
+        self.nv12Pipe = try device.makeComputePipelineState(function: nv12Fn)
+
         let pipeNames = ["fgCandidates", "fgFeatures", "fgMergeFields", "fgCompose"]
         self.pipes = try pipeNames.map { name in
             guard let fn = library.makeFunction(name: name) else {
@@ -412,26 +538,24 @@ private final class CoreMLFGLiveEngine {
         )
         self.biasUniform = bias
 
-        func makeTexture() throws -> any MTLTexture {
+        func makeWorkTexture() throws -> any MTLTexture {
             let desc = MTLTextureDescriptor.texture2DDescriptor(
                 pixelFormat: .rgba8Unorm,
                 width: profile.width,
                 height: profile.height,
                 mipmapped: false
             )
-            desc.usage = [.shaderRead, .shaderWrite, .renderTarget]
-            desc.storageMode = .shared
+            desc.usage = [.shaderRead, .shaderWrite]
+            desc.storageMode = .private
             guard let tex = device.makeTexture(descriptor: desc) else {
                 throw RenderError.unavailable("Cannot allocate live FG Metal texture.")
             }
             return tex
         }
 
-        self.texA = try makeTexture()
-        self.texB = try makeTexture()
-        // Triple-buffered output textures so the renderer can safely read the previous
-        // interpolated texture while the worker synthesizes the next one.
-        self.outputRing = [try makeTexture(), try makeTexture(), try makeTexture()]
+        self.texA = try makeWorkTexture()
+        self.texB = try makeWorkTexture()
+        self.outputPool = try FGTexturePool(device: device, width: profile.width, height: profile.height)
 
         let pw = profile.paddedWidth
         let ph = profile.paddedHeight
@@ -444,28 +568,41 @@ private final class CoreMLFGLiveEngine {
         self.stage1 = try CompiledStage(compiledURL: b1URL, inputTensor: feat, outputTensor: fine)
     }
 
-    func interpolate(previous: CVPixelBuffer, current: CVPixelBuffer) throws -> any MTLTexture {
+    deinit {
+        CVMetalTextureCacheFlush(cache, 0)
+    }
+
+    func interpolate(previous: VideoFrame, current: VideoFrame) throws -> InterpolatedTextureBox {
         let w = profile.width
         let h = profile.height
         let pw = profile.paddedWidth
         let ph = profile.paddedHeight
         let scale = profile.scale
 
-        let outTex = outputRing[outputIndex]
-        outputIndex = (outputIndex + 1) % outputRing.count
+        let outTex = try outputPool.acquire()
+        var releasedToCaller = false
+        defer { if !releasedToCaller { outputPool.release(outTex) } }
 
-        func renderToTexture(_ pb: CVPixelBuffer, _ tex: any MTLTexture, cb: any MTLCommandBuffer) {
-            let image = CIImage(cvPixelBuffer: pb)
-            let flipped = image.transformed(by: CGAffineTransform(
-                a: CGFloat(w) / image.extent.width, b: 0,
-                c: 0, d: -CGFloat(h) / image.extent.height,
-                tx: 0, ty: CGFloat(h)
-            ))
-            ciContext.render(
-                flipped, to: tex, commandBuffer: cb,
-                bounds: CGRect(x: 0, y: 0, width: w, height: h),
-                colorSpace: colorSpace
+        let reusePrevious = lastCurrentID == previous.id
+        if reusePrevious { swap(&texA, &texB) }
+
+        func encodeNV12(_ frame: VideoFrame, to dst: any MTLTexture, cb: any MTLCommandBuffer) throws -> VideoTextures {
+            let imported = try VideoTextures(frame: frame, cache: cache)
+            guard let encoder = cb.makeComputeCommandEncoder() else {
+                throw RenderError.unavailable("Cannot create Metal compute encoder for NV12 conversion.")
+            }
+            encoder.setComputePipelineState(nv12Pipe)
+            encoder.setTexture(imported.luma, index: 0)
+            encoder.setTexture(imported.chroma, index: 1)
+            encoder.setTexture(dst, index: 2)
+            var conversion = imported.conversion
+            encoder.setBytes(&conversion, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+            encoder.dispatchThreads(
+                MTLSize(width: w, height: h, depth: 1),
+                threadsPerThreadgroup: MTLSize(width: 16, height: 8, depth: 1)
             )
+            encoder.endEncoding()
+            return imported
         }
 
         func dispatch(
@@ -475,8 +612,10 @@ private final class CoreMLFGLiveEngine {
             buffers: [any MTLBuffer],
             includeBias: Bool = false,
             fullRes: Bool = false
-        ) {
-            let encoder = cb.makeComputeCommandEncoder()!
+        ) throws {
+            guard let encoder = cb.makeComputeCommandEncoder() else {
+                throw RenderError.unavailable("Cannot create Metal compute encoder for live frame generation.")
+            }
             encoder.setComputePipelineState(pipes[pipelineIndex])
             for (idx, tex) in textures.enumerated() { encoder.setTexture(tex, index: idx) }
             for (idx, buf) in buffers.enumerated() { encoder.setBuffer(buf, offset: 0, index: idx) }
@@ -484,7 +623,9 @@ private final class CoreMLFGLiveEngine {
             encoder.setBytes(&sizeUniform, length: MemoryLayout<UInt32>.stride * sizeUniform.count, index: buffers.count)
             if includeBias {
                 withUnsafeBytes(of: &biasUniform) { bytes in
-                    encoder.setBytes(bytes.baseAddress!, length: bytes.count, index: buffers.count + 1)
+                    if let base = bytes.baseAddress {
+                        encoder.setBytes(base, length: bytes.count, index: buffers.count + 1)
+                    }
                 }
             }
             encoder.dispatchThreads(
@@ -494,6 +635,13 @@ private final class CoreMLFGLiveEngine {
             encoder.endEncoding()
         }
 
+        func makeCommandBuffer() throws -> any MTLCommandBuffer {
+            guard let cb = queue.makeCommandBuffer() else {
+                throw RenderError.unavailable("Cannot create Metal command buffer for live frame generation.")
+            }
+            return cb
+        }
+
         func finish(_ cb: any MTLCommandBuffer) throws {
             cb.commit()
             cb.waitUntilCompleted()
@@ -501,25 +649,33 @@ private final class CoreMLFGLiveEngine {
         }
 
         try autoreleasepool {
-            let cb0 = queue.makeCommandBuffer()!
-            renderToTexture(previous, texA, cb: cb0)
-            renderToTexture(current, texB, cb: cb0)
-            dispatch(cb0, pipelineIndex: 0, textures: [texA, texB], buffers: [cand.buffer])
+            let cb0 = try makeCommandBuffer()
+            var retained: [VideoTextures] = []
+            if !reusePrevious {
+                retained.append(try encodeNV12(previous, to: texA, cb: cb0))
+            }
+            retained.append(try encodeNV12(current, to: texB, cb: cb0))
+            try dispatch(cb0, pipelineIndex: 0, textures: [texA, texB], buffers: [cand.buffer])
             try finish(cb0)
+            withExtendedLifetime(retained) {}
 
             try stage0.run()
 
-            let cb1 = queue.makeCommandBuffer()!
-            dispatch(cb1, pipelineIndex: 1, textures: [], buffers: [cand.buffer, coarse.buffer, feat.buffer], includeBias: true)
+            let cb1 = try makeCommandBuffer()
+            try dispatch(cb1, pipelineIndex: 1, textures: [], buffers: [cand.buffer, coarse.buffer, feat.buffer], includeBias: true)
             try finish(cb1)
 
             try stage1.run()
 
-            let cb2 = queue.makeCommandBuffer()!
-            dispatch(cb2, pipelineIndex: 2, textures: [], buffers: [feat.buffer, fine.buffer, field.buffer], includeBias: true)
-            dispatch(cb2, pipelineIndex: 3, textures: [texA, texB, outTex], buffers: [field.buffer], fullRes: true)
+            let cb2 = try makeCommandBuffer()
+            try dispatch(cb2, pipelineIndex: 2, textures: [], buffers: [feat.buffer, fine.buffer, field.buffer], includeBias: true)
+            try dispatch(cb2, pipelineIndex: 3, textures: [texA, texB, outTex], buffers: [field.buffer], fullRes: true)
             try finish(cb2)
         }
-        return outTex
+
+        lastCurrentID = current.id
+        releasedToCaller = true
+        let pool = outputPool
+        return InterpolatedTextureBox(outTex) { tex in pool.release(tex) }
     }
 }

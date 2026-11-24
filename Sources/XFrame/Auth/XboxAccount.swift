@@ -25,8 +25,9 @@ final class XboxAccount {
     var requestedRegion: String? { selectedRegion.isEmpty ? defaultRegion : selectedRegion }
 
     func selectRegion(_ name: String) {
-        guard !isBusy && !library.loading && !library.loadingConsoles && !library.ownsSession,
+        guard !isBusy && !library.ownsSession,
               name.isEmpty || regionNames.contains(name), name != selectedRegion else { return }
+        library.cancelLoading()
         selectedRegion = name
         library.reset()
         loadCloudGames()
@@ -232,7 +233,8 @@ final class XboxAccount {
     }
 
     func signOut() {
-        guard !library.ownsSession && !library.loading && !library.loadingConsoles else { return }
+        guard !library.ownsSession else { return }
+        library.cancelLoading()
         cancel()
         clearAccess()
         gamertag = nil

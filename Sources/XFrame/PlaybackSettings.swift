@@ -39,9 +39,10 @@ struct PlaybackSettingsNavigation {
 final class PlaybackSettingsView: NSVisualEffectView {
     enum Mode: Equatable { case settings, confirmation, ending, failed(String) }
     private enum Row: Equatable {
-        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), sharpening(SharpeningPreset), volume, mute, rumble, fullscreen, end, close, cancel, confirm, retry
+        case scaling(VideoScalingMode), hud(PerformanceHUDPreset), frameGeneration, sharpening(SharpeningPreset), volume, mute, rumble, fullscreen, end, close, cancel, confirm, retry
     }
     var selectScaling: ((VideoScalingMode) -> Void)?
+    var selectFrameGeneration: ((FrameGenerationMode) -> Void)?
     var selectSharpening: ((SharpeningPreset) -> Void)?
     var selectHUD: ((PerformanceHUDPreset) -> Void)?
     var selectAudio: ((Bool, Double) -> Void)?
@@ -64,6 +65,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private var navigation = PlaybackSettingsNavigation()
     private var sharpening: SharpeningPreset = .off
     private var scaling: VideoScalingMode = .original
+    private var frameGeneration: FrameGenerationMode = .off
     private var hud: PerformanceHUDPreset = .compact
     private var cloud = false
     private var console = false
@@ -143,6 +145,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
             effectiveLabel.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
             label("Performance Overlay")
             for preset in PerformanceHUDPreset.allCases { addRow(.hud(preset)) }
+            addRow(.frameGeneration)
             if scaling == .metalFX {
                 label("MetalFX Sharpening")
                 for preset in SharpeningPreset.allCases { addRow(.sharpening(preset)) }
@@ -175,7 +178,9 @@ final class PlaybackSettingsView: NSVisualEffectView {
             addRow(.retry)
         }
         refreshSelection()
-        scroll.contentView.scroll(to: .zero)
+        stack.layoutSubtreeIfNeeded()
+        let topY = max(0, stack.fittingSize.height - scroll.contentView.bounds.height)
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: topY))
         scroll.reflectScrolledClipView(scroll.contentView)
     }
     func configure(cloud: Bool, muted: Bool, volume: Double, rumbleEnabled: Bool = true,
@@ -224,6 +229,10 @@ final class PlaybackSettingsView: NSVisualEffectView {
         sharpening = preset
         refreshSelection()
     }
+    func updateFrameGeneration(_ mode: FrameGenerationMode) {
+        frameGeneration = mode
+        refreshSelection()
+    }
     func setEffective(_ status: ScalingStatus) { effectiveLabel.stringValue = status.title }
     func gamepad(_ state: GamepadSnapshot) {
         guard !isHidden, let action = navigation.process(state) else { return }
@@ -263,6 +272,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private func title(_ row: Row) -> String {
         switch row {
         case .scaling(let value): return (value == scaling ? "✓ " : "") + value.title
+        case .frameGeneration: return "Frame Generation: " + frameGeneration.shortTitle
         case .hud(let value): return (value == hud ? "✓ " : "") + value.title
         case .sharpening(let preset): return (preset == sharpening ? "✓ " : "") + preset.title
         case .volume: return "Volume: \(Int((volume * 100).rounded()))%  ← →"
@@ -293,6 +303,12 @@ final class PlaybackSettingsView: NSVisualEffectView {
         selectedRow = sender.tag
         switch actions[selectedRow] {
         case .scaling(let mode): selectScaling?(mode)
+        case .frameGeneration:
+            let all = FrameGenerationMode.allCases
+            let next = all[(all.firstIndex(of: frameGeneration).map { $0 + 1 } ?? 0) % all.count]
+            frameGeneration = next
+            refreshSelection()
+            selectFrameGeneration?(next)
         case .hud(let preset): selectHUD?(preset)
         case .sharpening(let preset): selectSharpening?(preset)
         case .volume: break

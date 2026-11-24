@@ -50,6 +50,9 @@ struct HUDDocument: Sendable {
                 Row(name: "Recovery skips / IDR", value: "\(s.recoverySkippedFrames) / \(s.keyframeSubmissions)"),
                 Row(name: "Session in / out", value: "\(s.decoded) / \(s.presented)")
             ]
+            if s.generatedFrames > 0 {
+                rows.append(Row(name: "Generated · total", value: String(s.generatedFrames)))
+            }
         }
         self.rows = preset == .hidden ? [] : rows
         accessibilityText = PerformanceHUDText.render(s, preset: preset, controller: "")

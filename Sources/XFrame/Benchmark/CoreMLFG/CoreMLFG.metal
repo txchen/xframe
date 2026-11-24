@@ -11,6 +11,24 @@ struct FGBias {
 };
 
 constexpr sampler linearPixel(coord::pixel, address::clamp_to_edge, filter::linear);
+constexpr sampler linearNorm(coord::normalized, address::clamp_to_edge, filter::linear);
+
+kernel void fgNV12ToRGBA(texture2d<float> luma [[texture(0)]],
+                         texture2d<float> chroma [[texture(1)]],
+                         texture2d<float, access::write> out [[texture(2)]],
+                         constant float4& conversion [[buffer(0)]],
+                         uint2 p [[thread_position_in_grid]]) {
+    uint w = out.get_width(), h = out.get_height();
+    if (p.x >= w || p.y >= h) return;
+    float2 uv = (float2(p) + 0.5f) / float2(w, h);
+    float y = (luma.sample(linearNorm, uv).r * 255.0f - 16.0f) / 219.0f;
+    float2 cbcr = (chroma.sample(linearNorm, uv).rg * 255.0f - 128.0f) / 224.0f;
+    float kr = conversion.x, kb = conversion.y, kg = 1.0f - kr - kb;
+    float r = y + 2.0f * (1.0f - kr) * cbcr.y;
+    float b = y + 2.0f * (1.0f - kb) * cbcr.x;
+    float g = y - 2.0f * kb * (1.0f - kb) / kg * cbcr.x - 2.0f * kr * (1.0f - kr) / kg * cbcr.y;
+    out.write(float4(saturate(float3(r, g, b)), 1.0f), p);
+}
 
 // Sample the box area mean of RGB8 texels. Padded tile gutter stays zero.
 float3 fgBox(texture2d<float> t, int2 p, constant FGSize& s) {

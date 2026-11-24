@@ -2,7 +2,7 @@
 
 A native Xbox streaming client for Apple Silicon Macs, under development.
 
-The current increment connects xCloud sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, black bars, Retina backing pixels, native full-screen support, and window resizing. Single-controller input and an opt-in keyboard gamepad fallback are implemented. Optional MetalFX Spatial and integer scaling are implemented. A LAN-only Xbox console streaming candidate is implemented; Series X behavior has not yet been verified on a physical console.
+XFrame connects xCloud and LAN Xbox Console Remote Play sessions to native H.264 video through WebRTC, verified VideoToolbox hardware decoding, and Metal rendering, with receive-only game audio through WebRTC's native output. Local H.264 playback and a fixed 1920 × 1080 test pattern remain available. Rendering uses Aspect Fit, Retina backing pixels, native full-screen support (with macOS Game Mode), optional MetalFX Spatial + sharpening, integer scaling, a default-on low-latency Original render worker, and optional live Core ML (ANE) + Metal 30 → 60 fps frame generation. Single-controller input (event-driven) and an opt-in keyboard gamepad fallback are implemented.
 
 ## Requirements
 
@@ -35,6 +35,8 @@ The script explicitly selects SwiftPM's native build engine because the default 
 Use **View → Toggle Full Screen** or **Control-Command-F** to toggle native full-screen mode. Closing all windows quits the app.
 
 Original scaling renders on a dedicated real-time worker thread, timed just before each display refresh. In matched xCloud sessions on M1, this lowered local frame age by about 7 ms, from about 40 to 33 ms. Version 0.1.5 enables it by default. Turn it off or on with **View → Low-Latency Original Rendering**. The change applies immediately, including during a stream, and persists. See [the acceptance results](docs/research/original-render-latency/acceptance-results-r2.md).
+
+Optional live 30 → 60 fps frame generation (**View → Frame Generation** or the in-picture Playback Settings panel) runs a Core ML (ANE) + Metal pipeline for 720p, 1080p, and 1440p sources, including 30 fps games streamed inside 60 Hz xCloud/console feeds.
 
 Controller input enablement is remembered across app restarts (first launch defaults to off); focus loss still releases game input. The controller toggle stays in the View menu so a controller user cannot disable their own navigation from the playback panel.
 

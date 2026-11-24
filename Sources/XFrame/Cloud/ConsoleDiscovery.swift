@@ -27,13 +27,19 @@ enum ConsoleDiscovery {
         defer { Darwin.close(fd) }
         var enabled: Int32 = 1
         guard setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &enabled, socklen_t(MemoryLayout<Int32>.size)) == 0 else { return [] }
+        let interfaces = LocalMediaPath.interfaces()
+        var targets: [UInt32] = [0xffff_ffff, 0xefff_fffa] // 255.255.255.255, 239.255.255.250
+        for iface in interfaces where iface.mask != 0 && iface.mask != 0xffff_ffff {
+            let directed = (iface.address & iface.mask) | ~iface.mask
+            if !targets.contains(directed) { targets.append(directed) }
+        }
         func sendDiscovery() {
-            for address in ["255.255.255.255", "239.255.255.250"] {
+            for ip in targets {
                 var destination = sockaddr_in()
                 destination.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
                 destination.sin_family = sa_family_t(AF_INET)
                 destination.sin_port = UInt16(5050).bigEndian
-                _ = address.withCString { inet_pton(AF_INET, $0, &destination.sin_addr) }
+                destination.sin_addr.s_addr = ip.bigEndian
                 let count = request.withUnsafeBytes { bytes in
                     withUnsafePointer(to: &destination) { pointer in
                         pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddr in
@@ -45,7 +51,6 @@ enum ConsoleDiscovery {
             }
         }
         var found: [String: DiscoveredConsole] = [:]
-        let interfaces = LocalMediaPath.interfaces()
         let deadline = Date().addingTimeInterval(1.5)
         var nextSend = Date.distantPast
         while Date() < deadline {

@@ -7,25 +7,31 @@ enum H264AccessUnit {
     // WebRTC's H.264 depacketizer supplies Annex B access units. Only compressed
     // bytes are copied here; decoded pixel planes stay on CoreVideo/Metal surfaces.
     static func nalUnits(_ data: Data) -> [Data] {
-        let bytes = [UInt8](data)
-        var starts: [(Int, Int)] = []
-        var i = 0
-        while i + 2 < bytes.count {
-            if bytes[i] == 0 && bytes[i + 1] == 0 {
-                if bytes[i + 2] == 1 { starts.append((i, i + 3)); i += 3; continue }
-                if i + 3 < bytes.count && bytes[i + 2] == 0 && bytes[i + 3] == 1 {
-                    starts.append((i, i + 4)); i += 4; continue
+        data.withUnsafeBytes { raw -> [Data] in
+            guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return [] }
+            let count = raw.count
+            var starts: [(Int, Int)] = []
+            starts.reserveCapacity(8)
+            var i = 0
+            while i + 2 < count {
+                if base[i] == 0 && base[i + 1] == 0 {
+                    if base[i + 2] == 1 { starts.append((i, i + 3)); i += 3; continue }
+                    if i + 3 < count && base[i + 2] == 0 && base[i + 3] == 1 {
+                        starts.append((i, i + 4)); i += 4; continue
+                    }
                 }
+                i += 1
             }
-            i += 1
-        }
-        return starts.enumerated().compactMap { index, start in
-            let end = index + 1 < starts.count ? starts[index + 1].0 : bytes.count
-            return end > start.1 ? Data(bytes[start.1..<end]) : nil
+            let baseIndex = data.startIndex
+            return starts.enumerated().compactMap { index, start in
+                let end = index + 1 < starts.count ? starts[index + 1].0 : count
+                return end > start.1 ? Data(data[(baseIndex + start.1)..<(baseIndex + end)]) : nil
+            }
         }
     }
     static func lengthPrefixed(_ units: [Data]) -> Data {
         var result = Data()
+        result.reserveCapacity(units.reduce(0) { $0 + 4 + $1.count })
         for unit in units {
             var length = UInt32(unit.count).bigEndian
             withUnsafeBytes(of: &length) { result.append(contentsOf: $0) }
@@ -71,7 +77,8 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     private let output: LiveVideo
     private let callbackLock = NSLock()
     private var callback: RTCVideoDecoderCallback?
-    private var recovery = H264RecoveryState() // Protected by callbackLock.
+    private var recovery = H264RecoveryState()
+    private var sessionInvalidated = false
     private var session: VTDecompressionSession?
     private var format: CMVideoFormatDescription?
     private var sps: Data?
@@ -83,9 +90,12 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
     // Shared by synchronous and asynchronous decode failures; tested without
     // relying on nondeterministic network packet loss.
     func handleDecodeFailure(_ status: OSStatus, synchronous: Bool = false, keyframe: Bool = false, unit: Int? = nil) {
-        if status == noErr { return } // VideoToolbox may intentionally drop a frame.
-        if status == kVTVideoDecoderBadDataErr {
-            callbackLock.withLock { recovery.failed(unit: unit) }
+        if status == noErr { return }
+        if status == kVTVideoDecoderBadDataErr || status == kVTInvalidSessionErr {
+            callbackLock.withLock {
+                recovery.failed(unit: unit)
+                if status == kVTInvalidSessionErr { sessionInvalidated = true }
+            }
             output.recoverableDecodeError(synchronous: synchronous, keyframe: keyframe, unit: unit); return
         }
         output.fail("Hardware H.264 decoding failed (\(status)).")
@@ -96,7 +106,7 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
             VTDecompressionSessionInvalidate(session)
         }
         session = nil; format = nil; sps = nil; pps = nil
-        callbackLock.withLock { recovery = H264RecoveryState() }
+        callbackLock.withLock { recovery = H264RecoveryState(); sessionInvalidated = false }
         return 0
     }
     func waitForPendingFrames() {
@@ -112,6 +122,12 @@ final class HardwareH264Decoder: NSObject, RTCVideoDecoder, @unchecked Sendable 
         let nextPPS = units.first { ($0.first! & 31) == 8 } ?? pps
         guard let nextSPS, let nextPPS else { return -1 }
         do {
+            let invalidated = callbackLock.withLock { () -> Bool in
+                let flag = sessionInvalidated
+                sessionInvalidated = false
+                return flag
+            }
+            if invalidated { _ = release() }
             if session == nil || nextSPS != sps || nextPPS != pps {
                 let nextFormat = try makeFormat(sps: nextSPS, pps: nextPPS)
                 if let session, VTDecompressionSessionCanAcceptFormatDescription(session, formatDescription: nextFormat) {

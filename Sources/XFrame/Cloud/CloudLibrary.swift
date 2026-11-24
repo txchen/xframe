@@ -202,6 +202,20 @@ final class CloudLibrary {
         self.sleep = sleep
     }
 
+    func cancelLoading() {
+        guard !ownsSession else { return }
+        if loading {
+            task?.cancel()
+            task = nil
+            loading = false
+        }
+        if loadingConsoles {
+            consoleTask?.cancel()
+            consoleTask = nil
+            loadingConsoles = false
+        }
+    }
+
     func reset() {
         guard !ownsSession && !loading && !loadingConsoles else { return }
         retryGameID = nil
@@ -406,7 +420,7 @@ final class CloudLibrary {
                         if cancelRequested { await cleanup(); return }
                         ready = true
                         if let signaling = service as? any CloudSignaling {
-                            let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing, requireLocalMedia: source == .home)
+                            let connection = CloudVideoConnection(framePacing: launchPreferences.framePacing, quality: launchPreferences.quality, requireLocalMedia: source == .home)
                             self.connection = connection
                             connection.showPlaybackSettings = { [weak library = self] in library?.showPlaybackSettings?() }
                             connection.settingsGamepad = { [weak library = self] state in library?.settingsGamepad?(state) }

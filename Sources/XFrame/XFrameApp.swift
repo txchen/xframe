@@ -102,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var scalingMenuItems: [NSMenuItem] = []
     private var frameGenerationMenuItems: [NSMenuItem] = []
     private var renderWorkerMenuItem: NSMenuItem?
+    private var zeroPlayoutMenuItem: NSMenuItem?
     private var hudMenuItems: [NSMenuItem] = []
     private var controllerMenuItem: NSMenuItem?
     private var rumbleMenuItem: NSMenuItem?
@@ -109,6 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var keyboardMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        WebRTCFieldTrials.configureIfNeeded()
         installMenu()
         keyboardMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
             guard let self else { return event }
@@ -129,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             renderer.hudPreset = hudPreset
             renderer.sharpening = sharpening
             playbackSettings.updateSharpening(sharpening)
+            playbackSettings.updateFrameGeneration(frameGenerationMode)
             renderer.scalingReport = { [weak self] status in
                 self?.diagnostics.scaling = status
                 self?.playbackSettings.setEffective(status)
@@ -136,6 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             view.showPlaybackSettings = { [weak self] in self?.togglePlaybackSettings() }
             view.dismissPlaybackSettings = { [weak self] in self?.hidePlaybackSettings() }
             playbackSettings.selectScaling = { [weak self] mode in self?.setScaling(mode) }
+            playbackSettings.selectFrameGeneration = { [weak self] mode in self?.setFrameGeneration(mode) }
             playbackSettings.selectSharpening = { [weak self] preset in
                 guard let self else { return }
                 self.sharpening = preset
@@ -412,6 +416,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         sender.state = enabled ? .on : .off
         videoView?.needsDisplay = true
     }
+    @objc private func toggleZeroPlayoutDelay(_ sender: NSMenuItem) {
+        let enabled = !WebRTCFieldTrials.zeroPlayoutDelayPreference()
+        UserDefaults.standard.set(enabled, forKey: WebRTCFieldTrials.zeroPlayoutDelayKey)
+        sender.state = enabled ? .on : .off
+    }
     @objc private func toggleControllerVibration(_ sender: NSMenuItem) {
         account.library.rumbleEnabled.toggle()
         refreshInputMenu()
@@ -535,6 +544,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func setFrameGeneration(_ mode: FrameGenerationMode) {
         frameGenerationMode = mode
         mode.save()
+        playbackSettings.updateFrameGeneration(mode)
         renderer?.frameGenerationMode = mode
         for item in frameGenerationMenuItems {
             item.state = item.representedObject as? String == mode.rawValue ? .on : .off
@@ -673,10 +683,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             item.state = mode == frameGenerationMode ? .on : .off
             frameGenerationMenuItems.append(item)
         }
-        renderWorkerMenuItem = viewMenu.addItem(withTitle: "Low-Latency Original Rendering", action: #selector(toggleRenderWorker(_:)), keyEquivalent: "")
+        renderWorkerMenuItem = viewMenu.addItem(withTitle: "Low-Latency Rendering", action: #selector(toggleRenderWorker(_:)), keyEquivalent: "")
         renderWorkerMenuItem?.target = self
-        renderWorkerMenuItem?.toolTip = "Renders Original scaling on a dedicated thread just before each refresh (about 7 ms lower latency on M1)."
+        renderWorkerMenuItem?.toolTip = "Renders Original, Integer, and MetalFX Spatial on a dedicated real-time thread with adaptive VSync lead."
         renderWorkerMenuItem?.state = MetalRenderer.renderWorkerPreference() ? .on : .off
+        zeroPlayoutMenuItem = viewMenu.addItem(withTitle: "Zero Playout Delay (WebRTC)", action: #selector(toggleZeroPlayoutDelay(_:)), keyEquivalent: "")
+        zeroPlayoutMenuItem?.target = self
+        zeroPlayoutMenuItem?.toolTip = "Applies WebRTC-ForcePlayoutDelay (min_ms:0,max_ms:0) to minimize jitter-buffer wait. Takes effect on next launch."
+        zeroPlayoutMenuItem?.state = WebRTCFieldTrials.zeroPlayoutDelayPreference() ? .on : .off
         let fullScreen = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         fullScreen.keyEquivalentModifierMask = [.control, .command]
         controllerMenuItem = viewMenu.addItem(withTitle: "Enable Controller Input", action: #selector(toggleControllerInput(_:)), keyEquivalent: "")

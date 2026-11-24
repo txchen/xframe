@@ -48,6 +48,7 @@ struct PlaybackStats: Sendable {
     var hardware = false
     var decoded = 0
     var presented = 0
+    var generatedFrames = 0
     var dropped = 0
     var queued = 0
     var peakQueue = 0
@@ -154,6 +155,11 @@ final class LocalVideo: VideoSource, @unchecked Sendable {
         condition.lock(); defer { condition.unlock() }
         guard !stopped else { return }
         stats.presented += 1
+    }
+    func didPresentGeneratedFrame() {
+        condition.lock(); defer { condition.unlock() }
+        guard !stopped else { return }
+        stats.generatedFrames += 1
     }
     func didMissPresentation() {
         condition.lock(); defer { condition.unlock() }

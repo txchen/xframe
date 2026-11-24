@@ -101,6 +101,50 @@ private func makeDummyTexture(width: Int, height: Int) throws -> any MTLTexture 
     #expect(scheduler.pollDisplay(at: 1.070) == nil)
 }
 
+@Test func schedulerPacesRealFrameOn120HzDisplay() throws {
+    var scheduler = FrameInterpolationScheduler()
+    scheduler.setMode(.balanced)
+
+    let pbA = try makeDummyNV12Buffer(width: 1920, height: 1080)
+    let pbB = try makeDummyNV12Buffer(width: 1920, height: 1080)
+    _ = scheduler.ingest(frame: VideoFrame(buffer: pbA, time: 0.0, id: 1), at: 1.0, isLive: false, width: 1920, height: 1080)
+    let resB = scheduler.ingest(frame: VideoFrame(buffer: pbB, time: 0.0333, id: 2), at: 1.0333, isLive: false, width: 1920, height: 1080)
+    let job = try #require(resB.job)
+    let midTex = try makeDummyTexture(width: 1920, height: 1080)
+    scheduler.complete(generation: job.generation, texture: midTex, width: 1920, height: 1080)
+
+    // Midpoint delivered at t = 1.0416 (first 120 Hz tick after completion).
+    if case .interpolated = scheduler.pollDisplay(at: 1.0416) {} else { Issue.record("Expected midpoint") }
+    // Next 120 Hz tick (+8.3 ms = 1.0500) must wait instead of emitting real frame immediately (no 1-1-0-0 judder).
+    #expect(scheduler.pollDisplay(at: 1.0500) == nil)
+    // Following 120 Hz tick (+16.7 ms = 1.0583) releases real frame B.
+    if case .real(let f) = scheduler.pollDisplay(at: 1.0583) { #expect(f.id == 2) } else { Issue.record("Expected paced real frame B") }
+}
+
+@Test func lumaFingerprintDetectsDuplicateAndChangedFrames() throws {
+    let pb1 = try makeDummyNV12Buffer(width: 1280, height: 720)
+    let pb2 = try makeDummyNV12Buffer(width: 1280, height: 720)
+    let pb3 = try makeDummyNV12Buffer(width: 1280, height: 720)
+
+    func fillY(_ pb: CVPixelBuffer, value: UInt8) {
+        CVPixelBufferLockBaseAddress(pb, [])
+        defer { CVPixelBufferUnlockBaseAddress(pb, []) }
+        if let base = CVPixelBufferGetBaseAddressOfPlane(pb, 0) {
+            let bytes = CVPixelBufferGetBytesPerRowOfPlane(pb, 0) * CVPixelBufferGetHeightOfPlane(pb, 0)
+            memset(base, Int32(value), bytes)
+        }
+    }
+    fillY(pb1, value: 40)
+    fillY(pb2, value: 40)
+    fillY(pb3, value: 180)
+
+    let fp1 = try #require(LumaFingerprint.capture(from: pb1))
+    let fp2 = try #require(LumaFingerprint.capture(from: pb2))
+    let fp3 = try #require(LumaFingerprint.capture(from: pb3))
+    #expect(fp1.isNearlyIdentical(to: fp2))
+    #expect(!fp1.isNearlyIdentical(to: fp3))
+}
+
 @Test func liveInterpolatorProducesInterpolatedTextureWhenWeightsCached() async throws {
     guard (try? BenchmarkModelCache().cachedModel()) != nil else { return }
     let device = try #require(MTLCreateSystemDefaultDevice())

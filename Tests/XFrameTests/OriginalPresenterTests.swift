@@ -169,3 +169,20 @@ private func acquirePermits(_ s: DispatchSemaphore, _ n: Int, timeout: Double) -
     defaults.set(true, forKey: MetalRenderer.renderWorkerKey)
     #expect(MetalRenderer.renderWorkerPreference(defaults))
 }
+
+@Test func renderWorkerAdaptiveLeadAndWebRTCFieldTrials() throws {
+    #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .original, metalFXGpuEMA: 0.004) == 0.003)
+    #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .integer, metalFXGpuEMA: 0.004) == 0.003)
+    #expect(abs(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .metalFX, metalFXGpuEMA: 0.004) - 0.0065) < 0.0001)
+    #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .metalFX, metalFXGpuEMA: 0.0005) == 0.004)
+    #expect(OriginalPresenter.effectiveLead(baseLead: 0.003, scalingMode: .metalFX, metalFXGpuEMA: 0.020) == 0.011)
+
+    let suite = "xframe-webrtc-trials-(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    #expect(WebRTCFieldTrials.zeroPlayoutDelayPreference(defaults))
+    #expect(WebRTCFieldTrials.dictionary(zeroPlayoutDelay: true) == ["WebRTC-ForcePlayoutDelay": "min_ms:0,max_ms:0"])
+    #expect(WebRTCFieldTrials.dictionary(zeroPlayoutDelay: false).isEmpty)
+    defaults.set(false, forKey: WebRTCFieldTrials.zeroPlayoutDelayKey)
+    #expect(!WebRTCFieldTrials.zeroPlayoutDelayPreference(defaults))
+}

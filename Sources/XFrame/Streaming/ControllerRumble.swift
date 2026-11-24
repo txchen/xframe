@@ -53,6 +53,7 @@ struct RumblePulse: Equatable, Sendable {
 final class ControllerRumble {
     private weak var controller: GCController?
     private var engines: [GCHapticsLocality: CHHapticEngine] = [:]
+    private var startedLocalities: Set<GCHapticsLocality> = []
     private var players: [any CHHapticPatternPlayer] = []
     private var stopTask: Task<Void, Never>?
     private(set) var status = "No controller"
@@ -61,6 +62,7 @@ final class ControllerRumble {
         if controller === device { return }
         stop()
         engines.removeAll()
+        startedLocalities.removeAll()
         controller = device
         guard let device else { status = "No controller"; return }
         guard let haptics = device.haptics else { status = "Controller haptics unavailable on this connection"; return }
@@ -68,17 +70,32 @@ final class ControllerRumble {
         let candidates: [GCHapticsLocality] = [.leftHandle, .rightHandle,
                           .leftTrigger, .rightTrigger]
         for locality in candidates where localities.contains(locality) {
-            if let engine = haptics.createEngine(withLocality: locality) { engines[locality] = engine }
+            if let engine = haptics.createEngine(withLocality: locality) {
+                configure(engine, locality: locality)
+                engines[locality] = engine
+            }
         }
         if engines.isEmpty, let engine = haptics.createEngine(withLocality: .default) {
+            configure(engine, locality: .default)
             engines[.default] = engine
         }
         status = engines.isEmpty ? "Controller haptics unavailable on this connection" : "Controller haptics ready"
     }
 
+    private func configure(_ engine: CHHapticEngine, locality: GCHapticsLocality) {
+        engine.isAutoShutdownEnabled = true
+        engine.resetHandler = { [weak self] in
+            Task { @MainActor [weak self] in self?.startedLocalities.remove(locality) }
+        }
+        engine.stoppedHandler = { [weak self] _ in
+            Task { @MainActor [weak self] in self?.startedLocalities.remove(locality) }
+        }
+    }
+
     func play(_ command: RumbleCommand) {
         stopPlayers()
-        guard !engines.isEmpty, let pulse = command.pulse else { stop(); return }
+        guard !engines.isEmpty, let pulse = command.pulse else { return }
+        var hadError = false
         for (locality, engine) in engines {
             let intensity: Double
             switch locality {
@@ -90,7 +107,10 @@ final class ControllerRumble {
             }
             guard intensity > 0 else { continue }
             do {
-                try engine.start()
+                if !startedLocalities.contains(locality) {
+                    try engine.start()
+                    startedLocalities.insert(locality)
+                }
                 let parameters = [CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity)),
                                   CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)]
                 let event = CHHapticEvent(eventType: .hapticContinuous, parameters: parameters,
@@ -99,19 +119,24 @@ final class ControllerRumble {
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
                 players.append(player)
-            } catch { status = "Controller haptics could not play" }
+            } catch {
+                startedLocalities.remove(locality)
+                hadError = true
+            }
         }
+        status = hadError && players.isEmpty ? "Controller haptics could not play" : "Controller haptics ready"
         if !players.isEmpty {
             stopTask = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(pulse.duration + 0.1))
                 guard !Task.isCancelled else { return }
-                self?.stop()
+                self?.stopPlayers()
             }
         }
     }
 
     func stop() {
         stopPlayers()
+        startedLocalities.removeAll()
         for engine in engines.values { engine.stop(completionHandler: nil) }
     }
 
