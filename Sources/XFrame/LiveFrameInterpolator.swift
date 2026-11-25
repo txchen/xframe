@@ -27,6 +27,11 @@ enum FrameGenerationMode: String, CaseIterable, Sendable {
         }
     }
 
+    var next: Self {
+        let all = Self.allCases
+        return all[((all.firstIndex(of: self) ?? 0) + 1) % all.count]
+    }
+
     static func load(_ defaults: UserDefaults = .standard) -> Self {
         defaults.string(forKey: defaultsKey).flatMap(Self.init(rawValue:)) ?? .off
     }

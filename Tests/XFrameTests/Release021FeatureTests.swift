@@ -103,3 +103,19 @@ import Testing
     rumbleBytes[3] = 4 // Out of 0..3 range rejected
     #expect(RumbleCommand.parse(Data(rumbleBytes)) == nil)
 }
+
+@Test func connectingStatusDotsAnimateAndModesCycle() {
+    let t0 = Date(timeIntervalSinceReferenceDate: 0.0)
+    let t1 = Date(timeIntervalSinceReferenceDate: 0.46)
+    let t2 = Date(timeIntervalSinceReferenceDate: 0.92)
+    let t3 = Date(timeIntervalSinceReferenceDate: 1.38)
+    #expect(StreamConnectingView.animatedText("Negotiating H.264 video…", at: t0) == "Negotiating H.264 video.")
+    #expect(StreamConnectingView.animatedText("Negotiating H.264 video…", at: t1) == "Negotiating H.264 video..")
+    #expect(StreamConnectingView.animatedText("Negotiating H.264 video…", at: t2) == "Negotiating H.264 video...")
+    #expect(StreamConnectingView.animatedText("Negotiating H.264 video…", at: t3) == "Negotiating H.264 video.")
+
+    #expect(VideoScalingMode.original.next == .integer)
+    #expect(VideoScalingMode.fsr1.next == .original)
+    #expect(FrameGenerationMode.off.next == .balanced)
+    #expect(FrameGenerationMode.quality.next == .off)
+}

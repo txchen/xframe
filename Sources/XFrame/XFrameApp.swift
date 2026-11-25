@@ -483,6 +483,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         alert.runModal()
     }
     private func handleKeyboard(_ event: NSEvent) -> NSEvent? {
+        if event.type == .keyDown, !event.isARepeat,
+           event.window === window, window?.isKeyWindow == true,
+           event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
+            switch event.keyCode {
+            case 97: cyclePerformanceHUD(); return nil          // F6
+            case 98: cycleScaling(); return nil                 // F7
+            case 100: cycleFrameGeneration(); return nil        // F8
+            case 101: togglePlaybackSettings(); return nil      // F9
+            default: break
+            }
+        }
         if !playbackSettings.isHidden, event.window === window, window?.isKeyWindow == true {
             // Keep app/system shortcuts available. Consume all ordinary game keys,
             // including key-up, while settings owns local input.
@@ -572,6 +583,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func cyclePerformanceHUD() { setPerformanceHUD(hudPreset.next) }
+    @objc private func cycleScaling() { setScaling(scalingMode.next) }
+    @objc private func cycleFrameGeneration() { setFrameGeneration(frameGenerationMode.next) }
+    @objc private func togglePlaybackSettingsMenu() { togglePlaybackSettings() }
     @objc private func selectPerformanceHUD(_ sender: NSMenuItem) {
         guard let value = sender.representedObject as? String,
               let preset = PerformanceHUDPreset(rawValue: value) else { return }
@@ -760,6 +774,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         keyboardMenuItem?.target = self
         refreshInputMenu()
         viewMenu.addItem(withTitle: "Keyboard Controls…", action: #selector(showKeyboardControls), keyEquivalent: "").target = self
+        let cycleScalingItem = viewMenu.addItem(withTitle: "Cycle Video Scaling", action: #selector(cycleScaling), keyEquivalent: "s")
+        cycleScalingItem.keyEquivalentModifierMask = [.command, .shift]
+        cycleScalingItem.target = self
+        let cycleFGItem = viewMenu.addItem(withTitle: "Cycle Frame Generation", action: #selector(cycleFrameGeneration), keyEquivalent: "i")
+        cycleFGItem.keyEquivalentModifierMask = [.command, .shift]
+        cycleFGItem.target = self
+        let settingsToggleItem = viewMenu.addItem(withTitle: "Toggle Playback Settings", action: #selector(togglePlaybackSettingsMenu), keyEquivalent: "p")
+        settingsToggleItem.keyEquivalentModifierMask = [.command, .shift]
+        settingsToggleItem.target = self
         let cycle = viewMenu.addItem(withTitle: "Cycle Performance Overlay", action: #selector(cyclePerformanceHUD), keyEquivalent: "d")
         cycle.keyEquivalentModifierMask = [.command, .shift]
         cycle.target = self

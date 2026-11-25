@@ -28,6 +28,12 @@ struct KeyboardGamepad {
     1 / 2 / 3 / 4 — D-pad Up / Down / Left / Right
     Return — Menu       Tab — View
 
+    Quick Shortcuts (Playback Window):
+    F6 / Shift-Cmd-D — Cycle Performance Overlay
+    F7 / Shift-Cmd-S — Cycle Video Scaling
+    F8 / Shift-Cmd-I — Cycle Frame Generation
+    F9 / Shift-Cmd-P — Toggle Playback Settings
+
     Keyboard input is enabled by default and can be toggled in View or the right-click panel.
     Both controller and keyboard can be enabled; new input switches control automatically.
     Command, Control and Option shortcuts remain available.

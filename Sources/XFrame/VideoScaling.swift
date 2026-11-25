@@ -12,6 +12,10 @@ enum VideoScalingMode: String, CaseIterable, Codable, Sendable {
         case .fsr1: "FSR 1 (EASU + RCAS)"
         }
     }
+    var next: Self {
+        let all = Self.allCases
+        return all[((all.firstIndex(of: self) ?? 0) + 1) % all.count]
+    }
 }
 
 struct ScalingExtent: Equatable, Codable, Sendable {
