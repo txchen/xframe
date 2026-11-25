@@ -281,7 +281,7 @@ final class LiveFrameInterpolator: @unchecked Sendable {
     init(device: any MTLDevice, resourceBundle: Bundle) {
         self.device = device
         self.resourceBundle = resourceBundle
-        self.weightsURL = try? BenchmarkModelCache().cachedModel()
+        self.weightsURL = BenchmarkModelCache.bundledModel(in: resourceBundle) ?? (try? BenchmarkModelCache().cachedModel())
     }
 
     var mode: FrameGenerationMode {

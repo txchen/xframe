@@ -129,8 +129,8 @@ enum PostProcessingBenchmark {
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw RenderError.unavailable("No Metal device is available.")
         }
-        progress("Preparing bundled video…")
-        let frames = try await decodeFixture()
+        progress("Preparing benchmark video…")
+        let frames = try await decodeFixture(progress: progress)
         try Task.checkCancellation()
         var textureCache: CVMetalTextureCache?
         guard CVMetalTextureCacheCreate(nil, nil, device, nil, &textureCache) == kCVReturnSuccess,
@@ -253,11 +253,8 @@ enum PostProcessingBenchmark {
         return Bundle.module
     }
 
-    private static func decodeFixture() async throws -> [BenchmarkVideoFrame] {
-        let bundle = try resourceBundle()
-        guard let url = bundle.url(forResource: "BigBuckBunny-1080p30", withExtension: "mp4") else {
-            throw RenderError.unavailable("The benchmark video is missing from the app.")
-        }
+    private static func decodeFixture(progress: @Sendable (String) -> Void) async throws -> [BenchmarkVideoFrame] {
+        let url = try await BenchmarkReleaseModels.ensureFixtureVideo(progress: progress)
         let asset = AVURLAsset(url: url)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
             throw RenderError.unavailable("The benchmark video has no video track.")

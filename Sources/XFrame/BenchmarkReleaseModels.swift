@@ -3,9 +3,51 @@ import Foundation
 
 enum BenchmarkReleaseModels {
     static let fgURL = URL(string: "https://github.com/txchen/xframe/releases/download/v0.1.2/framegen.safetensors")!
+    static let fixtureURL = URL(string: "https://github.com/txchen/xframe/releases/download/v0.1.2/BigBuckBunny-1080p30.mp4")!
+    static let fixtureSHA256 = "5872055dcb979f5d469ede9c575e60418bc9d7731e0528c05ee0817cc0b08633"
     static let nrURL = URL(string: "https://github.com/txchen/xframe/releases/download/v0.1.2/NeuralRendering-Small.zip")!
     static let nrArchiveSHA256 = "f550437620f190206ad93561ee37910896972bcff9a3399eb7f449f305052380"
     static let nrWeightsSHA256 = "c496209573133d430cc510c0ae424ba67a73fb1c957d96191e0227c42832607b"
+
+    static var cachedFixtureURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/XFrame/BenchmarkModels/BigBuckBunny-1080p30.mp4")
+    }
+
+    static func ensureFixtureVideo(progress: @Sendable (String) -> Void = { _ in }) async throws -> URL {
+        func verified(_ url: URL) -> Bool {
+            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+                  data.count > 0, data.count <= 20_000_000 else { return false }
+            let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            return digest == fixtureSHA256
+        }
+        let cached = cachedFixtureURL
+        if verified(cached) { return cached }
+        // Support offline unit tests / local source checkouts without requiring a download.
+        let repoFixture = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Benchmark/BigBuckBunny-1080p30.mp4")
+        if verified(repoFixture) { return repoFixture }
+
+        progress("Downloading benchmark test video (5.4 MB)…")
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForResource = 120
+        let session = URLSession(configuration: configuration, delegate: HTTPSModelRedirects(), delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        let (file, response) = try await session.download(from: fixtureURL)
+        defer { try? FileManager.default.removeItem(at: file) }
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+              http.url?.scheme == "https", verified(file) else {
+            throw RenderError.unavailable("Benchmark video download failed or checksum mismatch.")
+        }
+        try FileManager.default.createDirectory(at: cached.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        let data = try Data(contentsOf: file, options: .mappedIfSafe)
+        try data.write(to: cached, options: .atomic)
+        return cached
+    }
 
     static func downloadNR(cache: SmallNRModelCache) async throws -> URL {
         let configuration = URLSessionConfiguration.ephemeral

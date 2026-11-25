@@ -23,7 +23,8 @@ enum XFrameApp {
                     var fg: URL?, nr: URL?
                     if selection.needsFG {
                         let cache = BenchmarkModelCache()
-                        if let cached = try cache.cachedModel() { fg = cached }
+                        if let bundled = BenchmarkModelCache.bundledModel() { fg = bundled }
+                        else if let cached = try cache.cachedModel() { fg = cached }
                         else { fg = try await cache.download(from: BenchmarkReleaseModels.fgURL) }
                     }
                     if selection.needsNR {

@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 final class PostProcessingBenchmarkModel: ObservableObject {
     @Published var selection = BenchmarkSelection()
     @Published var report: PostProcessingBenchmarkReport?
-    @Published var status = "Ready. The test uses a bundled video and leaves playback settings unchanged."
+    @Published var status = "Ready. Test video and optional Core ML weights download on demand."
     @Published var running = false
     @Published var weightsURL: URL?
     @Published var modelBusy = false
@@ -20,11 +20,16 @@ final class PostProcessingBenchmarkModel: ObservableObject {
         self.sessionActive = sessionActive
         do { smallNRURL = try smallNRCache.cachedModel() }
         catch { status = "Small NR cache needs replacement: \(error.localizedDescription)" }
-        do {
-            weightsURL = try modelCache.cachedModel()
-            if weightsURL != nil { status = "Ready. Choose the tests to run; cached weights are available." }
-        } catch {
-            status = "Cached MLX-DLSS model needs replacement: \(error.localizedDescription)"
+        if let bundled = BenchmarkModelCache.bundledModel() {
+            weightsURL = bundled
+            status = "Ready. Core ML FG weights are bundled; benchmark video downloads on demand."
+        } else {
+            do {
+                weightsURL = try modelCache.cachedModel()
+                if weightsURL != nil { status = "Ready. Choose the tests to run; cached weights are available." }
+            } catch {
+                status = "Cached MLX-DLSS model needs replacement: \(error.localizedDescription)"
+            }
         }
     }
 
@@ -48,7 +53,7 @@ final class PostProcessingBenchmarkModel: ObservableObject {
             var selectedWeights = options.needsFG ? cachedFG : nil
             var selectedNR = options.needsNR ? cachedNR : nil
             if options.needsFG && selectedWeights == nil {
-                await MainActor.run { model.status = "Downloading MLX FG weights from GitHub Release (2.9 MB)…" }
+                await MainActor.run { model.status = "Downloading Core ML FG weights from GitHub Release (2.9 MB)…" }
                 selectedWeights = try await fgCache.download(from: BenchmarkReleaseModels.fgURL)
                 let downloaded = selectedWeights
                 await MainActor.run { model.weightsURL = downloaded }
@@ -166,7 +171,7 @@ struct PostProcessingBenchmarkView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Post-Processing Benchmark").font(.title2.weight(.semibold))
-                    Text("60 Hz target · bundled 1080p30 video · local processing only")
+                    Text("60 Hz target · on-demand 1080p30 video · native Metal, VideoToolbox & Core ML ANE")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -183,10 +188,13 @@ struct PostProcessingBenchmarkView: View {
                         Text("Choose tests").font(.title3.bold())
                         Spacer()
                         Button("Recommended") { model.selection.workloads = BenchmarkSelection().workloads }
-                        Button("All") { model.selection.workloads = Set(BenchmarkWorkload.allCases) }
+                        Button("All") {
+                            let visibleGroups = Set(["MetalFX scaling", "VideoToolbox interpolation", "Core ML frame generation · ANE + Metal"])
+                            model.selection.workloads = Set(BenchmarkWorkload.allCases.filter { visibleGroups.contains($0.group) })
+                        }
                         Button("None") { model.selection.workloads = [] }
                     }
-                    ForEach(["MetalFX scaling", "VideoToolbox interpolation", "Core ML frame generation · ANE + Metal", "MLX frame generation", "Small NR · research"], id: \.self) { group in
+                    ForEach(["MetalFX scaling", "VideoToolbox interpolation", "Core ML frame generation · ANE + Metal"], id: \.self) { group in
                         VStack(alignment: .leading, spacing: 10) {
                             Text(group).font(.system(size: 17, weight: .semibold))
                             let items = BenchmarkWorkload.allCases.filter { $0.group == group }
@@ -211,7 +219,7 @@ struct PostProcessingBenchmarkView: View {
                             }
                             if group == "Core ML frame generation · ANE + Metal" {
                                 HStack {
-                                    Text(model.weightsURL == nil ? "Shares 2.9 MB FG weights · compiles Core ML once on first run" : "Weights ready · compiles Core ML once on first run")
+                                    Text(model.weightsURL == nil ? "2.8 MB FG weights · compiles Core ML once on first run" : "Bundled 2.8 MB FG weights ready · compiles Core ML once on first run")
                                     Spacer()
                                     Button("Import…") { model.chooseWeights() }
                                 }.font(.system(size: 14)).foregroundStyle(.secondary)

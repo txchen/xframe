@@ -33,6 +33,22 @@ struct BenchmarkModelCache: Sendable {
 
     var modelURL: URL { directory.appendingPathComponent("framegen-310.7.0.safetensors") }
 
+    static func bundledModel(in bundle: Bundle? = nil) -> URL? {
+        let resolved: Bundle?
+        if let bundle {
+            resolved = bundle
+        } else if Bundle.main.bundleURL.pathExtension == "app",
+                  let resources = Bundle.main.resourceURL {
+            resolved = Bundle(url: resources.appendingPathComponent("XFrame_XFrame.bundle"))
+        } else {
+            resolved = Bundle.module
+        }
+        guard let url = resolved?.url(forResource: "CoreMLFG", withExtension: nil)?
+            .appendingPathComponent("framegen-310.7.0.safetensors"),
+              FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
     func cachedModel() throws -> URL? {
         var info = stat()
         if lstat(modelURL.path, &info) < 0 {
