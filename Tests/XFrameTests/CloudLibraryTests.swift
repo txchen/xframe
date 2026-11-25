@@ -254,7 +254,7 @@ private actor FakeCloud: CloudServing {
     let library = CloudLibrary(preferencesStore: store)
     library.load(using: fake)
     try await eventually { !library.loading }
-    let first = CloudStreamPreferences(quality: .hq, language: .simplifiedChinese, framePacing: .lowLatency)
+    let first = CloudStreamPreferences(quality: .hq, language: .simplifiedChinese, framePacing: .adaptive)
     let second = CloudStreamPreferences(quality: .standard, language: .traditionalChinese)
     library.streamPreferences = first
     library.start(cloudGame)

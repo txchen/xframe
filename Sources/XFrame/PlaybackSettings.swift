@@ -99,7 +99,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         layer?.borderColor = NSColor.white.withAlphaComponent(0.14).cgColor
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 6
+        stack.spacing = 5
         stack.edgeInsets = NSEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
         stack.translatesAutoresizingMaskIntoConstraints = false
         scroll.drawsBackground = false
@@ -116,7 +116,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         slider.controlSize = .small
         slider.setAccessibilityLabel("Game volume")
         let preferredWidth = widthAnchor.constraint(equalToConstant: 368)
-        let preferredHeight = heightAnchor.constraint(equalToConstant: 520)
+        let preferredHeight = heightAnchor.constraint(equalToConstant: 580)
         preferredWidth.priority = .defaultHigh
         preferredHeight.priority = .defaultHigh
         NSLayoutConstraint.activate([preferredWidth, preferredHeight])
@@ -168,7 +168,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         actions.append(row)
         stack.addArrangedSubview(button)
         button.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -8).isActive = true
-        button.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 30).isActive = true
     }
 
     private func rebuild() {

@@ -407,6 +407,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         worker.start(); workerSlot.set(worker)
         workerView = view
         let link = view.displayLink(target: RenderWorkerTick(self), selector: #selector(RenderWorkerTick.tick(_:)))
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
         link.add(to: .main, forMode: .common); workerLink = link
     }
     private func stopRenderWorker() {

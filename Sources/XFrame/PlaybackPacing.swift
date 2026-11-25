@@ -2,23 +2,21 @@ import Foundation
 import QuartzCore
 
 enum FramePacingMode: String, CaseIterable, Codable, Sendable {
-    case balanced, lowLatency, adaptive
+    case balanced, adaptive
     var title: String {
         switch self {
         case .balanced: "Balanced"
-        case .lowLatency: "Low latency (experimental)"
-        case .adaptive: "Adaptive smoothing (experimental)"
+        case .adaptive: "Adaptive smoothing"
         }
     }
     var shortTitle: String {
         switch self {
         case .balanced: "Balanced"
-        case .lowLatency: "Low latency"
         case .adaptive: "Adaptive"
         }
     }
     var capacity: Int {
-        switch self { case .balanced: 2; case .lowLatency: 1; case .adaptive: 4 }
+        switch self { case .balanced: 2; case .adaptive: 4 }
     }
 }
 

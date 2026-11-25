@@ -34,7 +34,7 @@ struct CloudStreamSettingsView: View {
                 Picker("Frame pacing", selection: $library.streamPreferences.framePacing) {
                     ForEach(FramePacingMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
-                Text("Balanced smooths brief frame-arrival jitter. Low latency keeps only the newest waiting frame. Adaptive smoothing absorbs uneven frame arrival and may add up to 40 ms delay. Experimental modes may skip frames or add input delay; a latency reduction is not guaranteed.")
+                Text("Balanced keeps latency low with a 2-frame jitter buffer. Adaptive smoothing uses a 4-frame RTP pacer for uneven Wi-Fi (may add up to 40 ms delay). You can also switch this live in the right-click Playback Settings menu.")
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

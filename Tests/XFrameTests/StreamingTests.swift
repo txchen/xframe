@@ -273,27 +273,35 @@ import Testing
     #expect(source.snapshot().dropped == 0)
 }
 
-@Test func lowLatencyKeepsNewestWaitingFrameAndStillExpiresAfterStall() throws {
+@Test func legacyLowLatencyPreferenceFallsBackToBalancedAndExpiresAfterStall() throws {
+    let suite = "XFrameTests.LegacyPacing.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    defaults.set("lowLatency", forKey: "XFrame.FramePacing")
+    #expect(CloudStreamPreferencesStore(defaults: defaults).load().framePacing == .balanced)
+
     var buffer: CVPixelBuffer?
     #expect(CVPixelBufferCreate(kCFAllocatorDefault, 16, 16,
         kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange, nil, &buffer) == kCVReturnSuccess)
     let pixelBuffer = try #require(buffer)
-    let source = LiveVideo(framePacing: .lowLatency)
+    let source = LiveVideo(framePacing: .balanced)
     for stamp: Int64 in [1, 2, 3] {
         source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: stamp))
     }
-    #expect(source.snapshot().capacity == 1)
-    #expect(source.snapshot().peakQueue == 1)
-    #expect(source.snapshot().dropped == 2)
-    let newest = try #require(source.nextFrame(at: 0))
-    #expect(newest.id == 3)
+    #expect(source.snapshot().capacity == 2)
+    #expect(source.snapshot().peakQueue == 2)
+    #expect(source.snapshot().dropped == 1)
+    let head = try #require(source.nextFrame(at: 0))
+    #expect(head.id == 2)
+    let next = try #require(source.nextFrame(at: 0))
+    #expect(next.id == 3)
     #expect(source.nextFrame(at: 0) == nil)
     source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 4))
-    #expect(source.nextFrame(at: newest.arrivedAt + 1) == nil)
-    #expect(source.snapshot().dropped == 3)
+    #expect(source.nextFrame(at: next.arrivedAt + 1) == nil)
+    #expect(source.snapshot().dropped == 2)
     let report = try #require(JSONSerialization.jsonObject(with: source.diagnosticReport().encoded()) as? [String: Any])
-    #expect(report["framePacing"] as? String == "lowLatency")
-    #expect(PerformanceHUDText.render(source.snapshot(), preset: .detailed, controller: "").contains("PACING Low latency (experimental)"))
+    #expect(report["framePacing"] as? String == "balanced")
+    #expect(PerformanceHUDText.render(source.snapshot(), preset: .detailed, controller: "").contains("PACING Balanced"))
     source.stop()
     source.renderFrame(RTCVideoFrame(buffer: RTCCVPixelBuffer(pixelBuffer: pixelBuffer), rotation: ._0, timeStampNs: 5))
     #expect(source.snapshot().queued == 0)
