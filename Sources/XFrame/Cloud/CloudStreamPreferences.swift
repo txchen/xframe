@@ -2,10 +2,13 @@ import Foundation
 
 enum CloudStreamQuality: String, CaseIterable, Sendable {
     case standard, hq
-    var title: String { self == .standard ? "Standard" : "HQ (experimental)" }
+    var title: String { self == .standard ? "Standard (1080p)" : "HQ (1440p / 4K)" }
     var osName: String { self == .standard ? "macos" : "tizen" }
     var width: Int { self == .standard ? 1920 : 4096 }
     var height: Int { self == .standard ? 1080 : 2160 }
+    var maxMacroblocksPerFrame: Int? { self == .standard ? 8160 : nil }
+    var maxMacroblocksPerSecond: Int? { self == .standard ? 489_600 : nil }
+    var supportsCustomResolution: Bool { self == .hq }
 }
 
 enum CloudGameLanguage: String, CaseIterable, Sendable {

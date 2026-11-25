@@ -54,6 +54,45 @@ enum WebRTCFieldTrials {
     }
 }
 
+enum SDPResolutionCap {
+    /// Caps H.264 video decode resolution in an SDP offer via `max-fs` and `max-mbps` fmtp parameters.
+    static func apply(sdp: String, maxFS: Int, maxMBPS: Int) -> String {
+        guard maxFS > 0, maxMBPS > 0 else { return sdp }
+        let separator = sdp.contains("\r\n") ? "\r\n" : "\n"
+        let lines = sdp.components(separatedBy: separator)
+
+        var h264Payloads = Set<String>()
+        var inVideo = false
+        for line in lines {
+            if line.hasPrefix("m=") { inVideo = line.hasPrefix("m=video "); continue }
+            guard inVideo, line.hasPrefix("a=rtpmap:") else { continue }
+            let body = line.dropFirst("a=rtpmap:".count)
+            let parts = body.split(separator: " ", maxSplits: 1)
+            if parts.count == 2, parts[1].uppercased().hasPrefix("H264/") {
+                h264Payloads.insert(String(parts[0]))
+            }
+        }
+        guard !h264Payloads.isEmpty else { return sdp }
+
+        var out: [String] = []
+        out.reserveCapacity(lines.count)
+        inVideo = false
+        for line in lines {
+            if line.hasPrefix("m=") { inVideo = line.hasPrefix("m=video "); out.append(line); continue }
+            guard inVideo, line.hasPrefix("a=fmtp:") else { out.append(line); continue }
+            let body = line.dropFirst("a=fmtp:".count)
+            let parts = body.split(separator: " ", maxSplits: 1)
+            guard parts.count == 2, h264Payloads.contains(String(parts[0])) else { out.append(line); continue }
+            let pt = String(parts[0])
+            let existing = parts[1].split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty && !$0.lowercased().hasPrefix("max-fs=") && !$0.lowercased().hasPrefix("max-mbps=") }
+            let updated = existing + ["max-fs=\(maxFS)", "max-mbps=\(maxMBPS)"]
+            out.append("a=fmtp:\(pt) \(updated.joined(separator: ";"))")
+        }
+        return out.joined(separator: separator)
+    }
+}
+
 enum SDPBitrate {
     /// Applies a maximum video bitrate cap (in Mbps) to the `m=video` section of an SDP.
     static func apply(sdp: String, maxMbps: Int) -> String {
@@ -319,7 +358,13 @@ final class CloudVideoConnection {
         received(audioReceiver.receiver.track)
         report("Negotiating H.264 video…")
         let rawOffer = try await makeOffer(peer)
-        let offer = try filteredSDP(rawOffer, side: .local)
+        let filteredOffer = try filteredSDP(rawOffer, side: .local)
+        let offer: String
+        if !requireLocalMedia, let maxFS = quality.maxMacroblocksPerFrame, let maxMBPS = quality.maxMacroblocksPerSecond {
+            offer = SDPResolutionCap.apply(sdp: filteredOffer, maxFS: maxFS, maxMBPS: maxMBPS)
+        } else {
+            offer = filteredOffer
+        }
         try checkActive()
         try await setDescription(peer, sdp: offer, local: true)
         try checkActive()
@@ -667,9 +712,10 @@ final class CloudVideoConnection {
             sendMessage("/streaming/characteristics/clientdevicecapabilities", content: [:])
             let width = requireLocalMedia ? 1920 : quality.width
             let height = requireLocalMedia ? 1080 : quality.height
+            let customResolution = !requireLocalMedia && quality.supportsCustomResolution
             sendMessage("/streaming/characteristics/dimensionschanged", content: ["horizontal": width, "vertical": height,
                 "preferredWidth": width, "preferredHeight": height, "safeAreaLeft": 0, "safeAreaTop": 0,
-                "safeAreaRight": width, "safeAreaBottom": height, "supportsCustomResolution": true])
+                "safeAreaRight": width, "safeAreaBottom": height, "supportsCustomResolution": customResolution])
         } else if message["type"] as? String == "TransactionStart", let id = message["id"] as? String,
                   let target = message["target"] as? String {
             send(["type": "Unhandled", "id": id, "target": target, "cv": nextCV()], on: "message")

@@ -119,3 +119,29 @@ import Testing
     #expect(FrameGenerationMode.off.next == .balanced)
     #expect(FrameGenerationMode.quality.next == .off)
 }
+
+@Test func sdpResolutionCapRestrictsOnlyH264VideoTo1080p() {
+    #expect(CloudStreamQuality.standard.maxMacroblocksPerFrame == 8160)
+    #expect(CloudStreamQuality.standard.maxMacroblocksPerSecond == 489_600)
+    #expect(!CloudStreamQuality.standard.supportsCustomResolution)
+    #expect(CloudStreamQuality.hq.maxMacroblocksPerFrame == nil)
+    #expect(CloudStreamQuality.hq.supportsCustomResolution)
+
+    let sdp = [
+        "v=0",
+        "m=audio 9 UDP/TLS/RTP/SAVPF 111",
+        "a=rtpmap:111 opus/48000/2",
+        "a=fmtp:111 minptime=10;useinbandfec=1",
+        "m=video 9 UDP/TLS/RTP/SAVPF 96 98",
+        "a=rtpmap:96 H264/90000",
+        "a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f;max-fs=14400",
+        "a=rtpmap:98 VP9/90000",
+        "a=fmtp:98 profile-id=0"
+    ].joined(separator: "\r\n")
+
+    let capped = SDPResolutionCap.apply(sdp: sdp, maxFS: 8160, maxMBPS: 489_600)
+    #expect(capped.contains("a=fmtp:96 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f;max-fs=8160;max-mbps=489600"))
+    #expect(!capped.contains("max-fs=14400"))
+    #expect(capped.contains("a=fmtp:98 profile-id=0"))
+    #expect(capped.contains("a=fmtp:111 minptime=10;useinbandfec=1"))
+}
