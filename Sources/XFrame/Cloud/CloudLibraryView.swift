@@ -140,78 +140,113 @@ struct CloudLibraryView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            HStack(spacing: 10) {
-                Image(nsImage: NSApplication.shared.applicationIconImage)
-                    .resizable().scaledToFit().frame(width: 30, height: 30)
-                Text("XFRAME").font(.system(size: 15, weight: .heavy, design: .rounded)).tracking(1.5)
-            }.padding(.top, 10)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("YOUR LIBRARY").font(.system(size: 14, weight: .semibold)).tracking(1.5)
-                    .foregroundStyle(LibraryStyle.secondary).padding(.bottom, 6)
-                collectionButton("Cloud games", icon: "square.grid.2x2", favorites: false, recent: false)
-                collectionButton("Recently played", icon: "clock", favorites: false, recent: true)
-                collectionButton("Favorites", icon: "star", favorites: true, recent: false)
-                Button {
-                    library.showingConsoles = true
-                } label: {
-                    Label("Consoles", systemImage: "gamecontroller")
-                        .font(.system(size: 17, weight: library.showingConsoles ? .semibold : .medium))
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .foregroundStyle(library.showingConsoles ? LibraryStyle.accent : LibraryStyle.secondary)
-                }.buttonStyle(.plain).disabled(!account.hasXboxSignIn)
-            }
-            Spacer()
-            Button {
-                library.showingStreamSettings = true
-            } label: {
-                Label("Settings", systemImage: "slider.horizontal.3")
-                    .font(.system(size: 16, weight: .medium))
-            }.buttonStyle(.plain).accessibilityLabel("Settings")
-            Button {
-                account.showingAccount = account.hasXboxSignIn
-            } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "person.crop.circle.fill").font(.system(size: 24))
-                        .foregroundStyle(LibraryStyle.accent)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(account.gamertag ?? "Xbox account").font(.system(size: 16, weight: .semibold)).lineLimit(1)
-                        Text(account.isBusy ? "Connecting…" : account.hasXboxSignIn ? "Manage account" : "Sign in")
-                            .font(.system(size: 14)).foregroundStyle(LibraryStyle.secondary)
-                    }
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.buttonStyle(.plain).accessibilityLabel("Xbox Account")
+        let catalogIDs = Set(library.games.map(\.id))
+        let recentCount = library.recentlyPlayed.filter { catalogIDs.contains($0) }.count
+        let favoriteCount = library.favorites.filter { catalogIDs.contains($0) }.count
 
-        }.padding(18).frame(width: 200).frame(maxHeight: .infinity)
+        return VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 9) {
+                Image(nsImage: NSApplication.shared.applicationIconImage)
+                    .resizable().scaledToFit().frame(width: 26, height: 26)
+                Text("XFRAME").font(.system(size: 14, weight: .heavy, design: .rounded)).tracking(1.6)
+            }.padding(.horizontal, 8).padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 3) {
+                sidebarSection("CLOUD")
+                collectionButton("All Games", icon: "square.grid.2x2", favorites: false, recent: false)
+                collectionButton("Recent", icon: "clock", favorites: false, recent: true, badge: recentCount)
+                collectionButton("Favorites", icon: "star", favorites: true, recent: false, badge: favoriteCount)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                sidebarSection("LOCAL")
+                sidebarRow(title: "Consoles", icon: "gamecontroller", selected: library.showingConsoles) {
+                    library.showingConsoles = true
+                }.disabled(!account.hasXboxSignIn)
+            }
+
+            Spacer()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Rectangle().fill(LibraryStyle.border).frame(height: 1).padding(.bottom, 4)
+                sidebarRow(title: "Settings", icon: "slider.horizontal.3", selected: false) {
+                    library.showingStreamSettings = true
+                }.accessibilityLabel("Settings")
+                Button {
+                    account.showingAccount = account.hasXboxSignIn
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "person.crop.circle.fill").font(.system(size: 22))
+                            .foregroundStyle(LibraryStyle.accent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(account.gamertag ?? "Xbox account").font(.system(size: 13.5, weight: .semibold)).lineLimit(1)
+                            Text(account.isBusy ? "Connecting…" : account.hasXboxSignIn ? "Manage account" : "Sign in")
+                                .font(.system(size: 11.5)).foregroundStyle(LibraryStyle.secondary).lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                    }.padding(.horizontal, 10).padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 9))
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel("Xbox Account")
+            }
+        }.padding(14).frame(width: 216).frame(maxHeight: .infinity)
             .background(LibraryStyle.sidebar)
             .overlay(alignment: .trailing) { Rectangle().fill(LibraryStyle.border).frame(width: 1) }
     }
 
-    private func collectionButton(_ title: String, icon: String, favorites: Bool, recent: Bool) -> some View {
+    private func sidebarSection(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10.5, weight: .semibold))
+            .tracking(1.3)
+            .foregroundStyle(Color.white.opacity(0.40))
+            .padding(.horizontal, 10)
+            .padding(.bottom, 2)
+    }
+
+    private func sidebarRow(title: String, icon: String, selected: Bool, badge: Int = 0, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: selected ? icon + ".fill" : icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .frame(width: 18, alignment: .center)
+                Text(title)
+                    .font(.system(size: 14, weight: selected ? .semibold : .medium))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                if badge > 0 {
+                    Text("\(badge)")
+                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(selected ? LibraryStyle.accent.opacity(0.18) : Color.white.opacity(0.07), in: Capsule())
+                        .foregroundStyle(selected ? LibraryStyle.accent : LibraryStyle.secondary)
+                }
+            }.padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+                .contentShape(Rectangle())
+                .foregroundStyle(selected ? LibraryStyle.accent : LibraryStyle.secondary)
+                .background(selected ? LibraryStyle.accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 8))
+        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func collectionButton(_ title: String, icon: String, favorites: Bool, recent: Bool, badge: Int = 0) -> some View {
         let selected = !library.showingConsoles && library.query.favoritesOnly == favorites && library.query.recentlyPlayedOnly == recent
-        return Button {
+        return sidebarRow(title: title, icon: icon, selected: selected, badge: badge) {
             library.showingConsoles = false
             library.updateQuery {
                 $0.favoritesOnly = favorites
                 $0.recentlyPlayedOnly = recent
             }
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: selected ? icon + ".fill" : icon).frame(width: 16)
-                Text(title).font(.system(size: 17, weight: selected ? .semibold : .medium))
-                Spacer(minLength: 0)
-            }.padding(.horizontal, 12).padding(.vertical, 12)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
-                .foregroundStyle(selected ? LibraryStyle.accent : LibraryStyle.secondary)
-                .background(selected ? LibraryStyle.accent.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 8))
-        }.buttonStyle(.plain).disabled(!account.hasCloudAccess).accessibilityAddTraits(selected ? .isSelected : [])
+        }.disabled(!account.hasCloudAccess)
     }
 
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(library.query.favoritesOnly ? "Favorites" : "Cloud games")
+                let heading = library.query.recentlyPlayedOnly ? "Recently played"
+                    : library.query.favoritesOnly ? "Favorites" : "Cloud games"
+                Text(heading)
                     .font(.system(size: 30, weight: .bold, design: .rounded))
 
             }
