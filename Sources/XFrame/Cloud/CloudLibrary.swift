@@ -80,6 +80,11 @@ final class CloudLibrary {
     var streamPreferences: CloudStreamPreferences {
         didSet { preferencesStore.save(streamPreferences) }
     }
+    func setLiveFramePacing(_ mode: FramePacingMode) {
+        streamPreferences.framePacing = mode
+        activeStreamPreferences?.framePacing = mode
+        connection?.video.setFramePacing(mode)
+    }
     private(set) var activeStreamPreferences: CloudStreamPreferences?
     @ObservationIgnored private let preferencesStore: CloudStreamPreferencesStore
     var selection: String?

@@ -84,6 +84,17 @@ final class LiveVideo: NSObject, VideoSource, RTCVideoRenderer, @unchecked Senda
         stats.framePacing = framePacing
         stats.isLive = true
     }
+    func setFramePacing(_ mode: FramePacingMode) {
+        lock.withLock {
+            guard !stopped, stats.framePacing != mode else { return }
+            stats.framePacing = mode
+            stats.capacity = mode.capacity
+            pacer = RTPFramePacer()
+            if frames.count > stats.capacity {
+                frames.removeFirst(frames.count - stats.capacity)
+            }
+        }
+    }
     func setSize(_ size: CGSize) {}
     func renderFrame(_ frame: RTCVideoFrame?) {
         guard let frame else { return }

@@ -39,12 +39,13 @@ struct PlaybackSettingsNavigation {
 final class PlaybackSettingsView: NSVisualEffectView {
     enum Mode: Equatable { case settings, confirmation, ending, failed(String) }
     private enum Row: Equatable {
-        case scaling, sharpening, frameGeneration, hud, volume, mute, keyboard, rumble, fullscreen, end, close, cancel, confirm, retry
+        case scaling, sharpening, frameGeneration, hud, framePacing, volume, mute, keyboard, rumble, fullscreen, end, close, cancel, confirm, retry
     }
     var selectScaling: ((VideoScalingMode) -> Void)?
     var selectFrameGeneration: ((FrameGenerationMode) -> Void)?
     var selectSharpening: ((SharpeningPreset) -> Void)?
     var selectHUD: ((PerformanceHUDPreset) -> Void)?
+    var selectFramePacing: ((FramePacingMode) -> Void)?
     var selectAudio: ((Bool, Double) -> Void)?
     var selectKeyboard: ((Bool) -> Void)?
     var selectRumble: ((Bool) -> Void)?
@@ -68,6 +69,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
     private var scaling: VideoScalingMode = .original
     private var frameGeneration: FrameGenerationMode = .off
     private var hud: PerformanceHUDPreset = .compact
+    private var framePacing: FramePacingMode = .balanced
     private var cloud = false
     private var console = false
     private var muted = false
@@ -182,6 +184,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
             if scaling == .metalFX || scaling == .fsr1 { addRow(.sharpening) }
             addRow(.frameGeneration)
             addRow(.hud)
+            if cloud { addRow(.framePacing) }
             section(cloud ? "Audio & Input" : "Input")
             if cloud {
                 addRow(.volume)
@@ -217,11 +220,13 @@ final class PlaybackSettingsView: NSVisualEffectView {
     }
 
     func configure(cloud: Bool, muted: Bool, volume: Double, rumbleEnabled: Bool = true,
-                   keyboardEnabled: Bool = true, fullscreen: Bool, transitioning: Bool,
+                   keyboardEnabled: Bool = true, framePacing: FramePacingMode = .balanced,
+                   fullscreen: Bool, transitioning: Bool,
                    console: Bool = false) {
         let sourceChanged = self.cloud != cloud || self.console != console
         self.cloud = cloud; self.console = console; self.muted = muted; self.volume = volume
         self.rumbleEnabled = rumbleEnabled; self.keyboardEnabled = keyboardEnabled
+        self.framePacing = framePacing
         self.fullscreen = fullscreen; self.transitioning = transitioning
         if sourceChanged && mode == .settings { rebuild() }
         refreshSelection()
@@ -338,6 +343,11 @@ final class PlaybackSettingsView: NSVisualEffectView {
             hud = next
             refreshSelection()
             selectHUD?(next)
+        case .framePacing:
+            let next = cycle(FramePacingMode.allCases, current: framePacing, step: step)
+            framePacing = next
+            refreshSelection()
+            selectFramePacing?(next)
         case .volume:
             volume = min(1, max(0, (volume * 100 + Double(step * 5)).rounded() / 100))
             refreshSelection()
@@ -362,6 +372,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         case .sharpening: return "Sharpening:  ‹ \(sharpening.title) ›"
         case .frameGeneration: return "Frame Generation:  ‹ \(frameGeneration.shortTitle) ›"
         case .hud: return "Overlay:  ‹ \(hud.title) ›"
+        case .framePacing: return "Frame Pacing:  ‹ \(framePacing.shortTitle) ›"
         case .volume: return "Volume: \(Int((volume * 100).rounded()))%  ‹ ›"
         case .mute: return muted ? "Mute: On" : "Mute: Off"
         case .keyboard: return "Keyboard Input: " + (keyboardEnabled ? "On" : "Off")
@@ -411,7 +422,7 @@ final class PlaybackSettingsView: NSVisualEffectView {
         selectedRow = sender.tag
         let row = actions[selectedRow]
         switch row {
-        case .scaling, .sharpening, .frameGeneration, .hud, .mute, .keyboard, .rumble:
+        case .scaling, .sharpening, .frameGeneration, .hud, .framePacing, .mute, .keyboard, .rumble:
             apply(row, step: 1)
         case .volume: break
         case .fullscreen: toggleFullscreen?()

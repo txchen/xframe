@@ -10,6 +10,13 @@ enum FramePacingMode: String, CaseIterable, Codable, Sendable {
         case .adaptive: "Adaptive smoothing (experimental)"
         }
     }
+    var shortTitle: String {
+        switch self {
+        case .balanced: "Balanced"
+        case .lowLatency: "Low latency"
+        case .adaptive: "Adaptive"
+        }
+    }
     var capacity: Int {
         switch self { case .balanced: 2; case .lowLatency: 1; case .adaptive: 4 }
     }

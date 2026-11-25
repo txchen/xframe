@@ -4,9 +4,9 @@ enum CloudStreamQuality: String, CaseIterable, Sendable {
     case standard, hq, low720
     var title: String {
         switch self {
-        case .standard: "Standard (Desktop · 1080p/1440p)"
-        case .hq: "HQ (Tizen · 1440p)"
-        case .low720: "720p (Mobile · Low bandwidth)"
+        case .standard: "Standard (1080p/1440p)"
+        case .hq: "HQ (High bitrate)"
+        case .low720: "720p (Low bandwidth)"
         }
     }
     var osName: String {

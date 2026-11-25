@@ -159,6 +159,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.videoView?.draw()
             }
             playbackSettings.selectHUD = { [weak self] preset in self?.setPerformanceHUD(preset) }
+            playbackSettings.selectFramePacing = { [weak self] mode in
+                self?.account.library.setLiveFramePacing(mode)
+            }
             playbackSettings.dismiss = { [weak self] in self?.hidePlaybackSettings() }
             playbackSettings.selectAudio = { [weak self] muted, volume in
                 self?.account.library.setAudio(muted: muted, volume: volume)
@@ -659,6 +662,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             muted: account.library.audioMuted, volume: account.library.audioVolume,
             rumbleEnabled: account.library.rumbleEnabled,
             keyboardEnabled: account.library.keyboardEnabled,
+            framePacing: account.library.activeStreamPreferences?.framePacing ?? account.library.streamPreferences.framePacing,
             fullscreen: window?.styleMask.contains(.fullScreen) == true,
             transitioning: playbackPresentation?.transitioning == true,
             console: account.library.ownsSession && account.library.sessionSource == .home)
