@@ -292,10 +292,14 @@ struct CloudService: CloudServing {
                 "timezoneOffsetMinutes": -TimeZone.current.secondsFromGMT() / 60, "sdkType": "web",
                 "osName": home ? "windows" : preferences.quality.osName]]
         let hq = !home && preferences.quality == .hq
+        let mobile = !home && preferences.quality == .low720
+        let platform = home ? "desktop" : preferences.quality.platformType
         var hardware: [String: Any] = [
-            "hw": ["make": hq || home ? "Microsoft" : "Apple", "model": hq || home ? "unknown" : "Mac", "platformType": "desktop", "sdktype": "web"],
+            "hw": ["make": hq || home ? "Microsoft" : (mobile ? "Google" : "Apple"),
+                   "model": hq || home ? "unknown" : (mobile ? "Pixel" : "Mac"),
+                   "platformType": platform, "sdktype": "web"],
             "os": ["name": home ? "windows" : preferences.quality.osName,
-                    "ver": home || hq ? "22631.2715" : "27", "platform": "desktop"],
+                    "ver": home || hq ? "22631.2715" : (mobile ? "14" : "27"), "platform": platform],
             "displayInfo": ["dimensions": ["widthInPixels": home ? 1920 : preferences.quality.width,
                                            "heightInPixels": home ? 1080 : preferences.quality.height],
                             "pixelDensity": ["dpiX": 1, "dpiY": 1]]]

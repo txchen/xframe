@@ -1,13 +1,50 @@
 import Foundation
 
 enum CloudStreamQuality: String, CaseIterable, Sendable {
-    case standard, hq
-    var title: String { self == .standard ? "Standard (1080p)" : "HQ (1440p / 4K)" }
-    var osName: String { self == .standard ? "macos" : "tizen" }
-    var width: Int { self == .standard ? 1920 : 4096 }
-    var height: Int { self == .standard ? 1080 : 2160 }
-    var maxMacroblocksPerFrame: Int? { self == .standard ? 8160 : nil }
-    var maxMacroblocksPerSecond: Int? { self == .standard ? 489_600 : nil }
+    case standard, hq, low720
+    var title: String {
+        switch self {
+        case .standard: "Standard (Desktop · 1080p/1440p)"
+        case .hq: "HQ (Tizen · 1440p)"
+        case .low720: "720p (Mobile · Low bandwidth)"
+        }
+    }
+    var osName: String {
+        switch self {
+        case .standard: "macos"
+        case .hq: "tizen"
+        case .low720: "android"
+        }
+    }
+    var platformType: String { self == .low720 ? "mobile" : "desktop" }
+    var width: Int {
+        switch self {
+        case .standard: 1920
+        case .hq: 4096
+        case .low720: 1280
+        }
+    }
+    var height: Int {
+        switch self {
+        case .standard: 1080
+        case .hq: 2160
+        case .low720: 720
+        }
+    }
+    var maxMacroblocksPerFrame: Int? {
+        switch self {
+        case .standard: 8160
+        case .hq: nil
+        case .low720: 3600
+        }
+    }
+    var maxMacroblocksPerSecond: Int? {
+        switch self {
+        case .standard: 489_600
+        case .hq: nil
+        case .low720: 216_000
+        }
+    }
     var supportsCustomResolution: Bool { self == .hq }
 }
 

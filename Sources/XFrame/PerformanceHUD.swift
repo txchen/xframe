@@ -21,7 +21,7 @@ enum PerformanceHUDText {
         let bitrate = decimal(stats.videoBitrateMbps)
         let average = "SESSION avg IN \(decode) · OUT \(present) fps"
         let rate = stats.isLive ? "STREAM \(decimal(stats.recentDecodedFPS)) · OUT \(decimal(stats.recentPresentedFPS)) fps · 2s" : average
-        let profile = quality.map { $0 == .hq ? "HQ" : "SQ" } ?? "n/a"
+        let profile = quality.map { $0 == .hq ? "HQ" : $0 == .low720 ? "720p" : "SQ" } ?? "n/a"
         let video = stats.isLive ? "\(profile) requested · VIDEO \(bitrate) Mbps · \(stats.hardware ? "HW" : "HW pending")" : "LOCAL VIDEO · \(stats.hardware ? "HW" : "HW pending")"
         let recovery = stats.connectionRecovering ? "Connection interrupted — recovering…\n" : ""
         if preset == .compact {
@@ -127,7 +127,7 @@ final class PerformanceHUDView: NSView {
                                  .foregroundColor: color, .paragraphStyle: paragraph])
         }
         text("XFRAME", x: inset, y: 13, w: 100, color: accent, size: 12)
-        let profile = quality.map { $0 == .hq ? "HQ req." : "SQ req." } ?? "LIVE"
+        let profile = quality.map { $0 == .hq ? "HQ req." : $0 == .low720 ? "720p req." : "SQ req." } ?? "LIVE"
         let failed = document?.state.hasPrefix("Failed:") == true
         let status = failed ? "FAILED" : (document?.state == "Ended" ? "ENDED" : nil)
         text(status ?? (document?.recovering == true ? "RECOVERING" : (document?.live == true ? profile + (document?.hardware == true ? " · HW" : "") : "LOCAL VIDEO")),

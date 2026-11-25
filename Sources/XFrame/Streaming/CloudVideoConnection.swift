@@ -344,7 +344,13 @@ final class CloudVideoConnection {
         self.peer = peer
         for (name, wireProtocol) in [("input", "1.0"), ("chat", "chatV1"), ("control", "controlV1"), ("message", "messageV1")] {
             let settings = RTCDataChannelConfiguration()
-            settings.isOrdered = true
+            // xCloud advertises useUnreliableInput=true; unordered/unreliable SCTP avoids head-of-line blocking on loss.
+            if name == "input" && !requireLocalMedia {
+                settings.isOrdered = false
+                settings.maxRetransmits = 0
+            } else {
+                settings.isOrdered = true
+            }
             settings.protocol = wireProtocol
             guard let channel = peer.dataChannel(forLabel: name, configuration: settings) else { throw StreamError.signaling }
             channel.delegate = events
